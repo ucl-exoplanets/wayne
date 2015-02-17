@@ -7,8 +7,8 @@ import os.path
 
 import numpy as np
 import quantities as pq
-from astropy.modeling import models
 
+from models import GaussianModel1D
 from detector import WFC3_IR
 import params
 
@@ -25,7 +25,7 @@ class Grism(object):
         :param wavelength: list of wavelengths of the raw spectrum
         :type wavelength: list / numpy.ndarray
         """
-        self.raw_flux = flux
+        self.raw_flux = flux  # TODO should have units
         self.raw_wavelength = wavelength
 
         self.detector = WFC3_IR()  # this should be called and set by an observation / instrument class
@@ -39,7 +39,7 @@ class Grism(object):
         self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-g141-fwhm.dat'))
         # in future add option to set unit of data file but we work internally in microns
         self.psf_wavelength = (self._psf_file[:, 0] * pq.nm).rescale(pq.micron)
-        self.psf_fwhm = self._psf_file[:, 0] * self.detector.pixel_unit
+        self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
 
         # Some constants
         self._FWHM_to_StDev = 1./(2*np.sqrt(2*np.log(2)))
@@ -63,8 +63,14 @@ class Grism(object):
         pass
 
     def psf(self, wavelength, flux):
-        """ Given a wavelength and flux this function returns the gaussian function for the observation at the wl
-        given (interpolated)
+        """
+        Given a wavelength and flux this function returns the gaussian function for the observation at the wl given
+         (linearly interpolated using numpy.interp)
+
+        The FWHM at each wavelength should be defined in a textfile loaded by self._psf_file
+
+        We assume the psf can be represented by a gaussian, this is true for WFC3 G141 (*WFC3 inst handbook (cycle 23)
+         - sec 7.6.1 - page 140*).
 
         :param wavelength: wavelength to sample in microns
         :param flux: The flux at the wavelength (i.e the area under the gaussian)
@@ -72,13 +78,11 @@ class Grism(object):
         :return:
         """
 
-        amplitude = 0  # To be fitted
-        mean = 0  # To be Fitted
+        mean = 0.  # this is the center, make sense that we zero it for now
 
-        FWHM = self.psf_fwhm
-        stdev = FWHM * self._FWHM_to_StDev
+        # linear interpolation of the FWHM given in self._psf_file TODO quadratic interp / fit a function?
+        FWHM = np.interp(wavelength.rescale(pq.micron), self.psf_wavelength, self.psf_fwhm, left=0., right=0.)
 
-        gauss = models.Gaussian1D(amplitude, mean, stdev)
+        gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
-        # TODO fix the stdev and vary mean and amplitude to match flux, read a little more to see if we can
-        # find a relation
+        return gaussian_model
