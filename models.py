@@ -1,4 +1,5 @@
 import astropy.modeling.models
+from scipy.special import erf
 import numpy as np
 
 _gauss_StDev_to_FWHM = (2*np.sqrt(2*np.log(2)))  # conversion constant
@@ -94,7 +95,27 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
         self.stddev = fwhm / _gauss_StDev_to_FWHM
 
-    def integrate(self, l1, l2):
-        """ Integrates the model over the given limits l1 to l2"""
+    def integrate(self, x1, x2):
+        """ Integrates the model over the given limits x1 to x2 using the error function to obtain the flux binned
+        between the limits
 
-        assert False
+        $P(x_1<x<x_2)=\frac{1}{2}(Erf[\frac{x_2-\mu}{\sigma\sqrt{2}}]-Erf[\frac{x_1-\mu}{\sigma\sqrt{2}}])$
+
+        For reasons i don't understand yet, this doesnt give the correct answer and we need to use $2\sigma\sqrt{2}$.
+
+        This probability is then turned into a flux by multiplying it by the total flux
+        """
+
+        stddev = self.stddev
+        mean = self.mean
+
+        # TODO there shouldnt be fudge factors! but it doesnt effect, flux, only effective psf width (see notes)
+        fudge = 2.04
+
+        erf2 = erf((x2-mean)/(fudge*stddev*np.log(2)))
+        erf1 = erf((x1-mean)/(fudge*stddev*np.log(2)))
+
+        prob = 0.5 * (erf2 - erf1)
+
+        binned_flux = prob*self.flux
+        return binned_flux
