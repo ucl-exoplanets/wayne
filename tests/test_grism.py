@@ -15,14 +15,14 @@ class Test_Grism(unittest.TestCase):
 
     def test_psf_at_sample_points(self):
 
-        self.g141_grism.psf(1.2)
-        self.g141_grism.psf(1.7)
+        # self.g141_grism.psf(1.2)
+        # self.g141_grism.psf(1.7)
 
         assert False
 
     def test_psf_between_sample_points_interpolation(self):
-
-        self.g141_grism.psf(1.15)
-        self.g141_grism.psf(1.65)
+        #
+        # self.g141_grism.psf(1.15)
+        # self.g141_grism.psf(1.65)
 
         assert False

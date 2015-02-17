@@ -112,7 +112,7 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         cdf1 = scipy.stats.norm.cdf((x1-mean)/stddev)
         cdf2 = scipy.stats.norm.cdf((x2-mean)/stddev)
 
-        prob = 0.5 * (cdf2 - cdf1)
+        prob = cdf2 - cdf1
 
         binned_flux = prob*self.flux
         return binned_flux
