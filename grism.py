@@ -94,3 +94,134 @@ class Grism(object):
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
         return gaussian_model
+
+    def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
+        """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
+        Software manual and determined by (Knutschner 2009, calibration of the G141 Grism).
+
+        :param x_ref: The x position of the star on the reference frame
+        :param y_ref: The y position of the star on the reference frame
+
+        :return: a_t, b_t, a_w, b_w
+        """
+
+        # Spectrum Trace
+        a_t = 1.04275e-2 + (-7.96978e-6)*x_ref + (-2.49607e-6)*y_ref + (1.45963e-9)*x_ref**2 + (1.39757e-8)*x_ref*y_ref \
+                                                                                            + (4.84940e-10)*y_ref**2
+        b_t = 1.96882 + (9.09159e-5)*x_ref + (-1.93260e-3)*y_ref
+
+        # Wavelength Solution
+        a_w = 4.51423e1 + (3.17239e-4)*x_ref + (2.17055e-3)*y_ref + (-7.42504e-7)*x_ref**2 + (3.48639e-7)*x_ref*y_ref \
+                                                                                            + (3.09213e-7)*y_ref**2
+        b_w = 8.95431e3 + (9.35925e-2)*x_ref # + (0)*y_ref
+
+        return a_t, b_t, a_w, b_w
+
+    def get_pixel_wl(self, x_ref, y_ref, x_1, y_1):
+        """ gives the wavelength of pixel x1, y1 given reference pixel x_ref, y_ref.
+
+        :param x_ref: The x position of the star on the reference frame
+        :param y_ref: The y position of the star on the reference frame
+        :param x_1:
+        :param y_1:
+
+        :notes: takes around 5.6 seconds to compute each pixel separately on a 1024x1024 grid
+
+        :return: the wavelength of pixel (x_1, y_1)
+        """
+        # For some reason this only works with the inputs flipped, i do this explicitly so its known and the reason
+        # can be found later TODO
+        x_ref, y_ref = y_ref, x_ref
+        x_1, y_1 = y_1, x_1
+
+        a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+
+        # Distance between the reference and required point on the trace
+        d = np.sqrt((y_ref-y_1+a_t*x_ref-a_t*x_1)**2/(a_t**2+1))
+
+        # Determination of wavelength
+        wl = a_w * d + b_w
+
+        return wl
+
+    def get_pixel_wl_per_row(self, x_ref, y_ref, x_values=None, y_value=None):
+        """ Given the star position (x_ref, y_ref) this function will return the wavelengths for the pixels in the row
+        y_ref. If x_values is given, this function will return the values for x_values rather than the whole row
+
+        :param x_ref: The x position of the star on the reference frame
+        :param y_ref: The y position of the star on the reference frame
+        :param x_values: list of pixel numbers to obtain wavelengths for, can be fractional
+        :param y_value: y value of the row, if None will use y_ref
+
+        :notes: takes around 0.33 seconds to compute each row, on 1024 grid. ~170x faster than each pixel individually
+
+        :return: wavelengths for the row at y_ref for all pixels or all values of x_values
+        """
+
+        if x_values is None:
+            x_values = np.arange(1024)  # TODO set pixel numbers in detector class
+        else:
+            x_values = np.array(x_values)
+
+        if y_value is None:
+            y_value = y_ref
+
+        # For some reason this only works with the inputs flipped, i do this explicitly so its known and the reason
+        # can be found later TODO
+        x_ref, y_ref = y_ref, x_ref
+        x_values, y_value = y_value, x_values
+
+        a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+
+        d_values = np.sqrt((y_ref-y_value+a_t*x_ref-a_t*x_values)**2/(a_t**2+1))
+
+        wl_values = a_w * d_values + b_w
+
+        return wl_values
+
+    def get_pixel_edges_wl_per_row(self, x_ref, y_ref, x_centers=None, y_value=None, pixel_size=1.):
+        """ Calculates the wavelength inbetween each pixel defined in x_centers. For example x_centers = 1,2,3 and the
+        return will give the wavelengths for 0.5, 1.5, 2.5, 3.5. This is the same as
+
+            self.get_pixel_row_wl(x_ref, y_ref, x_values=self._bin_centers_to_limits(x_centers, pixel_size), y_value)
+
+        And is used to get the limits to pass to a binning function to reduce the input spectra to pixels
+
+        :param x_ref: The x position of the star on the reference frame
+        :param y_ref: The y position of the star on the reference frame
+        :param x_centers: list of pixel numbers to be turned into edges
+        :param y_value: y value of the row, if None will use y_ref
+        :param pixel_size: size of pixel (same units as centers)
+
+        :notes: takes around 0.33 seconds to compute each row, on 1024 grid. ~170x faster than each pixel individually
+
+        :return: wavelengths for the row at y_ref for all pixels or all values of x_values
+        """
+
+        x_values = self._bin_centers_to_limits(x_centers, pixel_size)
+        wl_values = self.get_pixel_wl_per_row(x_ref, y_ref, x_values, y_value)
+
+        return wl_values
+
+    def _bin_centers_to_limits(self, centers, bin_size=1.):
+        """ Converts a list of bin centers into limits (edges) given a (constant) bin size. Can be fractional.
+
+        This is used to convert raw pixel numbers into limits
+            i.e 1, 2, 3 -> 0.5, 1.5, 2.5, 3.5
+        in order to then determine the spectral contribution in that pixel
+
+        No effort is made to see if you gave a constant bin, you will just get an incorrect result.
+            i.e. 1, 5, 7 -> 0.5, 4.5, 6.5, 7.5
+
+        :param centers: array of bin centers
+        :param bin_size: size of bin (same units as centers)
+
+        :return: array of bin edges of length len(centers)+1
+        """
+
+        centers = np.array(centers)
+        half_bin = bin_size/2.
+
+        bin_edges = np.append(centers-half_bin, centers[-1]+half_bin)
+
+        return bin_edges

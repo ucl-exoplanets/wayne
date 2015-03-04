@@ -21,4 +21,3 @@ class WFC3_IR(Detector):
         self.pixel_array = np.zeros((256, 256))
         self.pixel_unit = pq.length.UnitLength('WFC3 IR Pixel', 18*pq.micron, 'WFC3IR_Pix',
                                                doc='Pixel size for the HST WFC3 IR detector')
-
