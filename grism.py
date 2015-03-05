@@ -129,15 +129,12 @@ class Grism(object):
 
         :return: the wavelength of pixel (x_1, y_1)
         """
-        # For some reason this only works with the inputs flipped, i do this explicitly so its known and the reason
-        # can be found later TODO
-        x_ref, y_ref = y_ref, x_ref
-        x_1, y_1 = y_1, x_1
 
         a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+        a_t_i = 1/a_t  # the inverse
 
         # Distance between the reference and required point on the trace
-        d = np.sqrt((y_ref-y_1+a_t*x_ref-a_t*x_1)**2/(a_t**2+1))
+        d = np.sqrt((y_ref-y_1+a_t_i*x_ref-a_t_i*x_1)**2/(a_t_i**2+1))
 
         # Determination of wavelength
         wl = a_w * d + b_w
@@ -166,14 +163,10 @@ class Grism(object):
         if y_value is None:
             y_value = y_ref
 
-        # For some reason this only works with the inputs flipped, i do this explicitly so its known and the reason
-        # can be found later TODO
-        x_ref, y_ref = y_ref, x_ref
-        x_values, y_value = y_value, x_values
-
         a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+        a_t_i = 1/a_t  # the inverse
 
-        d_values = np.sqrt((y_ref-y_value+a_t*x_ref-a_t*x_values)**2/(a_t**2+1))
+        d_values = np.sqrt((y_ref-y_value+a_t_i*x_ref-a_t_i*x_values)**2/(a_t_i**2+1))
 
         wl_values = a_w * d_values + b_w
 

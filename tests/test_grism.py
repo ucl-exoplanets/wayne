@@ -49,7 +49,7 @@ class Test_Grism(unittest.TestCase):
         self.assertAlmostEqual(self.g141_grism.get_pixel_wl(50, 50, 200, 50), 15748.6, 1)
         self.assertAlmostEqual(self.g141_grism.get_pixel_wl(50, 50, 100, 51), 11222.7, 1)
         self.assertAlmostEqual(self.g141_grism.get_pixel_wl(50, 60, 100, 50), 11218.8, 1)
-        self.assertAlmostEqual(self.g141_grism.get_pixel_wl(60, 50, 100, 50), 10770.4, 1)
+        self.assertAlmostEqual(self.g141_grism.get_pixel_wl(60, 50, 100, 50), 10770.6, 1)
 
     # There is no code to stop this, but perhaps in future there should be
     # Going beyond the detector in ref or normal still gives a value as the calculations are polynomial based
