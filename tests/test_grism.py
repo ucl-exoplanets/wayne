@@ -85,3 +85,23 @@ class Test_Grism(unittest.TestCase):
         limits = self.g141_grism._bin_centers_to_limits(centers, 1)
 
         numpy.testing.assert_array_equal(limits, np.arange(-1.5, 2.))
+
+
+class Test_SpectrumTrace(unittest.TestCase):
+
+    def test__init__(self):
+        grism.SpectrumTrace(50, 50)  # pass if no exceptions
+
+    def test__get_wavelength_calibration_coeffs_50_50(self):
+        # This test is failing yet the result given as not equal isequal :-S
+        g141_trace = grism.SpectrumTrace(50, 50)
+
+        # This step is normally done at initialisation
+        trace_50_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 50))
+        np.testing.assert_array_almost_equal(trace_50_50, np.array([9.94401e-03, 1.87674e+00, 4.52664e+01, 8.95899e+03]), 4)
+
+        trace_100_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(100, 50))
+        np.testing.assert_array_almost_equal(trace_100_50, np.array([  9.5914e-03,   1.8813e+00,   4.5278e+01,   8.9637e+03]), 4)
+
+        trace_50_100 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 100))
+        np.testing.assert_array_almost_equal(trace_50_100, np.array([9.9440e-03, 1.8767e+00, 4.5266e+01, 8.9590e+03]), 4)

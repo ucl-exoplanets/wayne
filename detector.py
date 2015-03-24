@@ -6,18 +6,17 @@ import quantities as pq
 
 
 class Detector(object):
-    pass  # build this after WFC3_IR i.e. generalising when i know more about whats involved
-    #
-    # def __init__(self):
-    #
-    #     # Start with a single 256x256 array, add complexity in when we need it.
-    #     self.pixel_array = np.zeros((256, 256))
+    def __init__(self):
+        # some defaults to show what we need
+        self.pixel_array = np.zeros((1024, 1024))
+        self.pixel_unit = 15*pq.micron
 
 
 class WFC3_IR(Detector):
 
     def __init__(self):
-        # Start with a single 256x256 array, add complexity in when we need it.
-        self.pixel_array = np.zeros((256, 256))
+        Detector.__init__(self)
+        # Start with a single 1024x1024 array, add complexity in when we need it.
+        self.pixel_array = np.zeros((1024, 1024))
         self.pixel_unit = pq.length.UnitLength('WFC3 IR Pixel', 18*pq.micron, 'WFC3IR_Pix',
                                                doc='Pixel size for the HST WFC3 IR detector')
