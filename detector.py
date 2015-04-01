@@ -2,14 +2,15 @@
 """
 
 import numpy as np
-import quantities as pq
+from astropy import units as u
 
 
 class Detector(object):
     def __init__(self):
         # some defaults to show what we need
         self.pixel_array = np.zeros((1024, 1024))
-        self.pixel_unit = 15*pq.micron
+        self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
+        self.telescope_area = np.pi * (2.4/2.)**2
 
 
 class WFC3_IR(Detector):
@@ -18,5 +19,5 @@ class WFC3_IR(Detector):
         Detector.__init__(self)
         # Start with a single 1024x1024 array, add complexity in when we need it.
         self.pixel_array = np.zeros((1024, 1024))
-        self.pixel_unit = pq.length.UnitLength('WFC3 IR Pixel', 18*pq.micron, 'WFC3IR_Pix',
-                                               doc='Pixel size for the HST WFC3 IR detector')
+        self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
+        self.telescope_area = np.pi * (2.4*u.m/2.)**2

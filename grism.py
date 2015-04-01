@@ -6,7 +6,8 @@ then maps the field to pixels.
 import os.path
 
 import numpy as np
-import quantities as pq
+
+from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
@@ -18,7 +19,7 @@ import params
 
 
 class Grism(object):
-    """ Handles a grism object and can be used to peform calculation on it such as the psf given a flux and wavelength
+    """ Handles a grism object and can be used to perform calculation on it such as the psf given a flux and wavelength
 
     This class should not include observation data and instead be used to turn observational dat into observed. An
     observation / combined detector grism class can do this. calling each component as its needed. You are not then doing
@@ -46,22 +47,25 @@ class Grism(object):
 
         # Grism Values
         # ------------
-        self.min_lambda = 1075 * pq.nm
-        self.max_lambda = 1700 * pq.nm
+        self.min_lambda = 1.075 * u.micron
+        self.max_lambda = 1.700 * u.micron
 
         # self.dispersion = 4.65 * pq.nm - The dispersion is actually dependant on x and y and not constant
 
         ## PSF Information
         self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-g141-fwhm.dat'))
         # in future add option to set unit of data file but we work internally in microns
-        self.psf_wavelength = (self._psf_file[:, 0] * pq.nm).rescale(pq.micron)
+        self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
         self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
+
+        # we crop the input spectrum using this, the limiting factor here is psf
+        self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
 
         # Throughput
         self.throughput_file = os.path.join(params._data_dir, 'wfc3_ir_g141_src_004_syn.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_wl = tbl.field('WAVELENGTH')/10000.  # convert to microns
+            self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(u.micron)
             self.throughput_val = tbl.field('THROUGHPUT')
 
         # Non Grism Specific Constants
@@ -85,16 +89,9 @@ class Grism(object):
         :return:
         """
 
-        # TODO units are causing some issues now, lets worry about this when we have tests
-        # if not type(wavelength) is pq.quantity.Quantity:
-        #     raise TypeError("Wavelength must be given as a quantities unit i.e. 1 * pq.micron got {} type {}".format(
-        #         wavelength, type(wavelength)
-        #     ))
-
         mean = y_pos  # this is the center of the guassian
 
         # linear interpolation of the FWHM given in self._psf_file TODO quadratic interp / fit a function?
-        #                          .rescale(pq.micron)
         FWHM = np.interp(wavelength, self.psf_wavelength, self.psf_fwhm, left=0., right=0.)
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
@@ -393,7 +390,8 @@ class SpectrumTrace(object):
 
         d = np.sqrt((y - y_ref)**2 + (x-x_ref)**2)
 
-        wl = (self.m_w * d + self.c_w) / 10000.
+        wl = (self.m_w * d + self.c_w)*u.angstrom
+        wl = wl.to(u.micron)
 
         m_wl = (wl[1] - wl[0]) / (x[1] - x[0])
         c_wl = wl[0] - m_wl*x[0]
@@ -499,7 +497,7 @@ class SpectrumTrace(object):
 
         plt.scatter(self.x_ref, self.y_ref, c='r', s=60, label="Source Position", zorder=10)
 
-        spec_wl = np.array([1.075, 1.7])
+        spec_wl = np.array([1.075, 1.7]) * u.micron
         spec_x = self.wl_to_x(spec_wl)
         spec_y = self.wl_to_y(spec_wl)
         plt.scatter(spec_x, spec_y, c='g', s=60, label="Spectrum Position", zorder=10)
