@@ -29,12 +29,43 @@ class Exposure(object):
         self.detector = detector
         self.grism = grism
 
+    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, exptime, sampletime):
+        """
+
+        :param x_ref: star image x position on frame
+        :param y_ref: star image y position on frame
+        :param wl: wavelength of stellar flux AND planet signal (must be sampled identically)
+        :param stellar flux:
+        :param planet_signal: (units of transit depth)
+        :param scan_speed: (u.pixel/u.ms)
+        :param exptime: total exposure time /sec
+        :param sampletime: how often to generate a staring frame, shorter times improves accuracy at the expense of
+         runtime
+
+        :return: array with the exposure
+        """
+
+        scan_speed = scan_speed.to(u.pixel/u.ms)
+        exptime = exptime.to(u.ms)
+        sampletime = sampletime.to(u.ms)
+        # convert times to miliseconds and then call value to remove units so arrange works
+        # s_ denotes variables that change per sample
+        for s_time in np.arange(0, exptime.value, sampletime.value) * u.ms:
+
+            s_y_ref = y_ref + (s_time * scan_speed).to(u.pixel).value
+
+            # TODO we can vary the transit depth by generating a lightcurve from the signal at our sample times
+
+            # generate the staring frame at our sample time, writes directly to detector frame.
+            self.staring_frame(x_ref, s_y_ref, wl, stellar_flux, planet_signal, exptime)
+
+        return self.detector.pixel_array
+
     def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, exptime):
         """ constructs a staring mode frame, given a source position and spectrum scaling
 
         :param x_ref: star image x position on frame
         :param y_ref: star image y position on frame
-        :param scaling: Scaling factor to convert transit-depth to counts, probably to be replaced later
         :param wl: wavelength of stellar flux AND planet signal (must be sampled identically)
         :param stellar flux:
         :param planet_signal: (units of transit depth)
@@ -44,6 +75,7 @@ class Exposure(object):
         """
 
         flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
+        # TODO improve the inefficient cropping, we are doing it once per sample is scanning
         wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
 
         # Wavelength calibration, mapping to detector x/y pos
