@@ -14,7 +14,7 @@ class Observation(object):
     """ Builds a full observation, of separate orbits
     """
 
-    def __init__(self, planet, start_JD, detector, grism):
+    def __init__(self, planet, start_JD, detector, grism, NSAMP, SAMPSEQ, SUBARRAY):
         #  initialise all parameters here for now. There could be many options entered through a
         #  Parameter file but this could be done with an interface.
         #  mode handles exp time
@@ -38,12 +38,11 @@ class Observation(object):
         pass
 
 
-
 class Exposure(object):
     """ Constructs exposures given a spectrum
     """
 
-    def __init__(self, detector, grism):
+    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY):
         """
 
         :param detector: detector class, i.e. WFC3_IR()
@@ -56,7 +55,15 @@ class Exposure(object):
         self.detector = detector
         self.grism = grism
 
-    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, exptime, sampletime):
+        # Maybe theese should be set in the detector?
+        self.NSAMP = NSAMP
+        self.SAMPSEQ = SAMPSEQ
+        self.SUBARRAY = SUBARRAY
+
+        # total exptime
+        self.exptime = self.detector
+
+    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime):
         """
 
         :param x_ref: star image x position on frame
@@ -73,7 +80,7 @@ class Exposure(object):
         """
 
         scan_speed = scan_speed.to(u.pixel/u.ms)
-        exptime = exptime.to(u.ms)
+        exptime = self.exptime.to(u.ms)
         sampletime = sampletime.to(u.ms)
         # convert times to miliseconds and then call value to remove units so arrange works
         # s_ denotes variables that change per sample
@@ -88,7 +95,7 @@ class Exposure(object):
 
         return self.detector.pixel_array
 
-    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, exptime, psf_max=5):
+    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=5):
         """ constructs a staring mode frame, given a source position and spectrum scaling
 
         :param x_ref: star image x position on frame
@@ -128,7 +135,7 @@ class Exposure(object):
 
         # TODO scale flux by stellar distance / require it already scaled
 
-        counts = (count_rate * exptime).to(u.photon)
+        counts = (count_rate * self.exptime).to(u.photon)
 
         # Modify the counts by the grism throughput
         counts_tp = self.grism.throughput(wl, counts)

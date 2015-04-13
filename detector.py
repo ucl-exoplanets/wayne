@@ -4,14 +4,42 @@
 import numpy as np
 from astropy import units as u
 import pandas as pd
+import os.path
+
+import params
 
 
 class Detector(object):
     def __init__(self):
-        # some defaults to show what we need
+        # DEFAULTS so pycharm knows what types to expect
         self.pixel_array = np.zeros((1024, 1024))
         self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
         self.telescope_area = np.pi * (2.4/2.)**2
+
+        self.modes_table = self._get_modes()
+
+    def _get_modes(self):  # DEFAULTS
+        """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
+        """
+        modes_table = pd.DataFrame(columns=('SAMPSEQ', 'NSAMP', 'SUBARRAY'))
+
+        return modes_table
+
+    def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
+        """ Retrieves the total exposure time for the modes given
+        :return:
+        """
+
+        mt = self.modes_table
+
+        exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] == NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]
+        exptime = exptime_table.TIME.values
+
+        if not exptime:  # empty return
+            raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
+                                         "".format(SAMPSEQ, NSAMP, SUBARRAY))
+
+        return exptime * u.s
 
 
 class WFC3_IR(Detector):
@@ -23,10 +51,21 @@ class WFC3_IR(Detector):
         self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
 
-        self.modes_table = self._get_modes()
-
     def _get_modes(self):
         """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
         :return:
         """
-        return pd.read_csv('wfc3_ir_mode_exptime.csv', skiprows=1)
+
+        modes_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'), skiprows=1, dtype={
+            'SUBARRAY': np.int64, 'SAMPSEQ': np.object, 'NSAMP': np.int64, 'TIME':np.float},
+                                  thousands=',')
+
+        return modes_table
+
+
+class WFC3SimException(BaseException):
+    pass
+
+
+class WFC3SimSampleModeError(WFC3SimException):
+    pass
