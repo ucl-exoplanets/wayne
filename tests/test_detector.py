@@ -2,7 +2,6 @@ import unittest
 
 import pandas as pd
 import astropy.units as u
-import numpy.testing
 
 from .. import detector
 

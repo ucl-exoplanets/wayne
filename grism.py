@@ -83,16 +83,20 @@ class Grism(object):
 
         :param wavelength: wavelength to sample (quantites unit length)
         :param flux: The flux at the wavelength (i.e the area under the gaussian)
-        :param y_pos: optionally set ypos. this means you can itegrate over the same values as pixels set mean=2.1 and
+        :param y_pos: optionally set ypos. this means you can integrate over the same values as pixels set mean=2.1 and
           integrate from 2 to 3
 
         :return:
         """
 
+        if not isinstance(wavelength, u.Quantity):
+            raise TypeError("Wavelength must be given in units, got {}".format(type(wavelength)))
+
         mean = y_pos  # this is the center of the guassian
 
         # linear interpolation of the FWHM given in self._psf_file TODO quadratic interp / fit a function?
-        FWHM = np.interp(wavelength, self.psf_wavelength, self.psf_fwhm, left=0., right=0.)
+        FWHM = np.interp(wavelength.to(u.micron).value, self.psf_wavelength.to(u.micron).value,
+                         self.psf_fwhm, left=0., right=0.)
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
@@ -116,7 +120,7 @@ class Grism(object):
         # Wavelength Solution
         a_w = 4.51423e1 + (3.17239e-4)*x_ref + (2.17055e-3)*y_ref + (-7.42504e-7)*x_ref**2 + (3.48639e-7)*x_ref*y_ref \
                                                                                             + (3.09213e-7)*y_ref**2
-        b_w = 8.95431e3 + (9.35925e-2)*x_ref # + (0)*y_ref
+        b_w = 8.95431e3 + (9.35925e-2)*x_ref  # + (0)*y_ref
 
         return a_t, b_t, a_w, b_w
 
