@@ -9,7 +9,34 @@ import detector
 import grism
 import tools
 
-# TODO Observation class - controls everything, multiple exposures
+
+class Observation(object):
+    """ Builds a full observation, of separate orbits
+    """
+
+    def __init__(self, planet, start_JD, detector, grism):
+        #  initialise all parameters here for now. There could be many options entered through a
+        #  Parameter file but this could be done with an interface.
+        #  mode handles exp time
+
+        exp_delay = 1*u.s  # delay after one exposure to take the next
+        time_per_orbit = 45*u.min
+        orbits = 3
+
+        self.detector = detector
+        self.grism = grism
+        self.mode = ''
+        self.scanning = True
+
+        # note people may specify different filters
+        # generate staring frame giving zero order location (grismless)
+
+        pass
+
+    def run_observation(self):
+
+        pass
+
 
 
 class Exposure(object):
@@ -61,7 +88,7 @@ class Exposure(object):
 
         return self.detector.pixel_array
 
-    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, exptime):
+    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, exptime, psf_max=5):
         """ constructs a staring mode frame, given a source position and spectrum scaling
 
         :param x_ref: star image x position on frame
@@ -70,6 +97,9 @@ class Exposure(object):
         :param stellar flux:
         :param planet_signal: (units of transit depth)
         :param exptime:
+        :param psf_max: how many pixels either side of y_ref we want to go. Note if y_ref = 5.9 and psf_max=5 it would
+        be from 0 to 10. 0.9999999999999889% of flux between is between -4 and 4 of widest psf. Going one higher than
+        required is sensible for cases like above (5.9, 0 to 10) where one half is better represented
 
         :return: array with the exposure
         """
@@ -83,6 +113,16 @@ class Exposure(object):
         x_pos = trace.wl_to_x(wl)
         y_pos = trace.wl_to_y(wl)
 
+        # Overlap detection see if element is split between columns
+
+        # Note: delta_lambda inefficient, also calculated in self._flux_to_counts
+        delta_wl = tools.bin_centers_to_widths(wl)
+        # need to turn from wl width to x width
+        x_min = trace.wl_to_x(wl-delta_wl/2.)
+        x_max = trace.wl_to_x(wl+delta_wl/2.)
+        x_min_ = np.floor(x_min)
+        x_max_ = np.floor(x_max)
+
         # Scale the flux to photon counts (per pixel / per second)
         count_rate = self._flux_to_counts(flux, wl)
 
@@ -94,11 +134,6 @@ class Exposure(object):
         counts_tp = self.grism.throughput(wl, counts)
 
         # TODO QE scaling
-
-        # how many pixels either side of y_ref we want to go. Note if y_ref = 5.9 it would be from
-        # 0 to 10,  4 contains 0.9999999999999889% of flux between -4 and 4 of widest psf so we go one higher
-        # to account for fringe cases (i.e. 5.1 vs 5.9)
-        psf_max = 5
 
         # the len limits are the same per trace, it is the values in pixel units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
@@ -124,14 +159,29 @@ class Exposure(object):
             # these are the count values integrated on our detector grid
             flux_psf = []
             for j in xrange(psf_max*2+1):
+                # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
+                # integration to go from 1.8 to 10 or 1.9 to 10.9
                 val = psf.integrate(psf_y_lim[j], psf_y_lim[j+1])
 
                 flux_psf.append(val)
 
-            # Ideally we dont want to overwrite te detector, but have a function for the detector to give
-            # us a grid. there are other detector effects though so maybe wed prefer multiple detector classes
-            # or a .reset() on the class
-            self.detector.pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
+            # Now we are checking if the widths overlap pixels, this is important at low R. Currently we assume the line
+            # is still straight, calculate the proportion in the left and right pixels based on the y midpoint and
+            # split accordingly. This doesnt account for cases where the top half may be in one column and the bottom
+            #  half in another (High R)
+            if not x_min_[i] == x_max_[i]:  # then the element is split across two columns
+                # calculate proportion going column x_min_ and x_max_
+                x_width = x_max[i] - x_min[i]
+                propxmin = (x_max_[i] - x_min[i])/x_width  # (floor(xmax) - xmin)/width = %
+                propxmax = 1.-propxmin
+
+                self.detector.pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
+                self.detector.pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
+            else:  # all flux goes into one column
+                # Note: Ideally we dont want to overwrite te detector, but have a function for the detector to give
+                # us a grid. there are other detector effects though so maybe wed prefer multiple detector classes
+                # or a .reset() on the class
+                self.detector.pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
         return self.detector.pixel_array
 
@@ -200,3 +250,5 @@ class Exposure(object):
         combined_flux = stellar * (1. - planet)
 
         return combined_flux
+
+    # def fits_output(self):  # TODO
