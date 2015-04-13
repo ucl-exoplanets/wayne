@@ -9,7 +9,34 @@ import detector
 import grism
 import tools
 
-# TODO Observation class - controls everything, multiple exposures
+
+class Observation(object):
+    """ Builds a full observation, of separate orbits
+    """
+
+    def __init__(self, planet, start_JD, detector, grism):
+        #  initialise all parameters here for now. There could be many options entered through a
+        #  Parameter file but this could be done with an interface.
+        #  mode handles exp time
+
+        exp_delay = 1*u.s  # delay after one exposure to take the next
+        time_per_orbit = 45*u.min
+        orbits = 3
+
+        self.detector = detector
+        self.grism = grism
+        self.mode = ''
+        self.scanning = True
+
+        # note people may specify different filters
+        # generate staring frame giving zero order location (grismless)
+
+        pass
+
+    def run_observation(self):
+
+        pass
+
 
 
 class Exposure(object):
@@ -223,3 +250,5 @@ class Exposure(object):
         combined_flux = stellar * (1. - planet)
 
         return combined_flux
+
+    # def fits_output(self):  # TODO
