@@ -8,6 +8,7 @@ from astropy import constants as const
 import detector
 import grism
 import tools
+import exposure
 
 
 class Observation(object):
@@ -29,7 +30,11 @@ class Observation(object):
         self.scanning = True
 
         # note people may specify different filters
+
         # generate staring frame giving zero order location (grismless)
+
+        # Here be dragons
+        self.data = None  # the exposed frame will be stored here.
 
         pass
 
@@ -38,7 +43,7 @@ class Observation(object):
         pass
 
 
-class Exposure(object):
+class ExposureGenerator(object):
     """ Constructs exposures given a spectrum
     """
 
@@ -79,6 +84,9 @@ class Exposure(object):
         :return: array with the exposure
         """
 
+        # Exposure class which holds the result
+        self.exposure = exposure.Exposure()
+
         scan_speed = scan_speed.to(u.pixel/u.ms)
         exptime = self.exptime.to(u.ms)
         sampletime = sampletime.to(u.ms)
@@ -93,7 +101,9 @@ class Exposure(object):
             # generate the staring frame at our sample time, writes directly to detector frame.
             self.staring_frame(x_ref, s_y_ref, wl, stellar_flux, planet_signal, exptime)
 
-        return self.detector.pixel_array
+        self.exposure.add_read(self.detector.pixel_array)
+
+        return self.exposure
 
     def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=5):
         """ constructs a staring mode frame, given a source position and spectrum scaling
@@ -110,6 +120,9 @@ class Exposure(object):
 
         :return: array with the exposure
         """
+
+        # Exposure class which holds the result
+        self.exposure = exposure.Exposure()
 
         flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
         # TODO improve the inefficient cropping, we are doing it once per sample is scanning
@@ -190,7 +203,8 @@ class Exposure(object):
                 # or a .reset() on the class
                 self.detector.pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
-        return self.detector.pixel_array
+        self.exposure.add_read(self.detector.pixel_array)
+        return self.exposure
 
     def _flux_to_counts(self, flux, wl):
         """ Converts flux to photons by scaling to the to the detector pixel size, energy to photons
