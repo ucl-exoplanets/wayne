@@ -66,7 +66,7 @@ class ExposureGenerator(object):
         self.SUBARRAY = SUBARRAY
 
         # total exptime
-        self.exptime = self.detector
+        self.exptime = self.detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime):
         """
@@ -273,3 +273,66 @@ class ExposureGenerator(object):
         return combined_flux
 
     # def fits_output(self):  # TODO
+
+
+def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, exp_delay=3*u.s, time_per_orbit=54*u.min,
+                  hst_period=90*u.min):
+    """ Returns the start time of each exposure in minutes starting at 0. Useful for estimating buffer dumps etc.
+
+    Note, this is mainly used in testing, will probably be coupled with the lightcurve and added to observation class
+
+    :param detector:
+    :param NSAMP:
+    :param SAMPSEQ:
+    :param SUBARRAY:
+    :param orbits:
+    :return:
+    """
+
+    # note this may need to be done in a slow loop as we have differing overheads, and buffer calcs
+    # and other things like changing modes and scan up/down to consider
+    # this is slower but not prohibitively so since this isnt run often! The complexity here suggests this should
+    # be moved to a class and broken down into smaller calcs
+
+    guide_star_aq = 5*u.min
+    buffer_dump = 5.8*u.min  # varies on size
+
+    exptime = detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
+
+    # per orbit
+    num_exp_exact = ((time_per_orbit-guide_star_aq)/(exptime+exp_delay)).to(u.dimensionless_unscaled)
+    # assume we can only have full exposures (i.e. if an exposure takes 20s and we have 19s left it wont expose
+    num_exp = int(np.floor(num_exp_exact))  # int floors but I prefer explict flooring
+
+    # TODO buffer dumps
+    # TODO overheads, 6 min for first aq, 5 min for subsequent aq
+
+    exp_per_dump = detector.num_exp_per_buffer(NSAMP, SUBARRAY)
+
+    if num_exp > exp_per_dump:
+        num_exp = exp_per_dump  # TMP, stops entire orbit after 1 dump
+
+    exp_times = np.zeros(num_exp*num_orbits)
+    for orbit_n in xrange(num_orbits):
+        start_time = (hst_period * orbit_n) + guide_star_aq
+
+        orbit_exp_times = start_time + (np.arange(num_exp) * (exptime+exp_delay))
+
+        start_exp_n = num_exp*orbit_n
+        exp_times[start_exp_n:start_exp_n+num_exp] = orbit_exp_times
+
+    returnDict = {
+        'exp_times': exp_times, # no units?
+        'NSAMP': NSAMP,
+        'SAMPSEQ': SAMPSEQ,
+        'SUBARRAY': SUBARRAY,
+        'num_exp': len(exp_times),
+        'num_exp_orbit': num_exp,
+        'exptime': exptime,
+        'num_orbits': num_orbits,
+        'exp_delay': exp_delay,
+        'time_per_orbit': time_per_orbit,
+        'hst_period': hst_period,
+    }
+
+    return returnDict

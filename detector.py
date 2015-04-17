@@ -62,6 +62,25 @@ class WFC3_IR(Detector):
 
         return modes_table
 
+    def num_exp_per_buffer(self, NSAMP, SUBARRAY):
+        """ max number of exposures that can be taken before buffer dumping
+        :return:
+        """
+
+        hard_limit = 304  # headers pg 208
+
+        headers_per_exp = NSAMP + 1  # + 1 for zero read
+
+        # 2 full frame (1024) 16 sample exposures
+        total_allowed_reads = 2*16*(1024/SUBARRAY)
+
+        if total_allowed_reads > hard_limit:
+            total_allowed_reads = hard_limit
+
+        num_exp = int(np.floor(total_allowed_reads / headers_per_exp))
+
+        return num_exp
+
 
 class WFC3SimException(BaseException):
     pass
