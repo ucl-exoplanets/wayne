@@ -1,11 +1,12 @@
 """ Observation combines a spectrum, grism + detector combo and other observables to construct an image
 """
 
+import time
+
 import numpy as np
 from astropy import units as u
 from astropy import constants as const
 
-import detector
 import grism
 import tools
 import exposure
@@ -47,11 +48,11 @@ class ExposureGenerator(object):
     """ Constructs exposures given a spectrum
     """
 
-    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet):
+    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet, filename='0001_raw.fits'):
         """
 
         :param detector: detector class, i.e. WFC3_IR()
-        :type detector: detector.Detector
+        :type detector: detector.WFC3_IR
         :param grism: grism class i.e. G141
         :type grism: grism.Grism
         :return:
@@ -61,7 +62,7 @@ class ExposureGenerator(object):
         self.grism = grism
         self.planet = planet
 
-        # Maybe theese should be set in the detector?
+        # Maybe these should be set in the detector?
         self.NSAMP = NSAMP
         self.SAMPSEQ = SAMPSEQ
         self.SUBARRAY = SUBARRAY
@@ -69,7 +70,23 @@ class ExposureGenerator(object):
         # total exptime
         self.exptime = self.detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
 
-    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime):
+        self.exp_info = {
+            # these should be generated mostly in observation class and defaulted here / for staring also
+            'filename': filename,
+            'EXPSTART': '',  # MJD
+            'EXPTIME': self.exptime.to(u.s),  # Seconds
+            'SCAN': False,
+            'SCAN_DIR': None,  # 1 for down, -1 for up - replace with POSTARG calc later
+            'OBSTYPE': 'SPECTROSCOPIC',  # SPECTROSCOPIC or IMAGING
+            'NSAMP': self.NSAMP,
+            'SAMPSEQ': self.SAMPSEQ,
+            'SUBARRAY': self.SUBARRAY,
+            'psf_max': None,
+            'samp_time': 0*u.s,
+            'sim_time': 0*u.s
+        }
+
+    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime, psf_max=5):
         """
 
         :param x_ref: star image x position on frame
@@ -85,26 +102,26 @@ class ExposureGenerator(object):
         :return: array with the exposure
         """
 
+        start_time = time.clock()
+
         scan_speed = scan_speed.to(u.pixel/u.ms)
         exptime = self.exptime.to(u.ms)
         sampletime = sampletime.to(u.ms)
 
-        exp_info = {
-            # these should be generated mostly in observation class and defaulted here / for staring also
-            'filename': '',  # 00001_raw.fits
-            'EXPSTART': '',  # MJD
-            'EXPTIME': exptime.to(u.s),  # Seconds
+        self.exp_info.update({
             'SCAN': True,
-            'SCAN_DIR': 1,  # 1 for down, -1 for up - replace with POSTARG calc later
-            'OBSTYPE': 'SPECTROSCOPIC',  # SPECTROSCOPIC or IMAGING
-            'NSAMP': self.NSAMP,
-            'SAMPSEQ': self.SAMPSEQ,
-            'SUBARRAY': self.SUBARRAY,
-        }
+            'SCAN_DIR': 1,
+            'psf_max': psf_max,
+            'samp_time': sampletime
+        })
+
+        flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
+        wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
+
+        pixel_array = self.detector.gen_pixel_array()
 
         # Exposure class which holds the result
-        self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, exp_info)
-
+        self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
         # convert times to miliseconds and then call value to remove units so arrange works
         # s_ denotes variables that change per sample
@@ -115,9 +132,13 @@ class ExposureGenerator(object):
             # TODO we can vary the transit depth by generating a lightcurve from the signal at our sample times
 
             # generate the staring frame at our sample time, writes directly to detector frame.
-            self.staring_frame(x_ref, s_y_ref, wl, stellar_flux, planet_signal)
+            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, psf_max)
 
-        self.exposure.add_read(self.detector.pixel_array)
+        self.exposure.add_read(exp_data)
+
+        end_time = time.clock()
+
+        self.exp_info['sim_time'] = (end_time - start_time) * u.s
 
         return self.exposure
 
@@ -137,12 +158,28 @@ class ExposureGenerator(object):
         :return: array with the exposure
         """
 
+        self.exp_info.update({
+            'SCAN': False,
+            'psf_max': psf_max,
+        })
+
         # Exposure class which holds the result
-        self.exposure = exposure.Exposure()
+        self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
         flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
-        # TODO improve the inefficient cropping, we are doing it once per sample is scanning
         wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
+
+        pixel_array = self.detector.gen_pixel_array()
+
+        exp_data = self._gen_staring_frame(x_ref, y_ref, wl, flux, pixel_array, psf_max)
+
+        self.exposure.add_read(exp_data)
+        return self.exposure
+
+    def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, psf_max=5):
+        """ Does the bulk of the work in generating the observation. Used by both staring and scanning modes.
+        :return:
+        """
 
         # Wavelength calibration, mapping to detector x/y pos
         trace = self.grism.get_trace(x_ref, y_ref)
@@ -150,10 +187,9 @@ class ExposureGenerator(object):
         y_pos = trace.wl_to_y(wl)
 
         # Overlap detection see if element is split between columns
-
-        # Note: delta_lambda inefficient, also calculated in self._flux_to_counts
+        #   Note: delta_lambda inefficient, also calculated in self._flux_to_counts
         delta_wl = tools.bin_centers_to_widths(wl)
-        # need to turn from wl width to x width
+        #   need to turn wl width to x width
         x_min = trace.wl_to_x(wl-delta_wl/2.)
         x_max = trace.wl_to_x(wl+delta_wl/2.)
         x_min_ = np.floor(x_min)
@@ -169,7 +205,7 @@ class ExposureGenerator(object):
         # Modify the counts by the grism throughput
         counts_tp = self.grism.throughput(wl, counts)
 
-        # TODO QE scaling
+        # TODO QE scaling, done in throughput?
 
         # the len limits are the same per trace, it is the values in pixel units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
@@ -213,16 +249,15 @@ class ExposureGenerator(object):
                 propxmin = (x_max_[i] - x_min[i])/x_width  # (floor(xmax) - xmin)/width = %
                 propxmax = 1.-propxmin
 
-                self.detector.pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
-                self.detector.pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
+                pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
+                pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
             else:  # all flux goes into one column
                 # Note: Ideally we dont want to overwrite te detector, but have a function for the detector to give
                 # us a grid. there are other detector effects though so maybe wed prefer multiple detector classes
                 # or a .reset() on the class
-                self.detector.pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
+                pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
-        self.exposure.add_read(self.detector.pixel_array)
-        return self.exposure
+        return pixel_array
 
     def _flux_to_counts(self, flux, wl):
         """ Converts flux to photons by scaling to the to the detector pixel size, energy to photons
@@ -244,10 +279,6 @@ class ExposureGenerator(object):
         :param wl:
         :return:
         """
-
-        flux *= u.sr  # remove the solid angle dependence given by astropy.blackbody, need to include it later to
-                      # account for distance to the star
-
 
         A = self.detector.telescope_area
         lam_hc = wl/(const.h * const.c) * u.photon
@@ -284,6 +315,7 @@ class ExposureGenerator(object):
         :param planet: units of transit depth
 
         :return:
+        :rtype: np.ndarray
         """
 
         combined_flux = stellar * (1. - planet)

@@ -9,21 +9,22 @@ import os.path
 import params
 
 
-class Detector(object):
+class WFC3_IR(object):
+
     def __init__(self):
-        # DEFAULTS so pycharm knows what types to expect
-        self.pixel_array = np.zeros((1024, 1024))
+
+        # Start with a single 1024x1024 array, add complexity in when we need it.
+        self._pixel_array = np.zeros((1024, 1024))
         self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
-        self.telescope_area = np.pi * (2.4/2.)**2
+        self.telescope_area = np.pi * (2.4*u.m/2.)**2
 
+        # General Info
+        self.telescope = 'HST'
+        self.instrument = 'WFC3'
+        self.detector_type = 'IR'
+
+        # Init
         self.modes_table = self._get_modes()
-
-    def _get_modes(self):  # DEFAULTS
-        """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
-        """
-        modes_table = pd.DataFrame(columns=('SAMPSEQ', 'NSAMP', 'SUBARRAY'))
-
-        return modes_table
 
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
@@ -42,21 +43,9 @@ class Detector(object):
 
         return exptime * u.s
 
-
-class WFC3_IR(Detector):
-
-    def __init__(self):
-        Detector.__init__(self)
-        # Start with a single 1024x1024 array, add complexity in when we need it.
-        self.pixel_array = np.zeros((1024, 1024))
-        self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
-        self.telescope_area = np.pi * (2.4*u.m/2.)**2
-
-        # General Info
-        self.telescope = 'HST'
-        self.instrument = 'WFC3'
-        self.detector_type = 'IR'
-
+    def gen_pixel_array(self):
+        # this could return subbary types etc, lets just keep it out of class for now
+        return self._pixel_array.copy()
 
     def _get_modes(self):
         """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type

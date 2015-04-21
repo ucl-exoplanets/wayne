@@ -14,7 +14,7 @@ def crop_spectrum(min_wl, max_wl, wl, flux):
     :param flux: list of spectrum flux
     :type flux: numpy.ndarray
     :return: wl, flux (cropped)
-    :rtype: numpy.ndarray
+    :rtype: (numpy.ndarray, numpy.ndarray)
     """
 
     wl_min_nearest = wl-min_wl

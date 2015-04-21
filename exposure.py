@@ -6,6 +6,7 @@ import datetime
 import os.path
 
 import astropy.io.fits as fits
+import astropy.units as u
 
 
 class Exposure(object):
@@ -128,7 +129,7 @@ class Exposure(object):
         h['TIME-OBS'] = (False, 'UT time of start of observation (hh:mm:ss)')
         h['EXPSTART'] = (exp_info['EXPSTART'], 'exposure start time (Modified Julian Date)')
         h['EXPEND'] = (False, 'exposure end time (Modified Julian Date)')
-        h['EXPTIME'] = (exp_info['EXPTIME'], 'exposure duration (seconds)--calculated')
+        h['EXPTIME'] = (exp_info['EXPTIME'].to(u.s).value, 'exposure duration (seconds)--calculated')
         # h['EXPFLAG'] = ('INDETERMINATE', 'Exposure interruption indicator')
 
         h[''] = ''
@@ -139,11 +140,15 @@ class Exposure(object):
         h['POSTARG2'] = (exp_info['SCAN_DIR'] , 'POSTARG in axis 2 direction')
 
         h[''] = ''
-        h[''] = '/ DIAGNOSTIC KEYWORDS'
+        h[''] = '/ WFC3Sim'
         h[''] = ''
-        h['SIMULATION'] = (True, 'WFC3Sim Simulation (T/F)')
+        h['SIM'] = (True, 'WFC3Sim Simulation (T/F)')
         from __init__ import __version__
-        h['WFC3SIM_VER'] = (__version__, 'WFC3Sim Version Used')
+        h['SIM-VER'] = (__version__, 'WFC3Sim Version Used')
+        h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value, 'WFC3Sim exposure generation time (s)')
+        h[''] = ''
+        h['PSF-MAX'] = (exp_info['psf_max'], 'maximum width of psf tails (pix)')
+        h['SAMPTIME'] = (exp_info['samp_time'].to(u.ms).value, 'How often exposure is sampled (ms)')
 
         h[''] = ''
         h[''] = '/ INSTRUMENT CONFIGURATION INFORMATION'
@@ -157,7 +162,7 @@ class Exposure(object):
         else:
             SUBARRAY = False
         h['SUBARRAY'] = (SUBARRAY, 'data from a subarray (T) or full frame (F)')
-        h['SUBTYPE'] = ()
+        # h['SUBTYPE'] = () e.g 'SQ128SUB'
         h['DETECTOR'] = (self.detector.detector_type, 'detector in use: UVIS or IR')
         h['FILTER'] = (self.filter.name, 'element selected from filter wheel')
         h['SAMP_SEQ'] = (exp_info['SAMPSEQ'], 'MultiAccum exposure time sequence name')
