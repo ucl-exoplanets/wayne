@@ -44,6 +44,7 @@ class Grism(object):
         # Note that most det values are being pulled directly from the detector class. Given that these two classes are
         # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
         self.detector = WFC3_IR()
+        self.name = 'G141'
 
         # Grism Values
         # ------------

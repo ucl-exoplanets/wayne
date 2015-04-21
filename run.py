@@ -14,11 +14,17 @@ import numpy as np
 from astropy.analytic_functions import blackbody_lambda
 from astropy import units as u
 import matplotlib.pyplot as plt
+import exodata
 
 import tools
 import detector
 import grism
 import observation
+
+exocat = exodata.OECDatabase("/Users/ryan/git/open_exoplanet_catalogue/systems")
+exocat.searchPlanet("HD189733b")
+
+hd189 = exocat.planetDict['HD 189733 A b']
 
 source_spectra = np.loadtxt('/Users/ryan/Dropbox/notebooks/data/hj_10000.dat')
 source_spectra = source_spectra.T  # turn to (wl list, flux list)
@@ -36,10 +42,12 @@ f_bb = blackbody_lambda(wl_bb, 3250)
 f_bb_tmp = f_bb / 1e20  # temp factor to account for distance
 
 exp = observation.Exposure(detector.WFC3_IR(), grism.Grism())
-exp_data = exp.staring_frame(x_ref, y_ref, wl_p, f_bb_tmp, depth_p, 1.*u.s)
+exp_data = exp.staring_frame(x_ref, y_ref, wl_p, f_bb_tmp, depth_p, 1.*u.s, hd189)
 
 # output (confirm it ran correctly!)
 
-crop_data = exp_data[540:560, 550:750]
+crop_data = exp_data.data[540:560, 550:750]
 plt.matshow(crop_data, cmap='gist_heat')
 plt.savefig('run_test.png')
+
+exp_data.

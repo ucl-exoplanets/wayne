@@ -52,6 +52,12 @@ class WFC3_IR(Detector):
         self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
 
+        # General Info
+        self.telescope = 'HST'
+        self.instrument = 'WFC3'
+        self.detector_type = 'IR'
+
+
     def _get_modes(self):
         """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
         :return:

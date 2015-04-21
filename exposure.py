@@ -2,15 +2,28 @@
 to construct the output along with certain visualisation methods.
 """
 
+import datetime
+import os.path
+
 import astropy.io.fits as fits
 
 
 class Exposure(object):
 
-    def __init__(self):
+    def __init__(self, detector=None, filter=None, planet=None, exp_info=None):
         """ Sets up the exposure class. We probably need to give the class some information
+
+        :param exp_info: a dictionary with most of the information about the exposure. In future could be replaced by
+        an exp plan class, which is used for visiting planning
+        :type detector: detector.WFC3_IR
+        :type planet: exodata.astroclasses.Planet
         :return:
         """
+
+        self.detector = detector
+        self.filter = filter
+        self.planet = planet
+        self.exp_info = exp_info
 
         self.reads = []  # read 0 ->
 
@@ -23,13 +36,17 @@ class Exposure(object):
 
         self.reads.append(data)
 
-    def generate_fits(self, out_path):
+    def generate_fits(self, out_dir='', filename=None):
         """ Saves the exposure as a fits file.
         :return:
         """
 
+        if filename is None:
+            filename = self.exp_info['filename']
 
-        science_header = fits.PrimaryHDU()  # Lots of quantities for this will be defined elsewhere
+        out_path = os.path.join(out_dir, filename)
+
+        science_header = self.generate_science_header()
 
         hdulist = fits.HDUList([science_header])
 
@@ -68,3 +85,87 @@ class Exposure(object):
             hdulist.extend([read_HDU, error_array, data_quality_array, samples_HDU, integration_time_HDU])
 
         hdulist.writeto(out_path)
+
+    def generate_science_header(self):
+        """ Generates the primary header
+        :return:
+        """
+
+        exp_info = self.exp_info
+
+        science_header = fits.PrimaryHDU()
+        h = science_header.header
+        now = datetime.datetime.now()
+        h['DATE'] = (now.strftime("%Y-%m-%d"), 'date this file was written (yyyy-mm-dd)')
+        h['FILENAME'] = (exp_info['filename'], 'name of file')
+        h['FILETYPE'] = ('SCI', 'type of data found in data file')
+        h[''] = ''
+
+        h['TELESCOP'] = (self.detector.telescope, 'telescope used to acquire data')
+        h['INSTRUME'] = (self.detector.instrument, 'identifier for instrument used to acquire data')
+        h['EQUINOX'] = (2000.0, 'equinox of celestial coord. system')
+
+        h[''] = ''
+        h[''] = '/ DATA DESCRIPTION KEYWORDS'
+        h[''] = ''
+        # h['ROOTNAME'] = ('i.e ibh707kcq', 'rootname of the observation set')
+        # h['IMAGETYP'] = ('EXT', 'type of exposure identifier')
+        h['PRIMESI'] = (self.detector.instrument, 'instrument designated as prime')
+
+        h[''] = ''
+        h[''] = '/ TARGET INFORMATION'
+        h[''] = ''
+        h['TARGNAME'] = (self.planet.name, 'proposer\'s target name')
+        # TODO format is wrong, 00 00 00 vs 2.405492604190E+02
+        h['RA_TARG'] = (self.planet.ra, 'right ascension of the target (deg) (J2000)')
+        h['DEC_TARG'] = (self.planet.dec, 'declination of the target (deg) (J2000)')
+
+        h[''] = ''
+        h[''] = '/ EXPOSURE INFORMATION'
+        h[''] = ''
+        # These need calculating from the start MJD and exptime
+        h['DATE-OBS'] = (False, 'UT date of start of observation (yyyy-mm-dd)')
+        h['TIME-OBS'] = (False, 'UT time of start of observation (hh:mm:ss)')
+        h['EXPSTART'] = (exp_info['EXPSTART'], 'exposure start time (Modified Julian Date)')
+        h['EXPEND'] = (False, 'exposure end time (Modified Julian Date)')
+        h['EXPTIME'] = (exp_info['EXPTIME'], 'exposure duration (seconds)--calculated')
+        # h['EXPFLAG'] = ('INDETERMINATE', 'Exposure interruption indicator')
+
+        h[''] = ''
+        h[''] = '/ TARGET OFFSETS (POSTARGS)'
+        h[''] = ''
+        h['POSTARG1'] = (0., 'POSTARG in axis 1 direction')
+        # + for down scan, - for up scan, 0 staring?
+        h['POSTARG2'] = (exp_info['SCAN_DIR'] , 'POSTARG in axis 2 direction')
+
+        h[''] = ''
+        h[''] = '/ DIAGNOSTIC KEYWORDS'
+        h[''] = ''
+        h['SIMULATION'] = (True, 'WFC3Sim Simulation (T/F)')
+        from __init__ import __version__
+        h['WFC3SIM_VER'] = (__version__, 'WFC3Sim Version Used')
+
+        h[''] = ''
+        h[''] = '/ INSTRUMENT CONFIGURATION INFORMATION'
+        h[''] = ''
+        h['OBSTYPE'] = (exp_info['OBSTYPE'], 'observation type - imaging or spectroscopic')
+        h['OBSMODE'] = ('MULTIACCUM', 'operating mode')  # no other modes for WFC3 IR?
+        h['SCLAMP'] = ('NONE', 'lamp status, NONE or name of lamp which is on')
+        # h['NRPTEXP'] = (1, 'number of repeat exposures in set: default 1')
+        if not exp_info['SUBARRAY'] == 1024:
+            SUBARRAY = True
+        else:
+            SUBARRAY = False
+        h['SUBARRAY'] = (SUBARRAY, 'data from a subarray (T) or full frame (F)')
+        h['SUBTYPE'] = ()
+        h['DETECTOR'] = (self.detector.detector_type, 'detector in use: UVIS or IR')
+        h['FILTER'] = (self.filter.name, 'element selected from filter wheel')
+        h['SAMP_SEQ'] = (exp_info['SAMPSEQ'], 'MultiAccum exposure time sequence name')
+        h['NSAMP'] = (exp_info['NSAMP'], 'number of MULTIACCUM samples')
+        h['SAMPZERO'] = (0., 'sample time of the zeroth read (sec)')  # TODO add when known
+        APNAME = 'GRISM{}'.format(exp_info['SUBARRAY'])  # TODO fix for non grism
+        h['APERTURE'] = (APNAME, 'aperture name')
+        h['PROPAPER'] = ('', 'proposed aperture name')  # is this always null?
+        h['DIRIMAGE'] = ('NONE', 'direct image for grism or prism exposure')  # TODO change when true
+
+        return science_header

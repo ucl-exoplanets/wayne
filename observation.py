@@ -47,7 +47,7 @@ class ExposureGenerator(object):
     """ Constructs exposures given a spectrum
     """
 
-    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY):
+    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet):
         """
 
         :param detector: detector class, i.e. WFC3_IR()
@@ -59,6 +59,7 @@ class ExposureGenerator(object):
 
         self.detector = detector
         self.grism = grism
+        self.planet = planet
 
         # Maybe theese should be set in the detector?
         self.NSAMP = NSAMP
@@ -84,12 +85,27 @@ class ExposureGenerator(object):
         :return: array with the exposure
         """
 
-        # Exposure class which holds the result
-        self.exposure = exposure.Exposure()
-
         scan_speed = scan_speed.to(u.pixel/u.ms)
         exptime = self.exptime.to(u.ms)
         sampletime = sampletime.to(u.ms)
+
+        exp_info = {
+            # these should be generated mostly in observation class and defaulted here / for staring also
+            'filename': '',  # 00001_raw.fits
+            'EXPSTART': '',  # MJD
+            'EXPTIME': exptime.to(u.s),  # Seconds
+            'SCAN': True,
+            'SCAN_DIR': 1,  # 1 for down, -1 for up - replace with POSTARG calc later
+            'OBSTYPE': 'SPECTROSCOPIC',  # SPECTROSCOPIC or IMAGING
+            'NSAMP': self.NSAMP,
+            'SAMPSEQ': self.SAMPSEQ,
+            'SUBARRAY': self.SUBARRAY,
+        }
+
+        # Exposure class which holds the result
+        self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, exp_info)
+
+
         # convert times to miliseconds and then call value to remove units so arrange works
         # s_ denotes variables that change per sample
         for s_time in np.arange(0, exptime.value, sampletime.value) * u.ms:
@@ -99,7 +115,7 @@ class ExposureGenerator(object):
             # TODO we can vary the transit depth by generating a lightcurve from the signal at our sample times
 
             # generate the staring frame at our sample time, writes directly to detector frame.
-            self.staring_frame(x_ref, s_y_ref, wl, stellar_flux, planet_signal, exptime)
+            self.staring_frame(x_ref, s_y_ref, wl, stellar_flux, planet_signal)
 
         self.exposure.add_read(self.detector.pixel_array)
 
@@ -157,12 +173,14 @@ class ExposureGenerator(object):
 
         # the len limits are the same per trace, it is the values in pixel units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
-        psf_len_limits =  self._get_psf_len_limits(trace, psf_max)
+        psf_len_limits = self._get_psf_len_limits(trace, psf_max)
 
-        spectrum = np.array([wl, counts_tp]).T  # [(wl_1, counts_1),...,(wl_n, counts_n)}
+        counts_tp = counts_tp.to(u.ph).value  # remove the unit now we have "counts" so flux_to_psf works
+        # each resolution element (wl, counts_tp)
+        for i in xrange(len(wl)):
+            wl_i = wl[i]
+            count_i = counts_tp[i]
 
-        # each resolution element
-        for i, (wl_i, count_i) in enumerate(spectrum):
             x = x_pos[i]
             y = y_pos[i]
             # When we only want whole pixels, note we go 5 pixels each way from the round down.

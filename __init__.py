@@ -11,6 +11,7 @@ import detector
 import params
 import tools
 import observation
+import exposure
 
 # Dependencies with settings
 import matplotlib.pyplot as plt
