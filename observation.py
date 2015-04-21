@@ -275,11 +275,12 @@ class ExposureGenerator(object):
     # def fits_output(self):  # TODO
 
 
-def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, exp_delay=3*u.s, time_per_orbit=54*u.min,
+def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orbit=54*u.min,
                   hst_period=90*u.min):
     """ Returns the start time of each exposure in minutes starting at 0. Useful for estimating buffer dumps etc.
 
-    Note, this is mainly used in testing, will probably be coupled with the lightcurve and added to observation class
+    Note, this is mainly used in testing, will probably be coupled with the lightcurve and added to observation class.
+    In doing so anything detector sepecific should go into the detector classes
 
     :param detector:
     :param NSAMP:
@@ -294,43 +295,52 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, exp_delay=3*
     # this is slower but not prohibitively so since this isnt run often! The complexity here suggests this should
     # be moved to a class and broken down into smaller calcs
 
-    guide_star_aq = 5*u.min
-    buffer_dump = 5.8*u.min  # varies on size
-
     exptime = detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
-
-    # per orbit
-    num_exp_exact = ((time_per_orbit-guide_star_aq)/(exptime+exp_delay)).to(u.dimensionless_unscaled)
-    # assume we can only have full exposures (i.e. if an exposure takes 20s and we have 19s left it wont expose
-    num_exp = int(np.floor(num_exp_exact))  # int floors but I prefer explict flooring
-
-    # TODO buffer dumps
-    # TODO overheads, 6 min for first aq, 5 min for subsequent aq
-
     exp_per_dump = detector.num_exp_per_buffer(NSAMP, SUBARRAY)
 
-    if num_exp > exp_per_dump:
-        num_exp = exp_per_dump  # TMP, stops entire orbit after 1 dump
+    # The time to dump an n-sample, full-frame exposure is approximately 39 + 19 x (n + 1) seconds. Subarrays may also
+    # be used to reduce the overhead of serial buffer dumps. ** Instruemtn handbook 10.3
+    time_buffer_dump = 5.8 * u.min  # IH 23 pg 209
+    exp_overhead = 1*u.min  # IH 23 pg 209 - should be mostly read times - seems long, 1024 only?
 
-    exp_times = np.zeros(num_exp*num_orbits)
+
+    # TODO spacecraft manuvers IR 23 pg 206 for scanning
+    exp_times = []
     for orbit_n in xrange(num_orbits):
-        start_time = (hst_period * orbit_n) + guide_star_aq
+        if orbit_n == 0:
+            guide_star_aq = 6*u.min
+        else:
+            guide_star_aq = 5*u.min
 
-        orbit_exp_times = start_time + (np.arange(num_exp) * (exptime+exp_delay))
+        start_time = hst_period * orbit_n
 
-        start_exp_n = num_exp*orbit_n
-        exp_times[start_exp_n:start_exp_n+num_exp] = orbit_exp_times
+        visit_time = start_time + guide_star_aq
+        visit_end_time = start_time+time_per_orbit
+
+        # TODO wl calibration exp
+        exp_n = 0  # For buffer dumps - with mixed exp types we should really track headers and size
+        while visit_time < visit_end_time:
+
+            # you cant convert a list of quantities to an array so we have to either know the length to preset one or
+            # use floats in a list and convert after.
+            exp_times.append(visit_time.to(u.min).value)  # start of exposure
+            visit_time += (exptime + exp_overhead)
+
+            exp_n += 1
+            if exp_n > exp_per_dump:
+                visit_time += time_buffer_dump
+                exp_n = 0
+
 
     returnDict = {
-        'exp_times': exp_times, # no units?
+        'exp_times': np.array(exp_times)*u.min,
         'NSAMP': NSAMP,
         'SAMPSEQ': SAMPSEQ,
         'SUBARRAY': SUBARRAY,
         'num_exp': len(exp_times),
-        'num_exp_orbit': num_exp,
         'exptime': exptime,
         'num_orbits': num_orbits,
-        'exp_delay': exp_delay,
+        'exp_overhead': exp_overhead,
         'time_per_orbit': time_per_orbit,
         'hst_period': hst_period,
     }

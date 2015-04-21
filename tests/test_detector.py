@@ -29,6 +29,16 @@ class Test_Detector(unittest.TestCase):
         # 161.3020000002 != 161.302, almost equal doesnt like units
         self.assertAlmostEqual(det.exptime(NSAMP=8, SAMPSEQ='SPARS25', SUBARRAY=512).value, 161.302, 3)
 
+    def test_exptime_return_type(self):
+        # Testing that the return is a single quantity and not a single quantity in an array.
+        # this results in x += exptime + overhead failing with "ValueError: non-broadcastable output"
+        det = detector.WFC3_IR()
+
+        exp_time = det.exptime(NSAMP=1, SAMPSEQ='RAPID', SUBARRAY=1024)
+
+        x = 4. * u.s
+        x += exp_time + 6. * u.s  # should run without ValueError
+
     def test_getexptime_raises_WFC3SimSampleModeError_if_invalid_NSAMP(self):
         det = detector.WFC3_IR()
 

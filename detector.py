@@ -33,9 +33,10 @@ class Detector(object):
         mt = self.modes_table
 
         exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] == NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]
-        exptime = exptime_table.TIME.values
 
-        if not exptime:  # empty return
+        try:
+            exptime = exptime_table.TIME.values[0]  # 0 as we want a single value not a single value in an array
+        except IndexError:  # empty list
             raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
                                          "".format(SAMPSEQ, NSAMP, SUBARRAY))
 
