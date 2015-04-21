@@ -21,7 +21,7 @@ plt.style.use('ggplot')
 exodata = exodata.OECDatabase('/Users/ryan/git/open_exoplanet_catalogue/systems')
 gj1214b = exodata.planetDict['Gliese 1214 b']
 
-source_spectra = np.loadtxt('hj_1000.dat')
+source_spectra = np.loadtxt('hj_10000.dat')
 source_spectra = source_spectra.T  # turn to (wl list, flux list)
 source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 # for some reason the unit doesnt stay with some other methods
@@ -51,8 +51,8 @@ def gen_frame((samp, psf_max)):
 
     exp_scan_data = exp_scan.scanning_frame(x_ref, y_ref, wl_p, f_bb_tmp, depth_p, 1*u.pixel/u.s, samp, psf_max)
 
-    exp_scan_data.generate_fits('output/', 'R1000_256_RAPID_15_1ps_{}ms_{}psf.fits'.format(
-        samp.to(u.ms).value, psf_max
+    exp_scan_data.generate_fits('output/', 'R10000_256_RAPID_15_1ps_{}ms_{}psf.fits'.format(
+        int(samp.to(u.ms).value), psf_max
     ))
 
 to_run = [
