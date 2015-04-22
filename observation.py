@@ -125,15 +125,23 @@ class ExposureGenerator(object):
 
         # convert times to miliseconds and then call value to remove units so arrange works
         # s_ denotes variables that change per sample
-        for s_time in np.arange(0, exptime.value, sampletime.value) * u.ms:
-
-            s_y_ref = y_ref + (s_time * scan_speed).to(u.pixel).value
+        # Note the following will miss the last fraction of an observation.
+        sample_starts = np.arange(0, exptime.value, sampletime.value) * u.ms
+        num_samples = len(sample_starts)
+        for i, s_time in enumerate(sample_starts):
+            mid_time = s_time + (s_time/2.)  # we want to treat the sample at the mid point state not the beginning
+            s_y_ref = y_ref + (mid_time * scan_speed).to(u.pixel).value
 
             # TODO we can vary the transit depth by generating a lightcurve from the signal at our sample times
 
-            # generate the staring frame at our sample time, writes directly to detector frame.
-            # Sample time == staring exposure time
-            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, sampletime, psf_max)
+            # generate the staring frame at our sample, Sample duration == staring exposure time
+            if i == num_samples:  # last sample needs adjusting to fill remainder of exposure time only
+                sample_duration = (exptime.value - s_time).to(u.ms)
+            else:
+                sample_duration = sampletime
+
+            # generate sample frame
+            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, sample_duration, psf_max)
 
         self.exposure.add_read(exp_data)
 
