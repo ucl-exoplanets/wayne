@@ -56,8 +56,8 @@ def gen_frame((samp, psf_max)):
     ))
 
 to_run = [
-    (1000*u.ms, 5),
-    (1000*u.ms, 4),
+    (500*u.ms, 5),
+    (500*u.ms, 4),
     (100*u.ms, 5),
     (100*u.ms, 4),
     (10*u.ms, 5),

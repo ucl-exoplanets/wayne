@@ -132,7 +132,8 @@ class ExposureGenerator(object):
             # TODO we can vary the transit depth by generating a lightcurve from the signal at our sample times
 
             # generate the staring frame at our sample time, writes directly to detector frame.
-            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, psf_max)
+            # Sample time == staring exposure time
+            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, sampletime, psf_max)
 
         self.exposure.add_read(exp_data)
 
@@ -171,12 +172,12 @@ class ExposureGenerator(object):
 
         pixel_array = self.detector.gen_pixel_array()
 
-        exp_data = self._gen_staring_frame(x_ref, y_ref, wl, flux, pixel_array, psf_max)
+        exp_data = self._gen_staring_frame(x_ref, y_ref, wl, flux, pixel_array, self.exptime, psf_max)
 
         self.exposure.add_read(exp_data)
         return self.exposure
 
-    def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, psf_max=5):
+    def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime, psf_max=5):
         """ Does the bulk of the work in generating the observation. Used by both staring and scanning modes.
         :return:
         """
@@ -200,7 +201,7 @@ class ExposureGenerator(object):
 
         # TODO scale flux by stellar distance / require it already scaled
 
-        counts = (count_rate * self.exptime).to(u.photon)
+        counts = (count_rate * exptime).to(u.photon)
 
         # Modify the counts by the grism throughput
         counts_tp = self.grism.throughput(wl, counts)
