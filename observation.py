@@ -86,7 +86,7 @@ class ExposureGenerator(object):
             'sim_time': 0*u.s
         }
 
-    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime, psf_max=5):
+    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime, psf_max=4):
         """
 
         :param x_ref: star image x position on frame
@@ -151,7 +151,7 @@ class ExposureGenerator(object):
 
         return self.exposure
 
-    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=5):
+    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=4):
         """ constructs a staring mode frame, given a source position and spectrum scaling
 
         :param x_ref: star image x position on frame
@@ -185,7 +185,7 @@ class ExposureGenerator(object):
         self.exposure.add_read(exp_data)
         return self.exposure
 
-    def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime, psf_max=5):
+    def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime, psf_max):
         """ Does the bulk of the work in generating the observation. Used by both staring and scanning modes.
         :return:
         """

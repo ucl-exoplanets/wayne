@@ -95,24 +95,20 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
         self.stddev = fwhm / _gauss_StDev_to_FWHM
 
-    def integrate(self, x1, x2):
-        """ Integrates the model over the given limits x1 to x2 using the cumulative distribution function $\Phi$
-        (scipy.stats.norm.cdf) to obtain the flux binned between the limits.
+    def integrate(self, limits):
+        """ Integrates the model over the given limits (i.e [0,1,2] would give 0->1, 1->2) using the cumulative
+         distribution function $\Phi$ (scipy.stats.norm.cdf) to obtain the flux binned between the limits.
 
         $\Phi (z) = \mathrm{Pr}(Z < z) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^z \mathrm{exp}\left( -\frac{u^2}{2} \right) \mathrm{d}u$
         $\mathrm{Pr}(a < X \le b) = \Phi\left(\frac{b-\mu}{\sigma} \right) - \Phi\left(\frac{a-\mu}{\sigma} \right) $
 
         This probability is then turned into a binned flux by multiplying it by the total flux
+
+        :param limits: array of limits, i.e [0,1,2]
         """
 
-        stddev = self.stddev
-        mean = self.mean
+        cdf = scipy.stats.norm.cdf(limits, self.mean, self.stddev)
+        area = (np.roll(cdf, -1) - cdf)[:-1]  # x+1 - x, [-1] is x_0 - x_n and unwanted
 
-
-        cdf1 = scipy.stats.norm.cdf((x1-mean)/stddev)
-        cdf2 = scipy.stats.norm.cdf((x2-mean)/stddev)
-
-        prob = cdf2 - cdf1
-
-        binned_flux = prob*self.flux
+        binned_flux = area * self.flux
         return binned_flux

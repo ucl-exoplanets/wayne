@@ -39,6 +39,10 @@ class Exposure(object):
 
     def generate_fits(self, out_dir='', filename=None):
         """ Saves the exposure as a fits file.
+
+        :param fileObj: isntead of giving a dir and filename, give an open file object (used currently for testing and
+         tempfiles)
+
         :return:
         """
 

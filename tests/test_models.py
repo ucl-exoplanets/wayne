@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import numpy.testing
 from .. import models
 
 
@@ -94,28 +95,9 @@ class Test_GaussianModel1D(unittest.TestCase):
 
         self.assertEqual(gauss.flux, 1.)
 
-    # Integration values verified by MCMC
-    def test_integrate_dist1(self):
-        gauss = models.GaussianModel1D(mean=0, flux=1, stddev=1)
-
-        self.assertEqual(gauss.integrate(0, 0.5), gauss.integrate(-0.5, 0))
-
-        self.assertAlmostEqual(gauss.integrate(0, 0.5), 0.1915, 4)
-        self.assertAlmostEqual(gauss.integrate(-0.5, 0.5), 0.3829, 4)
-
-        self.assertAlmostEqual(gauss.integrate(0.3, 0.7), 0.1401, 4)
-        self.assertAlmostEqual(gauss.integrate(-0.1, 0.4), 0.1952, 4)
-
-        self.assertAlmostEqual(gauss.integrate(-4, 4), 1., 3)
-
-    def test_integrate_dist2(self):
+    # Integration values NOT verified by MCMC yet, but a limit was verified with the previous integrate function
+    def test_integrate_limits(self):
         gauss = models.GaussianModel1D(mean=5, flux=3, stddev=0.5)
 
-        self.assertEqual(gauss.integrate(5, 6), gauss.integrate(4, 5))
-
-        self.assertAlmostEqual(gauss.integrate(4, 5), 1.43174, 4)
-        self.assertAlmostEqual(gauss.integrate(4, 6), 1.43174*2, 4)
-
-        self.assertAlmostEqual(gauss.integrate(4.3, 4.7), 0.5805, 4)
-
-        self.assertAlmostEqual(gauss.integrate(3, 7), 3., 3)
+        np.testing.assert_almost_equal(gauss.integrate_limits((4.3, 4.7, 5.2, 6)),
+                                       np.array([0.5805, 1.1435, 0.9655]), 4)
