@@ -239,14 +239,9 @@ class ExposureGenerator(object):
             # over WHOLE pixels, The psf is centered on y_ref which handles intrapixel y_ref shifts.
             psf_y_lim = psf_len_limits + y_
 
-            # these are the count values integrated on our detector grid
-            flux_psf = []
-            for j in xrange(psf_max*2+1):
-                # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
-                # integration to go from 1.8 to 10 or 1.9 to 10.9
-                val = psf.integrate((psf_y_lim[j], psf_y_lim[j+1]))
-
-                flux_psf.append(val[0])
+            # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
+            # integration to go from 1.8 to 10 or 1.9 to 10.9
+            flux_psf = psf.integrate(psf_y_lim)
 
             # Now we are checking if the widths overlap pixels, this is important at low R. Currently we assume the line
             # is still straight, calculate the proportion in the left and right pixels based on the y midpoint and
