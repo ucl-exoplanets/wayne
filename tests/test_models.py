@@ -96,8 +96,8 @@ class Test_GaussianModel1D(unittest.TestCase):
         self.assertEqual(gauss.flux, 1.)
 
     # Integration values NOT verified by MCMC yet, but a limit was verified with the previous integrate function
-    def test_integrate_limits(self):
+    def test_integrate(self):
         gauss = models.GaussianModel1D(mean=5, flux=3, stddev=0.5)
 
-        np.testing.assert_almost_equal(gauss.integrate_limits((4.3, 4.7, 5.2, 6)),
+        np.testing.assert_almost_equal(gauss.integrate(np.array([4.3, 4.7, 5.2, 6.])),
                                        np.array([0.5805, 1.1435, 0.9655]), 4)

@@ -244,9 +244,9 @@ class ExposureGenerator(object):
             for j in xrange(psf_max*2+1):
                 # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
                 # integration to go from 1.8 to 10 or 1.9 to 10.9
-                val = psf.integrate(psf_y_lim[j], psf_y_lim[j+1])
+                val = psf.integrate((psf_y_lim[j], psf_y_lim[j+1]))
 
-                flux_psf.append(val)
+                flux_psf.append(val[0])
 
             # Now we are checking if the widths overlap pixels, this is important at low R. Currently we assume the line
             # is still straight, calculate the proportion in the left and right pixels based on the y midpoint and

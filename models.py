@@ -105,6 +105,7 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         This probability is then turned into a binned flux by multiplying it by the total flux
 
         :param limits: array of limits, i.e [0,1,2]
+        :type limits: numpy.ndarray
         """
 
         cdf = scipy.stats.norm.cdf(limits, self.mean, self.stddev)
