@@ -290,6 +290,11 @@ class ExposureGenerator(object):
         effected_elements = np.floor(x_min) != np.floor(x_max)
         print 'new num effected  = {} ({}%)'.format(np.sum(effected_elements), np.mean(effected_elements)*100)
 
+        x_min = trace.wl_to_x(wl) - x_diff
+        x_max = trace.wl_to_x(wl) + x_diff
+        effected_elements = np.floor(x_min) != np.floor(x_max)
+        print 'nw2 num effected  = {} ({}%)'.format(np.sum(effected_elements), np.mean(effected_elements)*100)
+
         # TODO if this overlaps, give the y position of the overlap?
 
         # return y_values

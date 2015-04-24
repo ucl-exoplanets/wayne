@@ -476,7 +476,7 @@ class SpectrumTrace(object):
         x = self.wl_to_x(wl)
         y = self.wl_to_y(wl)
 
-        m = -np.array(1.)/self.m_t
+        m = -np.array(1.)/self.m_t  # so m is an array
         c = y - m*x
 
         return x, y, m, c
