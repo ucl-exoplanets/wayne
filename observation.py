@@ -204,6 +204,10 @@ class ExposureGenerator(object):
         x_min_ = np.floor(x_min)
         x_max_ = np.floor(x_max)
 
+        effected_elements = np.floor(x_min) != np.floor(x_max)
+        print 'old num effected  = {} ({}%)'.format(np.sum(effected_elements), np.mean(effected_elements)*100)
+        self._overlap_detection(trace, x_pos, wl, psf_max)
+
         # Scale the flux to photon counts (per pixel / per second)
         count_rate = self._flux_to_counts(flux, wl)
 
@@ -231,7 +235,6 @@ class ExposureGenerator(object):
             # When we only want whole pixels, note we go 5 pixels each way from the round down.
             x_ = int(np.floor(x))  # Int technically floors, but towards zero although we shouldnt ever be negative
             y_ = int(np.floor(y))
-
 
             psf = self.grism.flux_to_psf(wl_i, count_i, y)
 
@@ -262,6 +265,34 @@ class ExposureGenerator(object):
                 pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
         return pixel_array
+
+    def _overlap_detection(self, trace, x_pos, wl, psf_max):
+        """ Overlap detection see if element is split between columns
+        :return:
+        """
+
+        #   Note: delta_lambda inefficient, also calculated in self._flux_to_counts
+        delta_wl = tools.bin_centers_to_widths(wl)
+        xangle = trace.xangle()  # angle between x axis and trace line / y axis and psf line
+
+        # we want to calculate the +- in the x position at the top and bottom of the psf, note
+        x_diff = psf_max * np.tan(xangle)
+
+        # the lower and upper x limits are then the lower wl limit - x_diff, upper + x_diff
+
+        # need to turn wl width to x width
+        delta_wl_half = delta_wl/2.
+        x_min = trace.wl_to_x(wl-delta_wl_half) - x_diff
+        x_max = trace.wl_to_x(wl+delta_wl_half) + x_diff
+        # x_min_ = np.floor(x_min)
+        # x_max_ = np.floor(x_max)
+
+        effected_elements = np.floor(x_min) != np.floor(x_max)
+        print 'new num effected  = {} ({}%)'.format(np.sum(effected_elements), np.mean(effected_elements)*100)
+
+        # TODO if this overlaps, give the y position of the overlap?
+
+        # return y_values
 
     def _flux_to_counts(self, flux, wl):
         """ Converts flux to photons by scaling to the to the detector pixel size, energy to photons

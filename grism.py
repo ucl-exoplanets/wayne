@@ -513,7 +513,7 @@ class SpectrumTrace(object):
     def xangle(self):
         """ get the angle from the x axis to the trace line using triganometry.
 
-        :return:
+        :return: angle in radians
         """
 
         x = np.array([1., 2.])

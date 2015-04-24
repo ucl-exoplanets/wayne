@@ -51,24 +51,26 @@ def gen_frame((samp, psf_max)):
 
     exp_scan_data = exp_scan.scanning_frame(x_ref, y_ref, wl_p, f_bb_tmp, depth_p, 1*u.pixel/u.s, samp, psf_max)
 
-    exp_scan_data.generate_fits('output/', 'R10000_256_RAPID_15_1ps_{}ms_{}psf.fits'.format(
-        int(samp.to(u.ms).value), psf_max
-    ))
+    # exp_scan_data.generate_fits('output/', 'R1000_256_RAPID_15_1ps_{}ms_{}psf.fits'.format(
+    #     int(samp.to(u.ms).value), psf_max
+    # ))
 
-to_run = [
-    (500*u.ms, 5),
-    (500*u.ms, 4),
-    (100*u.ms, 5),
-    (100*u.ms, 4),
-    (10*u.ms, 5),
-    (10*u.ms, 4),
-    (10*u.ms, 3),
-    (1*u.ms, 5),
-]
+# to_run = [
+#     (500*u.ms, 5),
+#     (500*u.ms, 4),
+#     (100*u.ms, 5),
+#     (100*u.ms, 4),
+#     (10*u.ms, 5),
+#     (10*u.ms, 4),
+#     (10*u.ms, 3),
+#     (1*u.ms, 5),
+# ]
+#
+# pool = Pool(8)
+# pool.map(gen_frame, to_run)
 
-pool = Pool(8)
-pool.map(gen_frame, to_run)
 
+gen_frame((100*u.ms, 4))
 
 
 
