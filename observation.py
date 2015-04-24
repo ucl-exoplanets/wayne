@@ -204,9 +204,9 @@ class ExposureGenerator(object):
         x_min_ = np.floor(x_min)
         x_max_ = np.floor(x_max)
 
-        effected_elements = np.floor(x_min) != np.floor(x_max)
-        print 'old num effected  = {} ({}%)'.format(np.sum(effected_elements), np.mean(effected_elements)*100)
-        self._overlap_detection(trace, x_pos, wl, psf_max)
+        # effected_elements = np.floor(x_min) != np.floor(x_max)
+        # print 'old num effected  = {} ({}%)'.format(np.sum(effected_elements), np.mean(effected_elements)*100)
+        # self._overlap_detection(trace, x_pos, wl, psf_max)
 
         # Scale the flux to photon counts (per pixel / per second)
         count_rate = self._flux_to_counts(flux, wl)
