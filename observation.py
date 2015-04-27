@@ -45,6 +45,8 @@ class Observation(object):
         self.planet_spectrum = planet_spectrum
 
         self.generate_meta()
+        star = self.planet.star
+        self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
         self.visit_plan = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits)
 
     def generate_meta(self):
@@ -60,7 +62,7 @@ class Observation(object):
 
         planet = self.planet
         star = self.planet.star
-        self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
+
 
         P = float(planet.P.rescale(pq.day))
         a = float((planet.a / star.R).simplified)
@@ -70,13 +72,13 @@ class Observation(object):
         # model for each resolution element.
 
         if depth:
-            planet_spectrum = (float(depth),)
+            planet_spectrum = np.array([depth])  # an array as we want to perform ndim later.
         else:
             planet_spectrum = self.planet_spectrum
 
-        models = []
-        for spec_elem in planet_spectrum:
-            models.append(pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array))
+        models = np.zeros((len(planet_spectrum), len(time_array)))
+        for j, spec_elem in enumerate(planet_spectrum):
+            models[j] = pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array)
 
         return models
 
@@ -142,7 +144,7 @@ class ExposureGenerator(object):
             'sim_time': 0*u.s
         }
 
-    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sampletime, psf_max=4):
+    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4):
         """
 
         :param x_ref: star image x position on frame
@@ -151,8 +153,7 @@ class ExposureGenerator(object):
         :param stellar flux:
         :param planet_signal: (units of transit depth)
         :param scan_speed: (u.pixel/u.ms)
-        :param exptime: total exposure time /sec
-        :param sampletime: how often to generate a staring frame, shorter times improves accuracy at the expense of
+        :param sample_rate: how often to generate a staring frame, shorter times improves accuracy at the expense of
          runtime
 
         :return: array with the exposure
@@ -161,15 +162,16 @@ class ExposureGenerator(object):
         start_time = time.clock()
 
         scan_speed = scan_speed.to(u.pixel/u.ms)
-        exptime = self.exptime.to(u.ms)
-        sampletime = sampletime.to(u.ms)
+        sample_rate = sample_rate.to(u.ms)
 
         self.exp_info.update({
             'SCAN': True,
             'SCAN_DIR': 1,
             'psf_max': psf_max,
-            'samp_time': sampletime
+            'samp_rate': sample_rate
         })
+
+        sample_starts, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
 
         flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
         wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
@@ -179,25 +181,15 @@ class ExposureGenerator(object):
         # Exposure class which holds the result
         self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
-        # convert times to miliseconds and then call value to remove units so arrange works
+        # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
-        # Note the following will miss the last fraction of an observation.
-        sample_starts = np.arange(0, exptime.value, sampletime.value) * u.ms
-        num_samples = len(sample_starts)
-        for i, s_time in enumerate(sample_starts):
-            mid_time = s_time + (s_time/2.)  # we want to treat the sample at the mid point state not the beginning
-            s_y_ref = y_ref + (mid_time * scan_speed).to(u.pixel).value
-
-            # TODO we can vary the transit depth by generating a lightcurve from the signal at our sample times
-
-            # generate the staring frame at our sample, Sample duration == staring exposure time
-            if i == num_samples:  # last sample needs adjusting to fill remainder of exposure time only
-                sample_duration = (exptime.value - s_time).to(u.ms)
-            else:
-                sample_duration = sampletime
+        exp_data = None
+        for i, s_mid in enumerate(sample_mid_points):
+            s_y_ref = y_ref + (s_mid * scan_speed).to(u.pixel).value
+            s_dur = sample_durations[i]
 
             # generate sample frame
-            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, sample_duration, psf_max)
+            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, s_dur, psf_max)
 
         self.exposure.add_read(exp_data)
 
@@ -206,6 +198,26 @@ class ExposureGenerator(object):
         self.exp_info['sim_time'] = (end_time - start_time) * u.s
 
         return self.exposure
+
+    def _gen_scanning_sample_times(self, sample_rate):
+        """ Generates several times to do with samples. In future durations could be changed here to account for
+        uneven scans. This function is separated so the observation class can use it.
+
+
+        :param sample_rate:
+        :return:
+        """
+
+        sample_rate = sample_rate.to(u.ms).value
+        exptime = self.exptime.to(u.ms)
+
+        sample_starts = np.arange(0, exptime.value, sample_rate) * u.ms
+        sample_durations = np.ones_like(sample_starts) * sample_rate
+        sample_durations[-1] = exptime - sample_starts[-1]
+
+        sample_mid_points = sample_starts + (sample_durations/2.)
+
+        return sample_starts, sample_mid_points, sample_durations
 
     def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=4):
         """ constructs a staring mode frame, given a source position and spectrum scaling

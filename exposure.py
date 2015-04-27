@@ -152,7 +152,7 @@ class Exposure(object):
         h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value, 'WFC3Sim exposure generation time (s)')
         h[''] = ''
         h['PSF-MAX'] = (exp_info['psf_max'], 'maximum width of psf tails (pix)')
-        h['SAMPTIME'] = (exp_info['samp_time'].to(u.ms).value, 'How often exposure is sampled (ms)')
+        h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value, 'How often exposure is sampled (ms)')
 
         h[''] = ''
         h[''] = '/ INSTRUMENT CONFIGURATION INFORMATION'
