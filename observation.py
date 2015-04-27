@@ -19,8 +19,8 @@ class Observation(object):
     """ Builds a full observation, of separate orbits
     """
 
-    def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, stellar_flux,
-                 planet_spectrum):
+    def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
+                 planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir=''):
         #  initialise all parameters here for now. There could be many options entered through a
         #  Parameter file but this could be done with an interface.
         #  mode handles exp time (NSAMP, SAMPSEQ, SUBARRAY)
@@ -39,26 +39,38 @@ class Observation(object):
         self.SAMPSEQ = SAMPSEQ
         self.SUBARRAY = SUBARRAY
 
+        self.sample_rate = sample_rate
+        self.x_ref = x_ref
+        self.y_ref = y_ref
+        self.scan_speed = scan_speed
+        self.psf_max = psf_max
+        self.outdir = outdir
+
         self.planet = planet
-        self.start_JD = start_JD
+        self.start_JD = start_JD  # in days
+        self.wl = wl
         self.stellar_flux = stellar_flux
         self.planet_spectrum = planet_spectrum
 
         self.generate_meta()
         star = self.planet.star
         self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
-        self.visit_plan = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits)
+        self.visit_plan = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits,
+                                        exp_overhead=3*u.min)  # TEMP! to make observations sparser
 
     def generate_meta(self):
 
         orbit_info = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits)
-        exp_start_times = orbit_info['exp_times']  # our start times in minutes from the start JD of the first orbit
 
-        # TODO convert to JD
+        # exp_times are in minutes from the start JD of the first orbit
+        self.exp_start_times = orbit_info['exp_times'] + self.start_JD
+        self.exp_start_times.to(u.days)
 
     def generate_lightcurves(self, time_array, depth=False):
 
         # TODO quick check if out of transit, in that case ones!
+
+        # TODO should this be in generate exposure?
 
         planet = self.planet
         star = self.planet.star
@@ -99,7 +111,32 @@ class Observation(object):
 
     def run_observation(self):
 
+        # TODO run _generate_exposure over expstarts here, multithreaded
+
         pass
+
+    def _generate_exposure(self, number, expstart):
+        """ Generates an exposure, used in a loop
+        :return:
+        """
+
+        filename = '{:04d}_raw.fits'.format(number)
+
+        exp_gen = ExposureGenerator(self.detector, self.grism, self.NSAMP, self.SAMPSEQ, self.SUBARRAY,
+                                    self.planet, filename)
+
+        _, sample_mid_points, sample_durations = exp_gen._gen_scanning_sample_times(self.sample_rate)
+
+        time_array = sample_mid_points + expstart
+
+        planet_depths = self.generate_lightcurves(time_array)
+
+        exp_frame = exp_gen.scanning_frame(self.x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
+                                           self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
+                                           sample_durations)
+
+        exp_frame.generate_fits(self.outdir, filename)
+
 
 
 class ExposureGenerator(object):
@@ -144,8 +181,12 @@ class ExposureGenerator(object):
             'sim_time': 0*u.s
         }
 
-    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4):
+    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
+                       sample_mid_points=None, sample_durations=None):
         """
+
+        Note, i need to seperate this into a user friendly version and a version to use with observation as i am already
+        seeing clashes (aka sample times generation)
 
         :param x_ref: star image x position on frame
         :param y_ref: star image y position on frame
@@ -171,10 +212,15 @@ class ExposureGenerator(object):
             'samp_rate': sample_rate
         })
 
-        sample_starts, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
+        # user friendly, else defined by observation class which uses theese values for lightcurve generation
+        if sample_mid_points is None & sample_durations is None:
+            _, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
 
-        flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
-        wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
+
+        if planet_signal.ndim == 1:  # depth does not vary with time during exposure
+            s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
+            # TODO handling cropping elsewhere to avoid doing it all the time, crop flux + depth together
+            s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, s_flux)
 
         pixel_array = self.detector.gen_pixel_array()
 
@@ -188,8 +234,15 @@ class ExposureGenerator(object):
             s_y_ref = y_ref + (s_mid * scan_speed).to(u.pixel).value
             s_dur = sample_durations[i]
 
+            if planet_signal.ndim == 1:
+                pass  # handled above but leaving to point out this needs cleaning up
+            else:
+                s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal[i])
+                # TODO handling cropping elsewhere to avoid doing it all the time, crop flux + depth together
+                s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, s_flux)
+
             # generate sample frame
-            exp_data = self._gen_staring_frame(x_ref, s_y_ref, wl, flux, pixel_array, s_dur, psf_max)
+            exp_data = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max)
 
         self.exposure.add_read(exp_data)
 
@@ -432,7 +485,7 @@ class ExposureGenerator(object):
 
 
 def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orbit=54*u.min,
-                  hst_period=90*u.min):
+                  hst_period=90*u.min, exp_overhead=1*u.min):
     """ Returns the start time of each exposure in minutes starting at 0. Useful for estimating buffer dumps etc.
 
     Note, this is mainly used in testing, will probably be coupled with the lightcurve and added to observation class.
@@ -457,7 +510,9 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orb
     # The time to dump an n-sample, full-frame exposure is approximately 39 + 19 x (n + 1) seconds. Subarrays may also
     # be used to reduce the overhead of serial buffer dumps. ** Instruemtn handbook 10.3
     time_buffer_dump = 5.8 * u.min  # IH 23 pg 209
-    exp_overhead = 1*u.min  # IH 23 pg 209 - should be mostly read times - seems long, 1024 only?
+
+    # temp defined in input to make tests sparser and account for lack of manouvers
+    # exp_overhead = 1*u.min  # IH 23 pg 209 - should be mostly read times - seems long, 1024 only?
 
 
     # TODO spacecraft manuvers IR 23 pg 206 for scanning
