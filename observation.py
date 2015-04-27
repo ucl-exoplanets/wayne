@@ -4,8 +4,11 @@
 import time
 
 import numpy as np
+import quantities as pq
 from astropy import units as u
 from astropy import constants as const
+import pylightcurve.fcmodel as pylc
+import matplotlib.pylab as plt
 
 import grism
 import tools
@@ -16,28 +19,81 @@ class Observation(object):
     """ Builds a full observation, of separate orbits
     """
 
-    def __init__(self, planet, start_JD, detector, grism, NSAMP, SAMPSEQ, SUBARRAY):
+    def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, stellar_flux,
+                 planet_spectrum):
         #  initialise all parameters here for now. There could be many options entered through a
         #  Parameter file but this could be done with an interface.
-        #  mode handles exp time
+        #  mode handles exp time (NSAMP, SAMPSEQ, SUBARRAY)
 
-        exp_delay = 1*u.s  # delay after one exposure to take the next
-        time_per_orbit = 45*u.min
-        orbits = 3
+        # My current thought is a detector instance should be given per frame, the exposure is then stored in the
+        # detector class which can also handle reads, flats, subbarays, and perhaps even translating the coordinates
+        # from full frame to etc. This was the point of the exposure frame, but the main reason for that is output and
+        # it is detector specific! so perhaps theese should be merged
 
         self.detector = detector
         self.grism = grism
-        self.mode = ''
         self.scanning = True
 
-        # note people may specify different filters
+        self.num_orbits = num_orbits
+        self.NSAMP = NSAMP
+        self.SAMPSEQ = SAMPSEQ
+        self.SUBARRAY = SUBARRAY
 
-        # generate staring frame giving zero order location (grismless)
+        self.planet = planet
+        self.start_JD = start_JD
+        self.stellar_flux = stellar_flux
+        self.planet_spectrum = planet_spectrum
 
-        # Here be dragons
-        self.data = None  # the exposed frame will be stored here.
+        self.generate_meta()
+        self.visit_plan = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits)
 
-        pass
+    def generate_meta(self):
+
+        orbit_info = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits)
+        exp_start_times = orbit_info['exp_times']  # our start times in minutes from the start JD of the first orbit
+
+        # TODO convert to JD
+
+    def generate_lightcurves(self, time_array, depth=False):
+
+        # TODO quick check if out of transit, in that case ones!
+
+        planet = self.planet
+        star = self.planet.star
+        self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
+
+        P = float(planet.P.rescale(pq.day))
+        a = float((planet.a / star.R).simplified)
+        i = float(planet.i.rescale(pq.deg))
+        W = float(planet.periastron)
+        transittime = float(planet.transittime)
+        # model for each resolution element.
+
+        if depth:
+            planet_spectrum = (float(depth),)
+        else:
+            planet_spectrum = self.planet_spectrum
+
+        models = []
+        for spec_elem in planet_spectrum:
+            models.append(pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array))
+
+        return models
+
+    def show_lightcurve(self):
+        """ Shows the white lightcurve of the planned observation
+        :return:
+        """
+
+        time_array = self.visit_plan['exp_times'].to(u.day).value + float(self.start_JD)
+
+        lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
+
+        plt.figure()
+        plt.scatter(time_array, lc_model)
+        plt.xlabel("Time (JD)")
+        plt.ylabel("Transit Depth")
+        plt.title("Normalised White Light Curve of observation")
 
     def run_observation(self):
 
@@ -362,8 +418,6 @@ class ExposureGenerator(object):
 
         return combined_flux
 
-    # def fits_output(self):  # TODO
-
 
 def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orbit=54*u.min,
                   hst_period=90*u.min):
@@ -423,7 +477,7 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orb
 
 
     returnDict = {
-        'exp_times': np.array(exp_times)*u.min,
+        'exp_times': np.array(exp_times)*u.min,  # start_times?
         'NSAMP': NSAMP,
         'SAMPSEQ': SAMPSEQ,
         'SUBARRAY': SUBARRAY,
