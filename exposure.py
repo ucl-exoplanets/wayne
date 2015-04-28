@@ -4,6 +4,7 @@ to construct the output along with certain visualisation methods.
 
 import datetime
 import os.path
+import numpy as np
 
 import astropy.io.fits as fits
 import astropy.units as u
@@ -58,6 +59,8 @@ class Exposure(object):
         for i, data in enumerate(reversed(self.reads)):
 
             data = self.crop_subarrray(data, self.exp_info['SUBARRAY'])
+
+            data = np.flipud(data)  # hst fits files are the other way round
 
             read_HDU = fits.ImageHDU(data)
             error_array = fits.ImageHDU()
