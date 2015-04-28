@@ -21,7 +21,7 @@ plt.style.use('ggplot')
 exodata = exodata.OECDatabase('/Users/ryan/git/open_exoplanet_catalogue/systems')
 gj1214b = exodata.planetDict['Gliese 1214 b']
 
-source_spectra = np.loadtxt('hj_1000.dat')
+source_spectra = np.loadtxt('hj_10000.dat')
 source_spectra = source_spectra.T  # turn to (wl list, flux list)
 source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 # for some reason the unit doesnt stay with some other methods

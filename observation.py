@@ -52,19 +52,11 @@ class Observation(object):
         self.stellar_flux = stellar_flux
         self.planet_spectrum = planet_spectrum
 
-        self.generate_meta()
         star = self.planet.star
         self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
         self.visit_plan = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits,
                                         exp_overhead=3*u.min)  # TEMP! to make observations sparser
-
-    def generate_meta(self):
-
-        orbit_info = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits)
-
-        # exp_times are in minutes from the start JD of the first orbit
-        self.exp_start_times = orbit_info['exp_times'] + self.start_JD
-        self.exp_start_times.to(u.days)
+        self.exp_start_times = self.visit_plan['exp_times'].to(u.day) + self.start_JD
 
     def generate_lightcurves(self, time_array, depth=False):
 
@@ -81,6 +73,8 @@ class Observation(object):
         i = float(planet.i.rescale(pq.deg))
         W = float(planet.periastron)
         transittime = float(planet.transittime)
+
+        time_array = time_array.to(u.day).value
         # model for each resolution element.
 
         if depth:
@@ -88,9 +82,10 @@ class Observation(object):
         else:
             planet_spectrum = self.planet_spectrum
 
-        models = np.zeros((len(planet_spectrum), len(time_array)))
+        models = np.zeros((len(time_array), len(planet_spectrum)))
+
         for j, spec_elem in enumerate(planet_spectrum):
-            models[j] = pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array)
+            models[:, j] = pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array)
 
         return models
 
@@ -99,7 +94,7 @@ class Observation(object):
         :return:
         """
 
-        time_array = self.visit_plan['exp_times'].to(u.day).value + float(self.start_JD)
+        time_array = self.exp_start_times
 
         lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
 
@@ -127,7 +122,7 @@ class Observation(object):
 
         _, sample_mid_points, sample_durations = exp_gen._gen_scanning_sample_times(self.sample_rate)
 
-        time_array = sample_mid_points + expstart
+        time_array = (sample_mid_points + expstart).to(u.day)
 
         planet_depths = self.generate_lightcurves(time_array)
 
@@ -136,7 +131,6 @@ class Observation(object):
                                            sample_durations)
 
         exp_frame.generate_fits(self.outdir, filename)
-
 
 
 class ExposureGenerator(object):
@@ -213,7 +207,7 @@ class ExposureGenerator(object):
         })
 
         # user friendly, else defined by observation class which uses theese values for lightcurve generation
-        if sample_mid_points is None & sample_durations is None:
+        if sample_mid_points is None and sample_durations is None:
             _, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
 
 
@@ -261,14 +255,14 @@ class ExposureGenerator(object):
         :return:
         """
 
-        sample_rate = sample_rate.to(u.ms).value
+        sample_rate = sample_rate.to(u.ms)
         exptime = self.exptime.to(u.ms)
 
-        sample_starts = np.arange(0, exptime.value, sample_rate) * u.ms
-        sample_durations = np.ones_like(sample_starts) * sample_rate
+        sample_starts = np.arange(0, exptime.value, sample_rate.value) * u.ms
+        sample_durations = np.ones(len(sample_starts)) * sample_rate
         sample_durations[-1] = exptime - sample_starts[-1]
 
-        sample_mid_points = sample_starts + (sample_durations/2.)
+        sample_mid_points = (sample_starts + (sample_durations/2.)).to(u.ms)
 
         return sample_starts, sample_mid_points, sample_durations
 
