@@ -124,7 +124,8 @@ class Observation(object):
 
         time_array = (sample_mid_points + expstart).to(u.day)
 
-        planet_depths = self.generate_lightcurves(time_array)
+        star_norm_flux = self.generate_lightcurves(time_array)
+        planet_depths = 1 - star_norm_flux
 
         exp_frame = exp_gen.scanning_frame(self.x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
@@ -217,14 +218,12 @@ class ExposureGenerator(object):
             # TODO handling cropping elsewhere to avoid doing it all the time, crop flux + depth together
             s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, s_flux)
 
-        pixel_array = self.detector.gen_pixel_array()
-
         # Exposure class which holds the result
         self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
-        exp_data = None
+        pixel_array = self.detector.gen_pixel_array()
         for i, s_mid in enumerate(sample_mid_points):
             s_y_ref = y_ref + (s_mid * scan_speed).to(u.pixel).value
             s_dur = sample_durations[i]
@@ -237,9 +236,9 @@ class ExposureGenerator(object):
                 s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, s_flux)
 
             # generate sample frame
-            exp_data = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max)
+            pixel_array = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max)
 
-        self.exposure.add_read(exp_data)
+        self.exposure.add_read(pixel_array)
 
         end_time = time.clock()
 
