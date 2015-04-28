@@ -132,6 +132,8 @@ class Observation(object):
 
         exp_frame.generate_fits(self.outdir, filename)
 
+        return exp_frame
+
 
 class ExposureGenerator(object):
     """ Constructs exposures given a spectrum
@@ -209,7 +211,6 @@ class ExposureGenerator(object):
         # user friendly, else defined by observation class which uses theese values for lightcurve generation
         if sample_mid_points is None and sample_durations is None:
             _, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
-
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
             s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)

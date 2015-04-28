@@ -57,6 +57,8 @@ class Exposure(object):
 
         for i, data in enumerate(reversed(self.reads)):
 
+            data = self.crop_subarrray(data, self.exp_info['SUBARRAY'])
+
             read_HDU = fits.ImageHDU(data)
             error_array = fits.ImageHDU()
 
@@ -90,6 +92,13 @@ class Exposure(object):
             hdulist.extend([read_HDU, error_array, data_quality_array, samples_HDU, integration_time_HDU])
 
         hdulist.writeto(out_path)
+
+    def crop_subarrray(self, data, subarray):
+
+        i_lower = (1024-subarray)/2
+        i_upper = i_lower + subarray
+
+        return data[i_lower:i_upper, i_lower:i_upper]
 
     def generate_science_header(self):
         """ Generates the primary header
