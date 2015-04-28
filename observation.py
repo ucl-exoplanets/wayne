@@ -2,6 +2,7 @@
 """
 
 import time
+# from multiprocessing import Pool, cpu_count
 
 import numpy as np
 import quantities as pq
@@ -9,6 +10,8 @@ from astropy import units as u
 from astropy import constants as const
 import pylightcurve.fcmodel as pylc
 import matplotlib.pylab as plt
+
+from progress import Progress
 
 import grism
 import tools
@@ -106,9 +109,27 @@ class Observation(object):
 
     def run_observation(self):
 
-        # TODO run _generate_exposure over expstarts here, multithreaded
+        # pool = Pool(8)
+        # pool.map(gen_frame, to_run)
 
-        pass
+        # filenums = range(1, len(self.exp_start_times)+1)
+        #
+        # # gen_exp = lambda args: self._generate_exposure(args[0], args[1])
+        #
+        # run_params = zip(filenums, self.exp_start_times)
+        #
+        # # pool = Pool(cpu_count())
+        # # pool.map(gen_exp, run_params)
+
+        num_frames = len(self.exp_start_times)
+        progress = Progress(num_frames)
+
+        for i, start_time in enumerate(self.exp_start_times):
+            filenum = i+1
+            self._generate_exposure(filenum, start_time)
+
+            progress.increment()
+            progress.print_status_line('Generating frames {}/{} done'.format(filenum, num_frames))
 
     def _generate_exposure(self, number, expstart):
         """ Generates an exposure, used in a loop

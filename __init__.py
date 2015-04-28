@@ -3,7 +3,7 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.2.150428d'
+__version__ = '0.2.150428e'
 
 # package imports
 import grism
