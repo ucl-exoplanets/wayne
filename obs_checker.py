@@ -14,10 +14,10 @@ import tools
 
 plt.style.use('ggplot')
 
-exodata = exodata.OECDatabase('/Users/ryan/git/open_exoplanet_catalogue/systems')
-gj1214b = exodata.planetDict['Gliese 1214 b']
+exodb = exodata.OECDatabase('/Users/ryan/git/open_exoplanet_catalogue/systems')
+gj1214b = exodb.planetDict['Gliese 1214 b']
 
-source_spectra = np.loadtxt('hj_1000.dat')
+source_spectra = np.loadtxt('hj_10000.dat')
 source_spectra = source_spectra.T  # turn to (wl list, flux list)
 source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 
@@ -41,7 +41,7 @@ start_JD = float((planet.transittime - 130*pq.min).rescale(pq.day)) * u.day  # c
 num_orbits = 3
 sample_rate = 0.1*u.s
 scan_speed = 1*u.pixel/u.s
-outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit1'
+outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit2'
 psf_max = 4
 
 

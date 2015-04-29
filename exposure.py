@@ -141,10 +141,12 @@ class Exposure(object):
         h[''] = '/ EXPOSURE INFORMATION'
         h[''] = ''
         # These need calculating from the start MJD and exptime
+        expstart = exp_info['EXPSTART'].value - 2400000.5
+        # TODO convert to UT
         h['DATE-OBS'] = (False, 'UT date of start of observation (yyyy-mm-dd)')
         h['TIME-OBS'] = (False, 'UT time of start of observation (hh:mm:ss)')
-        h['EXPSTART'] = (exp_info['EXPSTART'], 'exposure start time (Modified Julian Date)')
-        h['EXPEND'] = (False, 'exposure end time (Modified Julian Date)')
+        h['EXPSTART'] = (expstart, 'exposure start time (Modified Julian Date)')
+        h['EXPEND'] = (exp_info['EXPEND'].value - 2400000.5, 'exposure end time (Modified Julian Date)')
         h['EXPTIME'] = (exp_info['EXPTIME'].to(u.s).value, 'exposure duration (seconds)--calculated')
         # h['EXPFLAG'] = ('INDETERMINATE', 'Exposure interruption indicator')
 

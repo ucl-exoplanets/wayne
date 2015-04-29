@@ -139,7 +139,7 @@ class Observation(object):
         filename = '{:04d}_raw.fits'.format(number)
 
         exp_gen = ExposureGenerator(self.detector, self.grism, self.NSAMP, self.SAMPSEQ, self.SUBARRAY,
-                                    self.planet, filename)
+                                    self.planet, filename, expstart)
 
         _, sample_mid_points, sample_durations = exp_gen._gen_scanning_sample_times(self.sample_rate)
 
@@ -161,13 +161,16 @@ class ExposureGenerator(object):
     """ Constructs exposures given a spectrum
     """
 
-    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet, filename='0001_raw.fits'):
+    def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet, filename='0001_raw.fits',
+                 start_JD=0*u.day):
         """
 
         :param detector: detector class, i.e. WFC3_IR()
         :type detector: detector.WFC3_IR
         :param grism: grism class i.e. G141
         :type grism: grism.Grism
+
+        :param start_JD: start JD of the fits file, used in the fits saving
         :return:
         """
 
@@ -186,7 +189,8 @@ class ExposureGenerator(object):
         self.exp_info = {
             # these should be generated mostly in observation class and defaulted here / for staring also
             'filename': filename,
-            'EXPSTART': '',  # MJD
+            'EXPSTART': start_JD,  # JD
+            'EXPEND': start_JD + self.exptime.to(u.day),
             'EXPTIME': self.exptime.to(u.s),  # Seconds
             'SCAN': False,
             'SCAN_DIR': None,  # 1 for down, -1 for up - replace with POSTARG calc later
@@ -223,16 +227,16 @@ class ExposureGenerator(object):
         scan_speed = scan_speed.to(u.pixel/u.ms)
         sample_rate = sample_rate.to(u.ms)
 
+        # user friendly, else defined by observation class which uses theese values for lightcurve generation
+        if sample_mid_points is None and sample_durations is None:
+            _, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
+
         self.exp_info.update({
             'SCAN': True,
             'SCAN_DIR': 1,
             'psf_max': psf_max,
-            'samp_rate': sample_rate
+            'samp_rate': sample_rate,
         })
-
-        # user friendly, else defined by observation class which uses theese values for lightcurve generation
-        if sample_mid_points is None and sample_durations is None:
-            _, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
             s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
