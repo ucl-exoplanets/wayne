@@ -27,7 +27,11 @@ class Exposure(object):
         self.planet = planet
         self.exp_info = exp_info
 
+        self.subarray = exp_info['SUBARRAY']
+
         self.reads = []  # read 0 ->
+        # Add a zero read whilst we dont have one
+        self.add_read(np.zeros(self.subarray, self.subarray))
 
     def add_read(self, data):
         """ adds the read to the exposure, will probably need some header information to.
@@ -60,7 +64,7 @@ class Exposure(object):
 
             data = self.crop_subarrray(data, self.exp_info['SUBARRAY'])
 
-            data = np.flipud(data)  # hst fits files are the other way round
+            # data = np.flipud(data)  # hst fits files are the other way round
 
             read_HDU = fits.ImageHDU(data)
             error_array = fits.ImageHDU()
