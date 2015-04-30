@@ -31,7 +31,7 @@ class Exposure(object):
 
         self.reads = []  # read 0 ->
         # Add a zero read whilst we dont have one
-        self.add_read(np.zeros(self.subarray, self.subarray))
+        self.add_read(np.zeros((self.subarray, self.subarray)))
 
     def add_read(self, data):
         """ adds the read to the exposure, will probably need some header information to.
