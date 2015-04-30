@@ -15,13 +15,12 @@ import tools
 plt.style.use('ggplot')
 
 exodb = exodata.OECDatabase('/Users/ryan/git/open_exoplanet_catalogue/systems')
-gj1214b = exodb.planetDict['Gliese 1214 b']
+planet = exodb.planetDict['WASP-18 b']
 
-source_spectra = np.loadtxt('hj_10000.dat')
+source_spectra = np.loadtxt('hj_1000.dat')
 source_spectra = source_spectra.T  # turn to (wl list, flux list)
 source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 
-planet = gj1214b
 g141 = grism.Grism()
 det = detector.WFC3_IR()
 
@@ -34,14 +33,14 @@ f_bb_tmp = f_bb * u.sr / 1e20  # temp factor to account for distance
 
 x_ref = 450
 y_ref = 450
-NSAMP = 3
-SAMPSEQ = 'SPARS25'
-SUBARRAY = 256
-start_JD = float((planet.transittime - 130*pq.min).rescale(pq.day)) * u.day  # convert pq to u
-num_orbits = 3
+NSAMP = 15
+SAMPSEQ = 'SPARS10'
+SUBARRAY = 512
+start_JD = float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # convert pq to u
+num_orbits = 2
 sample_rate = 0.1*u.s
-scan_speed = 1*u.pixel/u.s
-outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit2'
+scan_speed = 180*u.pixel/(111.8*u.s)
+outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit3'
 psf_max = 4
 
 
@@ -51,5 +50,8 @@ psf_max = 4
 
 obs = observation.Observation(planet, start_JD, num_orbits, det, g141, NSAMP, SAMPSEQ, SUBARRAY, wl_p, f_bb_tmp,
                               depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir)
+print('exptime per frame = ', obs.exptime)
+obs.show_lightcurve()
+plt.show()
 
 obs.run_observation()

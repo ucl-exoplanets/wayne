@@ -61,6 +61,8 @@ class Observation(object):
                                         exp_overhead=3*u.min)  # TEMP! to make observations sparser
         self.exp_start_times = self.visit_plan['exp_times'].to(u.day) + self.start_JD
 
+        self.exptime = self.visit_plan['exptime']
+
     def generate_lightcurves(self, time_array, depth=False):
 
         # TODO quick check if out of transit, in that case ones!
