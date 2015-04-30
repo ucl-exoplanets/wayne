@@ -172,6 +172,10 @@ class Exposure(object):
         h['PSF-MAX'] = (exp_info['psf_max'], 'maximum width of psf tails (pix)')
         h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value, 'How often exposure is sampled (ms)')
 
+        # keywords for analysis (i.e. xref positions until)
+        h['STARXI'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
+
+
         h[''] = ''
         h[''] = '/ INSTRUMENT CONFIGURATION INFORMATION'
         h[''] = ''

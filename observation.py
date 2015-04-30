@@ -236,6 +236,8 @@ class ExposureGenerator(object):
             'SCAN_DIR': 1,
             'psf_max': psf_max,
             'samp_rate': sample_rate,
+            'x_ref': x_ref,
+            'y_ref': y_ref,
         })
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
@@ -310,6 +312,8 @@ class ExposureGenerator(object):
         self.exp_info.update({
             'SCAN': False,
             'psf_max': psf_max,
+            'x_ref': x_ref,
+            'y_ref': y_ref,
         })
 
         # Exposure class which holds the result
@@ -329,6 +333,10 @@ class ExposureGenerator(object):
         """ Does the bulk of the work in generating the observation. Used by both staring and scanning modes.
         :return:
         """
+
+        # light sensitive pixel array TODO better handling of this
+        # problem is trace counts from -5, or 0 at the start of the LS area.
+        ls_pixel_array = pixel_array[5:-5, 5:-5]
 
         # Wavelength calibration, mapping to detector x/y pos
         trace = self.grism.get_trace(x_ref, y_ref)
@@ -396,13 +404,16 @@ class ExposureGenerator(object):
                 propxmin = (x_max_[i] - x_min[i])/x_width  # (floor(xmax) - xmin)/width = %
                 propxmax = 1.-propxmin
 
-                pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
-                pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
+                ls_pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
+                ls_pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
             else:  # all flux goes into one column
                 # Note: Ideally we dont want to overwrite te detector, but have a function for the detector to give
                 # us a grid. there are other detector effects though so maybe wed prefer multiple detector classes
                 # or a .reset() on the class
-                pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
+                ls_pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
+
+        # add back onto the non ls parts
+        pixel_array[5:-5, 5:-5] += ls_pixel_array
 
         return pixel_array
 
