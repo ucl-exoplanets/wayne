@@ -70,7 +70,7 @@ def gen_frame((samp, psf_max)):
 # pool.map(gen_frame, to_run)
 
 
-gen_frame((100*u.ms, 4))
+gen_frame((500*u.ms, 4))
 
 
 

@@ -85,6 +85,7 @@ class Observation(object):
         P = float(planet.P.rescale(pq.day))
         a = float((planet.a / star.R).simplified)
         i = float(planet.i.rescale(pq.deg))
+        e = planet.e
         W = float(planet.periastron)
         transittime = float(planet.transittime)
 
@@ -98,12 +99,12 @@ class Observation(object):
 
         models = np.zeros((len(time_array), len(planet_spectrum)))
 
-        logger.debug("Generating lightcurves with P={}, a={}, i={}, W={}, T14={}, mean_depth={}".format(
-            P, a, i, W, transittime, np.mean(planet_spectrum)
+        logger.debug("Generating lightcurves with P={}, a={}, i={}, e={}, W={}, T14={}, mean_depth={}".format(
+            P, a, i, e, W, transittime, np.mean(planet_spectrum)
         ))
 
         for j, spec_elem in enumerate(planet_spectrum):
-            models[:, j] = pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array)
+            models[:, j] = pylc.model(self.ldcoeffs, spec_elem, P, a, e, i, W, transittime, time_array)
 
         return models
 
@@ -265,7 +266,7 @@ class ExposureGenerator(object):
 
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
-        pixel_array = self.detector.gen_pixel_array()
+        pixel_array = self.detector.gen_pixel_array(light_sensitive=True)  # misses 5 pixel border
         for i, s_mid in enumerate(sample_mid_points):
             s_y_ref = y_ref + (s_mid * scan_speed).to(u.pixel).value
             s_dur = sample_durations[i]
@@ -280,6 +281,15 @@ class ExposureGenerator(object):
             # generate sample frame
             pixel_array = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max)
 
+        logger.debug("Frame generated, adding bias pixels, original size={}, min={}, max={}".format(
+            pixel_array.shape, pixel_array.min(), pixel_array.max()
+        ))
+
+        pixel_array = self.detector.add_bias_pixels(pixel_array)
+
+        logger.debug("Bias pixels added, now size={}, min={}, max={}".format(
+            pixel_array.shape, pixel_array.min(), pixel_array.max()
+        ))
         self.exposure.add_read(pixel_array)
 
         end_time = time.clock()
@@ -316,7 +326,6 @@ class ExposureGenerator(object):
         :param wl: wavelength of stellar flux AND planet signal (must be sampled identically)
         :param stellar flux:
         :param planet_signal: (units of transit depth)
-        :param exptime:
         :param psf_max: how many pixels either side of y_ref we want to go. Note if y_ref = 5.9 and psf_max=5 it would
         be from 0 to 10. 0.9999999999999889% of flux between is between -4 and 4 of widest psf. Going one higher than
         required is sensible for cases like above (5.9, 0 to 10) where one half is better represented
@@ -337,21 +346,26 @@ class ExposureGenerator(object):
         flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
         wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
 
-        pixel_array = self.detector.gen_pixel_array()
+        pixel_array = self.detector.gen_pixel_array(light_sensitive=True)
+        pixel_array = self._gen_staring_frame(x_ref, y_ref, wl, flux, pixel_array, self.exptime, psf_max)
 
-        exp_data = self._gen_staring_frame(x_ref, y_ref, wl, flux, pixel_array, self.exptime, psf_max)
+        logger.debug("Frame generated, adding bias pixels, original size={}, min={}, max={}".format(
+            pixel_array.shape, pixel_array.min(), pixel_array.max()
+        ))
 
-        self.exposure.add_read(exp_data)
+        pixel_array = self.detector.add_bias_pixels(pixel_array)
+
+        logger.debug("Bias pixels added, now size={}, min={}, max={}".format(
+            pixel_array.shape, pixel_array.min(), pixel_array.max()
+        ))
+
+        self.exposure.add_read(pixel_array)
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime, psf_max):
         """ Does the bulk of the work in generating the observation. Used by both staring and scanning modes.
         :return:
         """
-
-        # light sensitive pixel array TODO better handling of this
-        # problem is trace counts from -5, or 0 at the start of the LS area.
-        ls_pixel_array = pixel_array[5:-5, 5:-5]
 
         # Wavelength calibration, mapping to detector x/y pos
         trace = self.grism.get_trace(x_ref, y_ref)
@@ -419,16 +433,13 @@ class ExposureGenerator(object):
                 propxmin = (x_max_[i] - x_min[i])/x_width  # (floor(xmax) - xmin)/width = %
                 propxmax = 1.-propxmin
 
-                ls_pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
-                ls_pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
+                pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
+                pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
             else:  # all flux goes into one column
                 # Note: Ideally we dont want to overwrite te detector, but have a function for the detector to give
                 # us a grid. there are other detector effects though so maybe wed prefer multiple detector classes
                 # or a .reset() on the class
-                ls_pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
-
-        # add back onto the non ls parts
-        pixel_array[5:-5, 5:-5] += ls_pixel_array
+                pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
         return pixel_array
 

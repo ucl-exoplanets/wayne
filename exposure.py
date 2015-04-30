@@ -30,6 +30,7 @@ class Exposure(object):
         self.subarray = exp_info['SUBARRAY']
 
         self.reads = []  # read 0 ->
+
         # Add a zero read whilst we dont have one
         self.add_read(np.zeros((self.subarray, self.subarray)))
 

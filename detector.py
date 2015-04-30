@@ -43,9 +43,32 @@ class WFC3_IR(object):
 
         return exptime * u.s
 
-    def gen_pixel_array(self):
-        # this could return subbary types etc, lets just keep it out of class for now
-        return self._pixel_array.copy()
+    def gen_pixel_array(self, light_sensitive=True):
+        """ returns the pixel array as an array of zeroes
+
+        this could return subbary types etc, but lets just keep it out of class for now
+
+        :param light_sensitive: only return the light sensitive parts (neglecting 5 pixel border)
+        """
+
+        if light_sensitive:
+            return np.zeros((1024-10, 1024-10))
+        else:
+            return np.zeros((1024, 1024))
+
+    def add_bias_pixels(self, pixel_array):
+        """ converts a light sensitive array to one with the 5 pixel border. In future will simulate the function
+        of bias pixels but for now returns zeroes.
+
+        input must be a full frame (for now)
+
+        :return:
+        """
+
+        full_array = np.zeros((1024, 1024))
+        full_array[5:-5, 5:-5] = pixel_array
+
+        return full_array
 
     def _get_modes(self):
         """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
