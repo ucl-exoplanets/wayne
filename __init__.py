@@ -3,9 +3,10 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.2.150430a'
+__version__ = '0.2.150430b'
 
 # package imports
+import wfc3simlog
 import grism
 import detector
 import params

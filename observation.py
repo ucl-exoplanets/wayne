@@ -13,6 +13,7 @@ import matplotlib.pylab as plt
 
 from progress import Progress
 
+from wfc3simlog import logger
 import grism
 import tools
 import exposure
@@ -32,6 +33,11 @@ class Observation(object):
         # detector class which can also handle reads, flats, subbarays, and perhaps even translating the coordinates
         # from full frame to etc. This was the point of the exposure frame, but the main reason for that is output and
         # it is detector specific! so perhaps theese should be merged
+
+        logger.info("Initialising Observation: startJD={}, num_orbits={}, detector={}, grism={}, "
+                    "NSAMP={}, SAMPSEQ={}, SUBARRAY={}, sample_rate={}, x_ref={}, y_ref={}, scan_speed={},"
+                    "psf_max={}, outdir={}".format(start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ,
+                                                   SUBARRAY, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir))
 
         self.detector = detector
         self.grism = grism
@@ -57,11 +63,14 @@ class Observation(object):
 
         star = self.planet.star
         self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
+        logger.info("Looked up Limb Darkening coeffs of {}".format(self.ldcoeffs))
+
         self.visit_plan = visit_planner(self.detector, self.NSAMP, self.SAMPSEQ, self.SUBARRAY, self.num_orbits,
                                         exp_overhead=3*u.min)  # TEMP! to make observations sparser
         self.exp_start_times = self.visit_plan['exp_times'].to(u.day) + self.start_JD
 
         self.exptime = self.visit_plan['exptime']
+        logger.info("Each exposure will have a expsoure time of {}".format(self.exptime))
 
     def generate_lightcurves(self, time_array, depth=False):
 
@@ -88,6 +97,10 @@ class Observation(object):
             planet_spectrum = self.planet_spectrum
 
         models = np.zeros((len(time_array), len(planet_spectrum)))
+
+        logger.debug("Generating lightcurves with P={}, a={}, i={}, W={}, T14={}, mean_depth={}".format(
+            P, a, i, W, transittime, np.mean(planet_spectrum)
+        ))
 
         for j, spec_elem in enumerate(planet_spectrum):
             models[:, j] = pylc.model(self.ldcoeffs, spec_elem, P, a, planet.e, i, W, transittime, time_array)

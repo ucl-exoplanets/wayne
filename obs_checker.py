@@ -32,7 +32,7 @@ f_bb = blackbody_lambda(wl_bb, planet.star.T)
 f_bb_tmp = f_bb * u.sr / 1e20  # temp factor to account for distance
 
 x_ref = 450
-y_ref = 450
+y_ref = 350
 NSAMP = 15
 SAMPSEQ = 'SPARS10'
 SUBARRAY = 512
@@ -40,7 +40,7 @@ start_JD = float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # c
 num_orbits = 2
 sample_rate = 0.1*u.s
 scan_speed = 180*u.pixel/(111.8*u.s)
-outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit3'
+outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit2'
 psf_max = 4
 
 
@@ -52,6 +52,6 @@ obs = observation.Observation(planet, start_JD, num_orbits, det, g141, NSAMP, SA
                               depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir)
 print('exptime per frame = ', obs.exptime)
 obs.show_lightcurve()
-plt.show()
+# plt.show()
 
 obs.run_observation()
