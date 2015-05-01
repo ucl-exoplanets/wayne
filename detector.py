@@ -35,13 +35,12 @@ class WFC3_IR(object):
 
         exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] == NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]
 
-        try:
-            exptime = exptime_table.TIME.values[0]  # 0 as we want a single value not a single value in an array
-        except IndexError:  # empty list
+        if exptime_table.empty:
             raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
                                          "".format(SAMPSEQ, NSAMP, SUBARRAY))
-
-        return exptime * u.s
+        else:
+            exptime = exptime_table.TIME.values[0]
+            return exptime * u.s
 
     def gen_pixel_array(self, light_sensitive=True):
         """ returns the pixel array as an array of zeroes
@@ -69,6 +68,27 @@ class WFC3_IR(object):
         full_array[5:-5, 5:-5] = pixel_array
 
         return full_array
+
+    def get_sample_times(self, NSAMP, SUBARRAY, SAMPSEQ):
+        """ Retrieves the time of each sample up the ramp for the mode given
+        :param NSAMP:
+        :param SUBARRAY:
+        :param SAMPSEQ:
+        :return:
+        """
+
+        if not 1 <= NSAMP <= 15:
+            raise WFC3SimSampleModeError("NSAMP must be an integer between 1 and 15, got {}".format(NSAMP))
+
+        mt = self.modes_table
+
+        exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] <= NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]['TIME']
+
+        if exptime_table.empty:
+            raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
+                                         "".format(SAMPSEQ, NSAMP, SUBARRAY))
+
+        return exptime_table
 
     def _get_modes(self):
         """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
