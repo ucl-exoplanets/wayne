@@ -3,7 +3,7 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.2.150502b'
+__version__ = '0.2.150502c'
 
 # package imports
 import wfc3simlog

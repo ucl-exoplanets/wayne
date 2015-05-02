@@ -157,7 +157,7 @@ class Observation(object):
         exp_gen = ExposureGenerator(self.detector, self.grism, self.NSAMP, self.SAMPSEQ, self.SUBARRAY,
                                     self.planet, filename, expstart)
 
-        _, sample_mid_points, sample_durations = exp_gen._gen_scanning_sample_times(self.sample_rate)
+        _, sample_mid_points, sample_durations, read_index = exp_gen._gen_scanning_sample_times(self.sample_rate)
 
         time_array = (sample_mid_points + expstart).to(u.day)
 
@@ -166,7 +166,7 @@ class Observation(object):
 
         exp_frame = exp_gen.scanning_frame(self.x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
-                                           sample_durations)
+                                           sample_durations, read_index)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -223,7 +223,7 @@ class ExposureGenerator(object):
         }
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
-                       sample_mid_points=None, sample_durations=None):
+                       sample_mid_points=None, sample_durations=None, read_index=None):
         """
 
         Note, i need to seperate this into a user friendly version and a version to use with observation as i am already
@@ -238,6 +238,8 @@ class ExposureGenerator(object):
         :param sample_rate: how often to generate a staring frame, shorter times improves accuracy at the expense of
          runtime
 
+        :param read_index: list of the sample indexes that are the final sample for that read
+
         :return: array with the exposure
         """
 
@@ -247,8 +249,8 @@ class ExposureGenerator(object):
         sample_rate = sample_rate.to(u.ms)
 
         # user friendly, else defined by observation class which uses theese values for lightcurve generation
-        if sample_mid_points is None and sample_durations is None:
-            _, sample_mid_points, sample_durations = self._gen_scanning_sample_times(sample_rate)
+        if sample_mid_points is None and sample_durations is None and read_index is None:
+            _, sample_mid_points, sample_durations, read_index = self._gen_scanning_sample_times(sample_rate)
 
         self.exp_info.update({
             'SCAN': True,
@@ -267,6 +269,9 @@ class ExposureGenerator(object):
         # Exposure class which holds the result
         self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
+        # Zero Read
+        self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
+
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
         pixel_array = self.detector.gen_pixel_array(light_sensitive=True)  # misses 5 pixel border
@@ -284,16 +289,10 @@ class ExposureGenerator(object):
             # generate sample frame
             pixel_array = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max)
 
-        logger.debug("Frame generated, adding bias pixels, original size={}, min={}, max={}".format(
-            pixel_array.shape, pixel_array.min(), pixel_array.max()
-        ))
+            if i in read_index:  # trigger a read including final read
+                self.exposure.add_read(self.detector.add_bias_pixels(pixel_array))
 
-        pixel_array = self.detector.add_bias_pixels(pixel_array)
-
-        logger.debug("Bias pixels added, now size={}, min={}, max={}".format(
-            pixel_array.shape, pixel_array.min(), pixel_array.max()
-        ))
-        self.exposure.add_read(pixel_array)
+        assert(len(self.exposure.reads) == self.NSAMP + 1)  # check to make sure all reads were made
 
         end_time = time.clock()
 
@@ -321,6 +320,9 @@ class ExposureGenerator(object):
         sample_rate = sample_rate.to(u.ms)
         read_times = self.read_times.to(u.ms)
 
+        read_index = []  # at what sample number to perform a read (after generation)
+        i = -1  # counting reads to create the read index, -1 as first sample is index 0 not 1
+
         sample_starts = []
         previous_read = 0.
         for read_time in read_times:
@@ -328,6 +330,8 @@ class ExposureGenerator(object):
             starts = np.arange(previous_read, read_time, sample_rate.value)
             sample_starts.append(starts)
 
+            i += len(starts)
+            read_index.append(i)
             previous_read = read_time
 
         sample_starts = np.concatenate(sample_starts)
@@ -342,7 +346,7 @@ class ExposureGenerator(object):
         sample_durations *= u.ms
         sample_mid_points *= u.ms
 
-        return sample_starts, sample_mid_points, sample_durations
+        return sample_starts, sample_mid_points, sample_durations, read_index
 
     def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=4):
         """ constructs a staring mode frame, given a source position and spectrum scaling

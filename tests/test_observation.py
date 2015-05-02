@@ -35,7 +35,7 @@ class TestExposureGenerator(unittest.TestCase):
 
     def test__gen_scanning_sample_times_works(self):
         expgen = observation.ExposureGenerator(self.det, self.g141, 3, 'SPARS10', 1024, self.planet)
-        sample_starts, sample_mid_points, sample_durations = expgen._gen_scanning_sample_times(1 * u.s)
+        sample_starts, sample_mid_points, sample_durations, s_read_index = expgen._gen_scanning_sample_times(1 * u.s)
 
         # read times 2.932, 12.933, 22.934
         # this code has been manually reviewed to produce the desired result
@@ -49,6 +49,10 @@ class TestExposureGenerator(unittest.TestCase):
 
         mid_points = starts + (durations/2)
 
+        read_index = [2, 13, 24]
+
         numpy.testing.assert_array_almost_equal(starts, sample_starts.to(u.s).value, 3)
         numpy.testing.assert_array_almost_equal(durations, sample_durations.to(u.s).value, 3)
         numpy.testing.assert_array_almost_equal(mid_points, sample_mid_points.to(u.s).value, 3)
+
+        numpy.testing.assert_array_equal(read_index, s_read_index)
