@@ -302,22 +302,45 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_scanning_sample_times(self, sample_rate):
-        """ Generates several times to do with samples. In future durations could be changed here to account for
-        uneven scans. This function is separated so the observation class can use it.
+        """ Generates several times to do with samples. Including samples up the ramp. exposures are sampled at the
+        sample rate until a read where the duration is reduced to the remainder. Sampling continues at the rate after
+        this read for the next one.
+
+        Note this can result in a situation where the final read is extremely short compared to the sample time
+
+        In future durations could be changed here to account for uneven scans. This function is separated so the
+        observation class can use it.
 
 
-        :param sample_rate:
+        :param sample_rate: how often to sample (in time units)
+        :type sample_rate: astropy.uints.core.UnitBase)
+
         :return:
         """
 
         sample_rate = sample_rate.to(u.ms)
-        exptime = self.exptime.to(u.ms)
+        read_times = self.read_times.to(u.ms)
 
-        sample_starts = np.arange(0, exptime.value, sample_rate.value) * u.ms
-        sample_durations = np.ones(len(sample_starts)) * sample_rate
-        sample_durations[-1] = exptime - sample_starts[-1]
+        sample_starts = []
+        previous_read = 0.
+        for read_time in read_times:
+            read_time = read_time.value
+            starts = np.arange(previous_read, read_time, sample_rate.value)
+            sample_starts.append(starts)
 
-        sample_mid_points = (sample_starts + (sample_durations/2.)).to(u.ms)
+            previous_read = read_time
+
+        sample_starts = np.concatenate(sample_starts)
+
+        _ends = np.roll(sample_starts, -1)
+        _ends[-1] = read_times[-1].value
+
+        sample_durations = _ends - sample_starts
+        sample_mid_points = sample_starts + (sample_durations/2)
+
+        sample_starts *= u.ms
+        sample_durations *= u.ms
+        sample_mid_points *= u.ms
 
         return sample_starts, sample_mid_points, sample_durations
 
