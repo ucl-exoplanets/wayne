@@ -202,6 +202,9 @@ class ExposureGenerator(object):
         # total exptime
         self.exptime = self.detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
 
+        # samples up the ramp
+        self.read_times = self.detector.get_read_times(NSAMP, SUBARRAY, SAMPSEQ)
+
         self.exp_info = {
             # these should be generated mostly in observation class and defaulted here / for staring also
             'filename': filename,
@@ -346,20 +349,20 @@ class ExposureGenerator(object):
         flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal)
         wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
 
-        pixel_array = self.detector.gen_pixel_array(light_sensitive=True)
-        pixel_array = self._gen_staring_frame(x_ref, y_ref, wl, flux, pixel_array, self.exptime, psf_max)
+        # Zero Read
+        self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
 
-        logger.debug("Frame generated, adding bias pixels, original size={}, min={}, max={}".format(
-            pixel_array.shape, pixel_array.min(), pixel_array.max()
-        ))
+        # Generate first sample up the ramp
+        first_read_time = self.read_times[0]
+        first_read_array = self.detector.gen_pixel_array(light_sensitive=True)
+        first_read_array = self._gen_staring_frame(x_ref, y_ref, wl, flux, first_read_array, first_read_time, psf_max)
+        self.exposure.add_read(self.detector.add_bias_pixels(first_read_array))
 
-        pixel_array = self.detector.add_bias_pixels(pixel_array)
+        # generate subsequent reads by scaling the first read, starting with the second (1)
+        for read_time in self.read_times[1:]:
+            read_array = first_read_array * (read_time/first_read_time)
+            self.exposure.add_read(self.detector.add_bias_pixels(read_array))
 
-        logger.debug("Bias pixels added, now size={}, min={}, max={}".format(
-            pixel_array.shape, pixel_array.min(), pixel_array.max()
-        ))
-
-        self.exposure.add_read(pixel_array)
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime, psf_max):

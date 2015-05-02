@@ -31,9 +31,6 @@ class Exposure(object):
 
         self.reads = []  # read 0 ->
 
-        # Add a zero read whilst we dont have one
-        self.add_read(np.zeros((self.subarray, self.subarray)))
-
     def add_read(self, data):
         """ adds the read to the exposure, will probably need some header information to.
 
@@ -41,6 +38,7 @@ class Exposure(object):
         :return:
         """
 
+        data = self.crop_subarrray(data, self.subarray)
         self.reads.append(data)
 
     def generate_fits(self, out_dir='', filename=None):
@@ -52,6 +50,8 @@ class Exposure(object):
         :return:
         """
 
+        assert(len(self.reads) == (self.exp_info['NSAMP'] + 1))
+
         if filename is None:
             filename = self.exp_info['filename']
 
@@ -62,8 +62,6 @@ class Exposure(object):
         hdulist = fits.HDUList([science_header])
 
         for i, data in enumerate(reversed(self.reads)):
-
-            data = self.crop_subarrray(data, self.exp_info['SUBARRAY'])
 
             # data = np.flipud(data)  # hst fits files are the other way round
 

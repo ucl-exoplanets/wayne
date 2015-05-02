@@ -69,7 +69,7 @@ class WFC3_IR(object):
 
         return full_array
 
-    def get_sample_times(self, NSAMP, SUBARRAY, SAMPSEQ):
+    def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
         :param NSAMP:
         :param SUBARRAY:
@@ -88,7 +88,7 @@ class WFC3_IR(object):
             raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
                                          "".format(SAMPSEQ, NSAMP, SUBARRAY))
 
-        return exptime_table
+        return np.array(exptime_table) * u.s
 
     def _get_modes(self):
         """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type

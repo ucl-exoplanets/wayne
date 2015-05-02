@@ -72,38 +72,38 @@ class Test_Detector(unittest.TestCase):
     def test_get_sample_times_works(self):
         det = detector.WFC3_IR()
 
-        exptimes = det.get_sample_times(NSAMP=5, SAMPSEQ='RAPID', SUBARRAY=1024)
-        answer = np.array([2.932, 5.865, 8.797, 11.729, 14.661])
+        exptimes = det.get_read_times(NSAMP=5, SAMPSEQ='RAPID', SUBARRAY=1024)
+        answer = np.array([2.932, 5.865, 8.797, 11.729, 14.661]) * u.s
         numpy.testing.assert_array_almost_equal(exptimes, answer, 3)
 
-        exptimes = det.get_sample_times(NSAMP=3, SAMPSEQ='SPARS10', SUBARRAY=256)
-        answer = np.array([0.278, 7.624, 14.971])
+        exptimes = det.get_read_times(NSAMP=3, SAMPSEQ='SPARS10', SUBARRAY=256)
+        answer = np.array([0.278, 7.624, 14.971]) * u.s
         numpy.testing.assert_array_almost_equal(exptimes, answer, 3)
 
     def test_get_sample_times_raises_WFC3SimSampleModeError_if_invalid_NSAMP(self):
         det = detector.WFC3_IR()
 
         with self.assertRaises(detector.WFC3SimSampleModeError):
-            det.get_sample_times(NSAMP=16, SAMPSEQ='RAPID', SUBARRAY=1024)
+            det.get_read_times(NSAMP=16, SAMPSEQ='RAPID', SUBARRAY=1024)
 
         with self.assertRaises(detector.WFC3SimSampleModeError):
-            det.get_sample_times(NSAMP=0, SAMPSEQ='RAPID', SUBARRAY=1024)
+            det.get_read_times(NSAMP=0, SAMPSEQ='RAPID', SUBARRAY=1024)
 
     def test_get_sample_times_raises_WFC3SimSampleModeError_if_invalid_SAMPSEQ(self):
         det = detector.WFC3_IR()
 
         with self.assertRaises(detector.WFC3SimSampleModeError):
-            det.get_sample_times(NSAMP=15, SAMPSEQ='WRONG', SUBARRAY=1024)
+            det.get_read_times(NSAMP=15, SAMPSEQ='WRONG', SUBARRAY=1024)
 
         with self.assertRaises(detector.WFC3SimSampleModeError):
             # 128 with SPARS25 not permitted
-            det.get_sample_times(NSAMP=15, SAMPSEQ='SPARS25', SUBARRAY=128)
+            det.get_read_times(NSAMP=15, SAMPSEQ='SPARS25', SUBARRAY=128)
 
     def test_get_sample_times_raises_WFC3SimSampleModeError_if_invalid_SUBARRAY(self):
         det = detector.WFC3_IR()
 
         with self.assertRaises(detector.WFC3SimSampleModeError):
-            det.get_sample_times(NSAMP=15, SAMPSEQ='RAPID', SUBARRAY=1023)
+            det.get_read_times(NSAMP=15, SAMPSEQ='RAPID', SUBARRAY=1023)
 
         with self.assertRaises(detector.WFC3SimSampleModeError):
-            det.get_sample_times(NSAMP=15, SAMPSEQ='RAPID', SUBARRAY=0)
+            det.get_read_times(NSAMP=15, SAMPSEQ='RAPID', SUBARRAY=0)
