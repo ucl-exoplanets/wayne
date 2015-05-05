@@ -1,4 +1,4 @@
-""" Holds any run paramters and in future will be able to load new ones from a par file
+""" Holds any run parameters and in future will be able to load new ones from a par file
 """
 
 import os.path

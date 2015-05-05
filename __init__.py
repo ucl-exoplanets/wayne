@@ -3,16 +3,7 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.2.150502c'
-
-# package imports
-import wfc3simlog
-import grism
-import detector
-import params
-import tools
-import observation
-import exposure
+__version__ = '0.2a.150505a'
 
 # Dependencies with settings
 import matplotlib.pyplot as plt

@@ -4,7 +4,6 @@ to construct the output along with certain visualisation methods.
 
 import datetime
 import os.path
-import numpy as np
 
 import astropy.io.fits as fits
 import astropy.units as u

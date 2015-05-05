@@ -1,10 +1,11 @@
 """ The detector class should map any fields from the telescope to a pixel map on the detector.
 """
 
+import os.path
+
 import numpy as np
 from astropy import units as u
 import pandas as pd
-import os.path
 
 import params
 

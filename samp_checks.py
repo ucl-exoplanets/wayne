@@ -3,8 +3,6 @@
 
 # We want to see how changing the sampling effects the generated exposure.
 
-from multiprocessing import Pool
-
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.analytic_functions import blackbody_lambda
@@ -15,6 +13,7 @@ import observation
 import detector
 import grism
 import tools
+
 
 plt.style.use('ggplot')
 

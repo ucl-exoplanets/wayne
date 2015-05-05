@@ -6,7 +6,6 @@ then maps the field to pixels.
 import os.path
 
 import numpy as np
-
 from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits

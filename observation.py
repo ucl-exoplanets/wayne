@@ -1,4 +1,5 @@
-""" Observation combines a spectrum, grism + detector combo and other observables to construct an image
+""" This module brings the other modules together to construct frames and generate a visits worth of frames
+(Observation). ExposureGenerator combines a spectrum, grism + detector combo and other observables to construct an image
 """
 
 import time
@@ -20,11 +21,50 @@ import exposure
 
 
 class Observation(object):
-    """ Builds a full observation, of separate orbits
-    """
 
     def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
                  planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir=''):
+        """ Builds a full observation running the visit planner to get exposure times, generates lightcurves for each
+        wavelength element and sample time and then runs the exposure generator for each frame.
+
+        :param planet: An ExoData type planet object your observing (holds observables like Rp, Rs, i, e, etc
+        :type: exodata.astroclasses.Planet
+        :param start_JD: The JD the entire visit should start (without overheads)
+        :type: float
+        :param num_orbits: number of orbits to generate for
+        :type: int
+        :param detector: The detector to use
+        :type: detector.WFC3_IR
+        :param grism: The grism to use
+        :type: grism.grism
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type: int
+        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+        :type SAMPSEQ: str
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+        :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type stellar_flux: astropy.units.quantity.Quantity
+        :param planet_spectrum: array of the transit depth for the planet spectrum
+        :type planet_spectrum: numpy.ndarray
+        :param sample_rate: How often to sample the exposure (time units)
+        :type sample_rate: astropy.units.quantity.Quantity
+        :param x_ref: pixel in x axis the reference should be located
+        :type x_ref: int
+        :param y_ref: pixel in y axis the reference should be located
+        :type y_ref: int
+        :param scan_speed: rate of scan in pixels/second
+        :type scan_speed: astropy.units.quantity.Quantity
+        :param psf_max: how many pixels the psf tails span, 0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        :param outdir: location on disk to save the output fits files to. Must exist.
+        :type outdir: str
+
+        :return: Nothing, output is saved to outdir
+        """
         #  initialise all parameters here for now. There could be many options entered through a
         #  Parameter file but this could be done with an interface.
         #  mode handles exp time (NSAMP, SAMPSEQ, SUBARRAY)
@@ -73,6 +113,17 @@ class Observation(object):
         logger.info("Each exposure will have a expsoure time of {}".format(self.exptime))
 
     def generate_lightcurves(self, time_array, depth=False):
+        """ Generates lightcurves samples a the time array using pylightcurve. orbital parameters are pulled from the
+        planet object given in intialisation
+
+        :param time_array: list of times (JD) to sample at
+        :type time_array: numpy.ndarray
+        :param depth: a signle depth or array of depths to generate for
+        :type depth: float or numpy.ndarray
+
+        :return: models, a 2d array containing a lightcurve per depth, sampled at timearray
+        :rtype: numpy.ndarray
+        """
 
         # TODO quick check if out of transit, in that case ones!
 
@@ -109,7 +160,8 @@ class Observation(object):
         return models
 
     def show_lightcurve(self):
-        """ Shows the white lightcurve of the planned observation
+        """ Plots the white lightcurve of the planned observation
+
         :return:
         """
 
@@ -117,14 +169,19 @@ class Observation(object):
 
         lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
 
-        plt.figure()
+        fig = plt.figure()
         plt.scatter(time_array, lc_model)
         plt.xlabel("Time (JD)")
         plt.ylabel("Transit Depth")
         plt.title("Normalised White Light Curve of observation")
 
-    def run_observation(self):
+        return fig
 
+    def run_observation(self):
+        """ Runs the observation by calling self._generate_exposure for each exposure start time
+        """
+
+        # multicore doesnt work, i suspect because it needs to pickle this entire class
         # pool = Pool(8)
         # pool.map(gen_frame, to_run)
 
@@ -142,14 +199,19 @@ class Observation(object):
 
         for i, start_time in enumerate(self.exp_start_times):
             filenum = i+1
-            self._generate_exposure(filenum, start_time)
+            self._generate_exposure(start_time, filenum)
 
             progress.increment()
             progress.print_status_line('Generating frames {}/{} done'.format(filenum, num_frames))
 
-    def _generate_exposure(self, number, expstart):
-        """ Generates an exposure, used in a loop
-        :return:
+    def _generate_exposure(self, expstart, number):
+        """ Generates the exposure at expstart, number is the filenumber of the exposure
+
+        :param number: file number to save the exposure as
+        :param expstart: JD of the start of the exposure
+
+        :return: exposure frame
+        :rtype: exposure.Exposure
         """
 
         filename = '{:04d}_raw.fits'.format(number)
