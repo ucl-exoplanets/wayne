@@ -11,6 +11,7 @@ from astropy import units as u
 from astropy import constants as const
 import pylightcurve.fcmodel as pylc
 import matplotlib.pylab as plt
+import scipy.stats
 
 from progress import Progress
 
@@ -563,31 +564,47 @@ class ExposureGenerator(object):
 
         # TODO QE scaling, done in throughput?
 
+
+        # Integrate gaussian per wl - vectorised
+        # ---
         # the len limits are the same per trace, it is the values in pixel units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
         psf_len_limits = self._get_psf_len_limits(trace, psf_max)
-
         counts_tp = counts_tp.to(u.ph).value  # remove the unit now we have "counts" so flux_to_psf works
+
+        psf_std = self.grism.wl_to_psf_std(wl)
+        psf_means = y_pos
+
+        # len limits are at 0, we need to shift them up to floor(y_ref). We do this because we are integrating
+        # over WHOLE pixels, The psf is centered on y_ref which handles intrapixel y_ref shifts.
+        # to integrate we need the (limits - mean)/std so we have (psf_len_limits + y_ - y)/std
+        y_pos_norm = (np.floor(y_pos) - psf_means)/psf_std
+
+        # create a 2d array of the len limits per wl in rows i.e [[-4, -3 ... 3, 4],...[100, 101, ... 105, 106]]
+        psf_y_limits = np.ones((len(y_pos_norm), len(psf_len_limits)))
+        psf_y_limits = psf_y_limits * psf_len_limits
+
+        # floored ypos value as we want pixel boundries (then adjust psf mean to y_ref)
+        # here we transpose y from 1xn to nx1 (need to reshape first to add dimension)
+        y_pos_vector_ = y_pos_norm.reshape(1, len(y_pos_norm)).T
+        psf_y_limits = psf_y_limits * y_pos_vector_
+
+        # now we just need to integrate between the limits on each row of this vector. scipy.stats.norm.cdf will return
+        # values for 2d vectors.
+        # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
+        # integration to go from 1.8 to 10 or 1.9 to 10.9
+        binned_fluxes = self._integrate_2d_limits_array(psf_y_limits, counts_tp)
+
         # each resolution element (wl, counts_tp)
         for i in xrange(len(wl)):
-            wl_i = wl[i]
-            count_i = counts_tp[i]
-
             x = x_pos[i]
             y = y_pos[i]
             # When we only want whole pixels, note we go 5 pixels each way from the round down.
-            x_ = int(np.floor(x))  # Int technically floors, but towards zero although we shouldnt ever be negative
+            x_ = int(np.floor(x))  # Int technically floors, but towards zero, although we shouldnt ever be negative
             y_ = int(np.floor(y))
 
-            psf = self.grism.flux_to_psf(wl_i, count_i, y)
-
-            # len limits are at 0, we need to shift them up to floor(y_ref). We do this because we are integrating
-            # over WHOLE pixels, The psf is centered on y_ref which handles intrapixel y_ref shifts.
-            psf_y_lim = psf_len_limits + y_
-
-            # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
-            # integration to go from 1.8 to 10 or 1.9 to 10.9
-            flux_psf = psf.integrate(psf_y_lim)
+            # retrieve counts from vectorised integration
+            flux_psf = binned_fluxes[i]
 
             # Now we are checking if the widths overlap pixels, this is important at low R. Currently we assume the line
             # is still straight, calculate the proportion in the left and right pixels based on the y midpoint and
@@ -608,6 +625,18 @@ class ExposureGenerator(object):
                 pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
         return pixel_array
+
+    def _integrate_2d_limits_array(self, limit_array, counts):
+        """ Integrates the 2d array between limits. return array will have 1 less column
+        :return:
+        """
+
+        cdf = scipy.stats.norm.cdf(limit_array)
+        area = (np.roll(cdf, -1, axis=1) - cdf)[:,:-1]  # x+1 - x, [-1] is x_0 - x_n and unwanted
+
+        binned_flux = area * counts.reshape(1, len(counts)).T
+
+        return binned_flux
 
     def _overlap_detection(self, trace, wl, psf_max):
         """ Overlap detection see if element is split between columns. it does this by comparing the end points of the

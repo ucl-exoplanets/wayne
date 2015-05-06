@@ -10,7 +10,7 @@ from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
-from models import GaussianModel1D
+from models import GaussianModel1D, _gauss_StDev_to_FWHM
 from detector import WFC3_IR
 import params
 
@@ -99,6 +99,23 @@ class Grism(object):
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
         return gaussian_model
+
+    def wl_to_psf_std(self, wavelengths):
+        """ This is an optimised function to return the standard deviations of the gaussians at each wavelength for
+        each flux. looks up FWHM then converts to stddev.
+
+        :param wavelengths:
+
+        :return: standard deviations of the gaussian for each lambda
+        """
+
+        FWHM = np.interp(wavelengths.to(u.micron).value, self.psf_wavelength.to(u.micron).value,
+                         self.psf_fwhm, left=0., right=0.)
+
+        std = FWHM / _gauss_StDev_to_FWHM
+
+        return std
+
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
         """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
