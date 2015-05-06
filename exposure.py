@@ -4,7 +4,6 @@ to construct the output along with certain visualisation methods.
 
 import datetime
 import os.path
-import numpy as np
 
 import astropy.io.fits as fits
 import astropy.units as u
@@ -13,11 +12,14 @@ import astropy.units as u
 class Exposure(object):
 
     def __init__(self, detector=None, filter=None, planet=None, exp_info=None):
-        """ Sets up the exposure class. We probably need to give the class some information
+        """ Sets up the exposure class which holds the exposure, its reads, and generates the headers and fits files
 
         :param exp_info: a dictionary with most of the information about the exposure. In future could be replaced by
         an exp plan class, which is used for visiting planning
-        :type detector: detector.WFC3_IR
+        :type exp_info: dict
+        :param detector: initialised detector class
+        :type detector: detector.WFC3_I
+        :param planet: and exodata planet object being observed
         :type planet: exodata.astroclasses.Planet
         :return:
         """
@@ -32,9 +34,12 @@ class Exposure(object):
         self.reads = []  # read 0 ->
 
     def add_read(self, data):
-        """ adds the read to the exposure, will probably need some header information to.
+        """ Adds the read to the exposure, will probably need some header information to in future.
 
-        :param data:
+        Reads should be added in time order from the zero read to the final read
+
+        :param data: an array to add
+        :type data: numpy.ndarray
         :return:
         """
 
@@ -42,10 +47,12 @@ class Exposure(object):
         self.reads.append(data)
 
     def generate_fits(self, out_dir='', filename=None):
-        """ Saves the exposure as a fits file.
+        """ Saves the exposure as a HST style fits file.
 
-        :param fileObj: isntead of giving a dir and filename, give an open file object (used currently for testing and
-         tempfiles)
+        :param out_dir: director to save output
+        :type out_dir: str
+        :param filename: filename to save the fits
+        :type filename: str
 
         :return:
         """
@@ -100,6 +107,16 @@ class Exposure(object):
         hdulist.writeto(out_path)
 
     def crop_subarrray(self, data, subarray):
+        """ Takes a full frame array and crops it down to the subarray size.
+
+        :param data: data array
+        :type data: numpy.ndarray
+        :param subarray: subbarray mode (1024, 512, 256, 128, 64)
+        :type subarray: int
+
+        :return: cropped array
+        :rtype: numpy.ndarray
+        """
 
         i_lower = (1024-subarray)/2
         i_upper = i_lower + subarray
@@ -107,8 +124,10 @@ class Exposure(object):
         return data[i_lower:i_upper, i_lower:i_upper]
 
     def generate_science_header(self):
-        """ Generates the primary header
-        :return:
+        """ Generates the primary science header to match HST plus some information about the simulation
+
+        :return: fits header
+        :rtype: astropy.io.fits.PrimaryHDU
         """
 
         exp_info = self.exp_info

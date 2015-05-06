@@ -9,7 +9,6 @@ from unittest_tools import assertArrayAlmostEqual
 
 
 class Test_Grism(unittest.TestCase):
-
     def setUp(self):
         self.g141_grism = grism.Grism()
 
@@ -34,7 +33,6 @@ class Test_Grism(unittest.TestCase):
         self.assertAlmostEqual(psf2.stddev, 0.5177, 4)
 
     def test_flux_to_psf_between_sample_points_interpolation(self):
-
         psf1 = self.g141_grism.flux_to_psf(1.15 * u.micron, 1.)
         self.assertAlmostEqual(psf1.flux, 1., 9)
         self.assertAlmostEqual(psf1.amplitude, 0.9125, 4)
@@ -55,8 +53,8 @@ class Test_Grism(unittest.TestCase):
     # There is no code to stop this, but perhaps in future there should be
     # Going beyond the detector in ref or normal still gives a value as the calculations are polynomial based
     # def test_get_pixel_wl_beyond_limits(self):
-    #     self.assertAlmostEqual(self.g141_grism.get_pixel_wl(2000, 2000, 100, 50), 11218.8, 1)
-    #     self.assertAlmostEqual(self.g141_grism.get_pixel_wl(60, 50, 2000, 2000), 10770.4, 1)
+    # self.assertAlmostEqual(self.g141_grism.get_pixel_wl(2000, 2000, 100, 50), 11218.8, 1)
+    # self.assertAlmostEqual(self.g141_grism.get_pixel_wl(60, 50, 2000, 2000), 10770.4, 1)
 
     def test_get_pixel_wl_per_row(self):
         wl = self.g141_grism.get_pixel_wl_per_row(50, 50)
@@ -89,7 +87,6 @@ class Test_Grism(unittest.TestCase):
 
 
 class Test_SpectrumTrace(unittest.TestCase):
-
     def test__init__(self):
         grism.SpectrumTrace(50, 50)  # pass if no exceptions
 
@@ -99,10 +96,13 @@ class Test_SpectrumTrace(unittest.TestCase):
 
         # This step is normally done at initialisation
         trace_50_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 50))
-        assertArrayAlmostEqual(trace_50_50, np.array([9.94400817e-03, 1.87673580e+00, 4.52664778e+01, 8.95898963e+03]), 4)
+        assertArrayAlmostEqual(trace_50_50,
+                               np.array([9.94400817e-03, 1.87673580e+00, 4.52664778e+01, 8.95898963e+03]), 4)
 
         trace_100_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(100, 50))
-        assertArrayAlmostEqual(trace_100_50, np.array([9.5914e-03,   1.8813e+00,   4.5278e+01,   8.9637e+03]), 4)
+        assertArrayAlmostEqual(trace_100_50,
+                               np.array([9.5914e-03, 1.8813e+00, 4.5278e+01, 8.9637e+03]), 4)
 
         trace_50_100 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 100))
-        assertArrayAlmostEqual(trace_50_100, np.array([9.85778097e-03, 1.78010580e+00, 4.53781960e+01, 8.95898963e+03]), 4)
+        assertArrayAlmostEqual(trace_50_100,
+                               np.array([9.85778097e-03, 1.78010580e+00, 4.53781960e+01, 8.95898963e+03]), 4)

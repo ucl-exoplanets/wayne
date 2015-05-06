@@ -6,7 +6,6 @@ then maps the field to pixels.
 import os.path
 
 import numpy as np
-
 from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -21,13 +20,8 @@ import params
 class Grism(object):
     """ Handles a grism object and can be used to perform calculation on it such as the psf given a flux and wavelength
 
-    This class should not include observation data and instead be used to turn observational dat into observed. An
-    observation / combined detector grism class can do this. calling each component as its needed. You are not then doing
-
-    x = grism(observation, g141)
-    x.psf(wl)
-
-    but x.psf(wl, flux), psf should include all the factors, such as throughput
+    This class should not include observation data and instead be used to turn observational data into observed. An
+    observation / combined detector grism class can do this. calling each component as its needed.
     """
     def __init__(self):
         """ In future will take the vars that define a unique grism, for now this is kept WFC3 G141 specific, with all
@@ -82,10 +76,13 @@ class Grism(object):
         We assume the psf can be represented by a gaussian, this is true for WFC3 G141 (*WFC3 inst handbook (cycle 23)
          - sec 7.6.1 - page 140*).
 
-        :param wavelength: wavelength to sample (quantites unit length)
+        :param wavelength: wavelength to sample (unit length) singular
+        :type wavelength: astropy.units.quantity.Quantity
         :param flux: The flux at the wavelength (i.e the area under the gaussian)
+        :type flux: float
         :param y_pos: optionally set ypos. this means you can integrate over the same values as pixels set mean=2.1 and
           integrate from 2 to 3
+        :type y_pos: float
 
         :return:
         """

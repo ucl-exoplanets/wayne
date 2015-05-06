@@ -1,4 +1,5 @@
-""" Observation combines a spectrum, grism + detector combo and other observables to construct an image
+""" This module brings the other modules together to construct frames and generate a visits worth of frames
+(Observation). ExposureGenerator combines a spectrum, grism + detector combo and other observables to construct an image
 """
 
 import time
@@ -18,13 +19,54 @@ import grism
 import tools
 import exposure
 
+__all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
+
 
 class Observation(object):
-    """ Builds a full observation, of separate orbits
-    """
 
     def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
                  planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir=''):
+        """ Builds a full observation running the visit planner to get exposure times, generates lightcurves for each
+        wavelength element and sample time and then runs the exposure generator for each frame.
+
+        :param planet: An ExoData type planet object your observing (holds observables like Rp, Rs, i, e, etc)
+        :type: exodata.astroclasses.Planet
+        :param start_JD: The JD the entire visit should start (without overheads)
+        :type: float
+        :param num_orbits: number of orbits to generate for
+        :type: int
+        :param detector: The detector to use
+        :type: detector.WFC3_IR
+        :param grism: The grism to use
+        :type: grism.grism
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type NSAMP: int
+        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+        :type SAMPSEQ: str
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+        :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type stellar_flux: astropy.units.quantity.Quantity
+        :param planet_spectrum: array of the transit depth for the planet spectrum
+        :type planet_spectrum: numpy.ndarray
+        :param sample_rate: How often to sample the exposure (time units)
+        :type sample_rate: astropy.units.quantity.Quantity
+        :param x_ref: pixel in x axis the reference should be located
+        :type x_ref: int
+        :param y_ref: pixel in y axis the reference should be located
+        :type y_ref: int
+        :param scan_speed: rate of scan in pixels/second
+        :type scan_speed: astropy.units.quantity.Quantity
+        :param psf_max: how many pixels the psf tails span, 0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        :param outdir: location on disk to save the output fits files to. Must exist.
+        :type outdir: str
+
+        :return: Nothing, output is saved to outdir
+        """
         #  initialise all parameters here for now. There could be many options entered through a
         #  Parameter file but this could be done with an interface.
         #  mode handles exp time (NSAMP, SAMPSEQ, SUBARRAY)
@@ -73,6 +115,17 @@ class Observation(object):
         logger.info("Each exposure will have a expsoure time of {}".format(self.exptime))
 
     def generate_lightcurves(self, time_array, depth=False):
+        """ Generates lightcurves samples a the time array using pylightcurve. orbital parameters are pulled from the
+        planet object given in intialisation
+
+        :param time_array: list of times (JD) to sample at
+        :type time_array: numpy.ndarray
+        :param depth: a signle depth or array of depths to generate for
+        :type depth: float or numpy.ndarray
+
+        :return: models, a 2d array containing a lightcurve per depth, sampled at timearray
+        :rtype: numpy.ndarray
+        """
 
         # TODO quick check if out of transit, in that case ones!
 
@@ -109,7 +162,8 @@ class Observation(object):
         return models
 
     def show_lightcurve(self):
-        """ Shows the white lightcurve of the planned observation
+        """ Plots the white lightcurve of the planned observation
+
         :return:
         """
 
@@ -117,14 +171,19 @@ class Observation(object):
 
         lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
 
-        plt.figure()
+        fig = plt.figure()
         plt.scatter(time_array, lc_model)
         plt.xlabel("Time (JD)")
         plt.ylabel("Transit Depth")
         plt.title("Normalised White Light Curve of observation")
 
-    def run_observation(self):
+        return fig
 
+    def run_observation(self):
+        """ Runs the observation by calling self._generate_exposure for each exposure start time
+        """
+
+        # multicore doesnt work, i suspect because it needs to pickle this entire class
         # pool = Pool(8)
         # pool.map(gen_frame, to_run)
 
@@ -142,14 +201,19 @@ class Observation(object):
 
         for i, start_time in enumerate(self.exp_start_times):
             filenum = i+1
-            self._generate_exposure(filenum, start_time)
+            self._generate_exposure(start_time, filenum)
 
             progress.increment()
             progress.print_status_line('Generating frames {}/{} done'.format(filenum, num_frames))
 
-    def _generate_exposure(self, number, expstart):
-        """ Generates an exposure, used in a loop
-        :return:
+    def _generate_exposure(self, expstart, number):
+        """ Generates the exposure at expstart, number is the filenumber of the exposure
+
+        :param number: file number to save the exposure as
+        :param expstart: JD of the start of the exposure
+
+        :return: exposure frame
+        :rtype: exposure.Exposure
         """
 
         filename = '{:04d}_raw.fits'.format(number)
@@ -174,20 +238,28 @@ class Observation(object):
 
 
 class ExposureGenerator(object):
-    """ Constructs exposures given a spectrum
-    """
 
     def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet, filename='0001_raw.fits',
                  start_JD=0*u.day):
-        """
+        """ Constructs exposures given a spectrum
 
         :param detector: detector class, i.e. WFC3_IR()
         :type detector: detector.WFC3_IR
         :param grism: grism class i.e. G141
         :type grism: grism.Grism
 
-        :param start_JD: start JD of the fits file, used in the fits saving
-        :return:
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type NSAMP: int
+        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+        :type SAMPSEQ: str
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+
+        :param planet: An ExoData type planet object your observing (holds observables like Rp, Rs, i, e, etc)
+        :type planet: exodata.astroclasses.Planet
+        :param filename: name of the generated file, given to the Exposure class (for fits header + saving)
+        :type filename: str
         """
 
         self.detector = detector
@@ -224,21 +296,34 @@ class ExposureGenerator(object):
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
                        sample_mid_points=None, sample_durations=None, read_index=None):
-        """
+        """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a version to use with observation as i am already
-        seeing clashes (aka sample times generation)
+        seeing clashes (aka sample times generation).
 
-        :param x_ref: star image x position on frame
-        :param y_ref: star image y position on frame
-        :param wl: wavelength of stellar flux AND planet signal (must be sampled identically)
-        :param stellar flux:
-        :param planet_signal: (units of transit depth)
-        :param scan_speed: (u.pixel/u.ms)
-        :param sample_rate: how often to generate a staring frame, shorter times improves accuracy at the expense of
-         runtime
+        :param x_ref: pixel in x axis the reference should be located
+        :type x_ref: int
+        :param y_ref: pixel in y axis the reference should be located
+        :type y_ref: int
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+                :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type stellar_flux: astropy.units.quantity.Quantity
+        :param planet_spectrum: array of the transit depth for the planet spectrum
+        :type planet_spectrum: numpy.ndarray
 
-        :param read_index: list of the sample indexes that are the final sample for that read
+        :param scan_speed: rate of scan in pixels/second
+        :type scan_speed: astropy.units.quantity.Quantity
+        :param sample_rate: How often to sample the exposure (time units)
+        :type sample_rate: astropy.units.quantity.Quantity
+        :param psf_max: how many pixels the psf tails span, 0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        :type psf_max: int
+
+        :param sample_mid_point: mid point of each sample, None to auto generate
+        :param sample_durations: duration of each sample, None to auto generate
+        :param read_index: list of the sample indexes that are the final sample for that read, None for auto
+        :type read_index: list
 
         :return: array with the exposure
         """
@@ -310,9 +395,8 @@ class ExposureGenerator(object):
         In future durations could be changed here to account for uneven scans. This function is separated so the
         observation class can use it.
 
-
         :param sample_rate: how often to sample (in time units)
-        :type sample_rate: astropy.uints.core.UnitBase)
+        :type sample_rate: astropy.units.quantity.Quantity)
 
         :return:
         """
@@ -349,16 +433,22 @@ class ExposureGenerator(object):
         return sample_starts, sample_mid_points, sample_durations, read_index
 
     def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=4):
-        """ constructs a staring mode frame, given a source position and spectrum scaling
+        """ Constructs a staring mode frame, given a source position and spectrum scaling
 
-        :param x_ref: star image x position on frame
-        :param y_ref: star image y position on frame
-        :param wl: wavelength of stellar flux AND planet signal (must be sampled identically)
-        :param stellar flux:
-        :param planet_signal: (units of transit depth)
-        :param psf_max: how many pixels either side of y_ref we want to go. Note if y_ref = 5.9 and psf_max=5 it would
-        be from 0 to 10. 0.9999999999999889% of flux between is between -4 and 4 of widest psf. Going one higher than
-        required is sensible for cases like above (5.9, 0 to 10) where one half is better represented
+        :param x_ref: pixel in x axis the reference should be located
+        :type x_ref: int
+        :param y_ref: pixel in y axis the reference should be located
+        :type y_ref: int
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+        :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type stellar_flux: astropy.units.quantity.Quantity
+        :param planet_spectrum: array of the transit depth for the planet spectrum
+        :type planet_spectrum: numpy.ndarray
+
+        :param psf_max: how many pixels the psf tails span, 0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        :type psf_max: int
 
         :return: array with the exposure
         """
@@ -473,9 +563,22 @@ class ExposureGenerator(object):
 
         return pixel_array
 
-    def _overlap_detection(self, trace, x_pos, wl, psf_max):
-        """ Overlap detection see if element is split between columns
-        :return:
+    def _overlap_detection(self, trace, wl, psf_max):
+        """ Overlap detection see if element is split between columns. it does this by comparing the end points of the
+        psf including the width of the bin.
+
+        Note: this function is not used anywhere yet as the code for handling these cases is not yet written. The
+        detected cases is much higher, especially with lower R inputs. It converges to the central width case at high R
+
+        :param trace: trace line
+        :type trace: grism.SpectrumTrace
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+        :param psf_max: how many pixels the psf tails span, 0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        :type psf_max: int
+
+        :return: nothing yet, dont know what i need until i have a solution!
         """
 
         #   Note: delta_lambda inefficient, also calculated in self._flux_to_counts
@@ -522,9 +625,13 @@ class ExposureGenerator(object):
         * $Q_\lambda T_\lambda$ is the fractional throughput, Q being instrument sensitivity and T the filter transmission
         * Spectral dispersion in $\overset{\circ}{A}$ / pixel
 
-        :param flux:
-        :param wl:
-        :return:
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+        :param flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type flux: astropy.units.quantity.Quantity
+
+        :return: photon counts (same size as flux) ph/s
+        :rtype: astropy.units.quantity.Quantity
         """
 
         A = self.detector.telescope_area
@@ -540,6 +647,19 @@ class ExposureGenerator(object):
         return counts
 
     def _get_psf_len_limits(self, trace, psf_max):
+        """ Obtains the limits of the psf per pixel. As the trace is slightly inclined the length per pixel is > 1
+        so we aren't integrating for y + 0 to y+1 but (for example) y+0 to y+1.007 to y+2.014. This function returns
+        theese limits from -psfmax to psfmax
+
+        :param trace: trace line
+        :type trace: grism.SpectrumTrace
+        :param psf_max: how many pixels the psf tails span, 0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        :type psf_max: int
+
+        :return: integration limits per pixel of the psf.
+        :rtype: numpy.ndarray
+        """
         # The spectral trace forms our wavelength calibration
         psf_pixel_len = trace.psf_length_per_pixel()  # line isnt vertical so the length is slightly more than 1
         psf_pixel_frac = (psf_pixel_len - 1)/2.  # extra bit either side of the line of length 1
@@ -555,14 +675,18 @@ class ExposureGenerator(object):
     def combine_planet_stellar_spectrum(self, stellar, planet):
         """ combines the stellar and planetary spectrum
 
-        varying depth is handled by generating lightcurves for each element, the planet spectrum afterall is just the
+        combined_flux = F_\star * (1-transit_depth)
+
+        Varying depth is handled by generating lightcurves for each element, the planet spectrum after all is just the
         transit depth at maximum for each element
 
-        :param stellar:
-        :param planet: units of transit depth
+        :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type stellar_flux: astropy.units.quantity.Quantity
+        :param planet_spectrum: array of the transit depth for the planet spectrum
+        :type planet_spectrum: numpy.ndarray
 
-        :return:
-        :rtype: np.ndarray
+        :return: combined flux
+        :rtype: astropy.units.quantity.Quantity
         """
 
         combined_flux = stellar * (1. - planet)
@@ -574,15 +698,50 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orb
                   hst_period=90*u.min, exp_overhead=1*u.min):
     """ Returns the start time of each exposure in minutes starting at 0. Useful for estimating buffer dumps etc.
 
-    Note, this is mainly used in testing, will probably be coupled with the lightcurve and added to observation class.
-    In doing so anything detector sepecific should go into the detector classes
+    Note: Currently does not include:
+    * spacecraft manuvers
+    * buffer dump times based on frame size + number
+    * variable final read times (subarray dependant)
+    * support for single / combined scan up / scan down modes
 
-    :param detector:
-    :param NSAMP:
-    :param SAMPSEQ:
-    :param SUBARRAY:
-    :param orbits:
-    :return:
+    :param detector: detector class, i.e. WFC3_IR()
+    :type detector: detector.WFC3_IR
+    :param grism: grism class i.e. G141
+    :type grism: grism.Grism
+
+    :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+    :type NSAMP: int
+    :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+    'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+    :type SAMPSEQ: str
+    :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+    :type SUBARRAY: int
+
+    :param num_orbits: number of orbits
+    :type num_orbits: int
+    :param time_per_orbit: Time target is in sight per orbit
+    :type time_per_orbit: astropy.units.quantity.Quantity
+    :param hst_period: How long it takes for HST to complete an orbit
+    :type: astropy.units.quantity.Quantity
+    :param exp_overhead: Overhead (downtime) per exposure. Can be varied to account for spacefract manuvers or one
+    direction scanning
+    :type exp_overhead: astropy.units.quantity.Quantity
+
+    :return: Dictionary containing information about the run
+    :rtype: dict
+
+    Output dictionary contains:
+
+    * 'exp_times': array of exposure start times
+    * 'NSAMP': number of samples
+    * 'SAMPSEQ': SAMPSEQ mode
+    * 'SUBARRAY': SUBARRAY mode
+    * 'num_exp': number of exposures in visit
+    * 'exptime': how long each exposure takes
+    * 'num_orbits': number of orbits specified
+    * 'exp_overhead': overhead per exposure
+    * 'time_per_orbit': Time target visible in single orbit
+    * 'hst_period': Orbital period of HST
     """
 
     # note this may need to be done in a slow loop as we have differing overheads, and buffer calcs

@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import numpy.testing
+
 from .. import models
 
 
