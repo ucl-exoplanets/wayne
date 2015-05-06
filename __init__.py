@@ -3,7 +3,11 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.2a.150505a'
+__version__ = '0.2a.150506a'
+__short_version__ = '0.2'
+__all__ = ('detector', 'exposure', 'grism', 'models', 'params', 'tools')
+
+import detector, exposure, grism, models, tools, params
 
 # Dependencies with settings
 import matplotlib.pyplot as plt

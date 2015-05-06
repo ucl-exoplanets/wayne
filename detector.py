@@ -11,8 +11,13 @@ import params
 
 
 class WFC3_IR(object):
+    """ Class containg the various methods and calibrations for the WFC3 IR detector
+    """
 
     def __init__(self):
+        """ Initialise the WFC3 IR class.
+        :return:
+        """
 
         # Start with a single 1024x1024 array, add complexity in when we need it.
         self._pixel_array = np.zeros((1024, 1024))
@@ -29,7 +34,17 @@ class WFC3_IR(object):
 
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
-        :return:
+
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type NSAMP: int
+        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+        :type SAMPSEQ: str
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+
+        :return: exposure time
+        :rtype: astropy.units.quantity.Quantity
         """
 
         mt = self.modes_table
@@ -44,11 +59,15 @@ class WFC3_IR(object):
             return exptime * u.s
 
     def gen_pixel_array(self, light_sensitive=True):
-        """ returns the pixel array as an array of zeroes
+        """ Returns the pixel array as an array of zeroes
 
-        this could return subbary types etc, but lets just keep it out of class for now
+        this could return subarray types etc, but lets just keep it out of class for now
 
         :param light_sensitive: only return the light sensitive parts (neglecting 5 pixel border)
+        :type light_sensitive: bool
+
+        :return: full frame array of zeroes (based on set subarray)
+        :rtype: numpy.ndarray
         """
 
         if light_sensitive:
@@ -62,7 +81,11 @@ class WFC3_IR(object):
 
         input must be a full frame (for now)
 
-        :return:
+        :param pixel_array: light sensitive pixel array
+        :type pixel_array: np.ndarray
+
+        :return: pixel array with bias pixel border h+10, w+10
+        :rtype: numpy.ndarray
         """
 
         full_array = np.zeros((1024, 1024))
@@ -72,10 +95,17 @@ class WFC3_IR(object):
 
     def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
-        :param NSAMP:
-        :param SUBARRAY:
-        :param SAMPSEQ:
-        :return:
+
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type NSAMP: int
+        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+        :type SAMPSEQ: str
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+
+        :return: array of read times for each sample up the ramp to NSAMP
+        :rtype: numpy.ndarray
         """
 
         if not 1 <= NSAMP <= 15:
@@ -92,8 +122,10 @@ class WFC3_IR(object):
         return np.array(exptime_table) * u.s
 
     def _get_modes(self):
-        """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type
-        :return:
+        """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type from data directory.
+
+        :return: modes table
+        :rtype: pandas.DataFrame
         """
 
         modes_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'), skiprows=1, dtype={
@@ -103,8 +135,17 @@ class WFC3_IR(object):
         return modes_table
 
     def num_exp_per_buffer(self, NSAMP, SUBARRAY):
-        """ max number of exposures that can be taken before buffer dumping
-        :return:
+        """ calculates the maximum number of exposures that can be taken before buffer dumping. It does this by checking
+        HST's limits on the number of frames (including sample up the ramps) of 304 and the size limit of 2 full frame
+        16 sample exposures.
+
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type NSAMP: int
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+
+        :return:  maximum number of exposures before a buffer dump
+        :rtype: int
         """
 
         hard_limit = 304  # headers pg 208

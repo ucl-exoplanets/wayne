@@ -17,12 +17,18 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         """ This improves on the standard gaussian in astropy by allowing you to define a gaussian by the integral and
         the FWHM in class. This results in somevar checking in initialisation.
 
-        :param amplitude:
-        :param mean:
-        :param stdev:
-        :param fwhm:
+        You must give the stddev OR FWHM, and the flux OR the amplitude
+
+        :param amplitude: amplitude (peak) of gaussian
+        :type amplitude: float
+        :param mean: mean value
+        :type mean: float
+        :param stdev: standard deviation
+        :type stddev: float
+        :param fwhm: full width at half maximum
+        :type fwhm: float
         :param flux: Integral of the gaussian, requires stdev or fwhm to be set
-        :return:
+        :type flux: float
         """
 
         if not((stddev is not None) ^ (fwhm is not None)):
@@ -65,6 +71,9 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
          $\text{flux} = \int_{-\infty}^\infty a e^{- { (x-b)^2 \over 2 c^2 } }\,dx=ac\cdot\sqrt{2\pi}.$
          $a = \frac{\text{flux}}{c \sqrt{2 \pi}}$
 
+        :param flux:
+        :type flux: float
+
         :param flux: integral of the gaussian
         """
 
@@ -76,7 +85,7 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
         This function uses the constant _gauss_StDev_to_FWHM defined at the top of this file
 
-        :return:
+        :return: fwhm
         """
 
         fwhm = self.stddev * _gauss_StDev_to_FWHM
@@ -90,6 +99,9 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
         This function uses the constant _gauss_FWHM_to_StDev defined at the top of this file
 
+
+        :param fwhm: Full width at half maximum
+        :type fwhm: float
         :return:
         """
 

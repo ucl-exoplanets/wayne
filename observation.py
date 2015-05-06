@@ -19,6 +19,8 @@ import grism
 import tools
 import exposure
 
+__all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
+
 
 class Observation(object):
 
