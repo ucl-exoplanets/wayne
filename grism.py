@@ -6,7 +6,6 @@ then maps the field to pixels.
 import os.path
 
 import numpy as np
-
 from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -21,13 +20,8 @@ import params
 class Grism(object):
     """ Handles a grism object and can be used to perform calculation on it such as the psf given a flux and wavelength
 
-    This class should not include observation data and instead be used to turn observational dat into observed. An
-    observation / combined detector grism class can do this. calling each component as its needed. You are not then doing
-
-    x = grism(observation, g141)
-    x.psf(wl)
-
-    but x.psf(wl, flux), psf should include all the factors, such as throughput
+    This class should not include observation data and instead be used to turn observational data into observed. An
+    observation / combined detector grism class can do this. calling each component as its needed.
     """
     def __init__(self):
         """ In future will take the vars that define a unique grism, for now this is kept WFC3 G141 specific, with all
@@ -44,6 +38,7 @@ class Grism(object):
         # Note that most det values are being pulled directly from the detector class. Given that these two classes are
         # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
         self.detector = WFC3_IR()
+        self.name = 'G141'
 
         # Grism Values
         # ------------
@@ -81,18 +76,25 @@ class Grism(object):
         We assume the psf can be represented by a gaussian, this is true for WFC3 G141 (*WFC3 inst handbook (cycle 23)
          - sec 7.6.1 - page 140*).
 
-        :param wavelength: wavelength to sample (quantites unit length)
+        :param wavelength: wavelength to sample (unit length) singular
+        :type wavelength: astropy.units.quantity.Quantity
         :param flux: The flux at the wavelength (i.e the area under the gaussian)
-        :param y_pos: optionally set ypos. this means you can itegrate over the same values as pixels set mean=2.1 and
+        :type flux: float
+        :param y_pos: optionally set ypos. this means you can integrate over the same values as pixels set mean=2.1 and
           integrate from 2 to 3
+        :type y_pos: float
 
         :return:
         """
 
+        if not isinstance(wavelength, u.Quantity):
+            raise TypeError("Wavelength must be given in units, got {}".format(type(wavelength)))
+
         mean = y_pos  # this is the center of the guassian
 
         # linear interpolation of the FWHM given in self._psf_file TODO quadratic interp / fit a function?
-        FWHM = np.interp(wavelength, self.psf_wavelength, self.psf_fwhm, left=0., right=0.)
+        FWHM = np.interp(wavelength.to(u.micron).value, self.psf_wavelength.to(u.micron).value,
+                         self.psf_fwhm, left=0., right=0.)
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
@@ -116,7 +118,7 @@ class Grism(object):
         # Wavelength Solution
         a_w = 4.51423e1 + (3.17239e-4)*x_ref + (2.17055e-3)*y_ref + (-7.42504e-7)*x_ref**2 + (3.48639e-7)*x_ref*y_ref \
                                                                                             + (3.09213e-7)*y_ref**2
-        b_w = 8.95431e3 + (9.35925e-2)*x_ref # + (0)*y_ref
+        b_w = 8.95431e3 + (9.35925e-2)*x_ref  # + (0)*y_ref
 
         return a_t, b_t, a_w, b_w
 
@@ -471,7 +473,7 @@ class SpectrumTrace(object):
         x = self.wl_to_x(wl)
         y = self.wl_to_y(wl)
 
-        m = -np.array(1.)/self.m_t
+        m = -np.array(1.)/self.m_t  # so m is an array
         c = y - m*x
 
         return x, y, m, c
@@ -508,7 +510,7 @@ class SpectrumTrace(object):
     def xangle(self):
         """ get the angle from the x axis to the trace line using triganometry.
 
-        :return:
+        :return: angle in radians
         """
 
         x = np.array([1., 2.])

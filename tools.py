@@ -7,14 +7,17 @@ import numpy as np
 def crop_spectrum(min_wl, max_wl, wl, flux):
     """ crops the spectrum strictly between the limits provided, only works if wl is ordered
 
-    :param min_wl:
-    :param max_wl:
-    :param wl: list of spectrum wl
+    :param min_wl: lower limit to crop
+    :type: numpy.ndarray
+    :param max_wl: upper limit to crop
+    :type: numpy.ndarray
+    :param wl: array of spectrum wl
     :type wl: numpy.ndarray
-    :param flux: list of spectrum flux
+    :param flux: array of spectrum flux
     :type flux: numpy.ndarray
+
     :return: wl, flux (cropped)
-    :rtype: numpy.ndarray
+    :rtype: (numpy.ndarray, numpy.ndarray)
     """
 
     wl_min_nearest = wl-min_wl
@@ -33,6 +36,12 @@ def bin_centers_to_edges(centers):
     """ Converts bin centers to edges, handling uneven bins. Bins are assumed to
     be between the midpoint of the surrounding centers, the edges are assumed to
     extend out by the midpoint to the next/previous point.
+
+    :param centers: array of bin centers
+    :type centers: numpy.ndarray
+
+    :return: bin edges
+    :rtype: numpy.ndarray
     """
 
     bin_range = (centers-np.roll(centers, 1))/2.
@@ -50,10 +59,13 @@ def bin_centers_to_edges(centers):
 
 
 def bin_centers_to_widths(centers):
-    """ Converts centers to the width per bin
+    """ Converts bin centers to the width per bin
 
-    :param bin_edges:
-    :return:
+    :param centers: array of bin centers
+    :type centers: numpy.ndarray
+
+    :return: bin widths
+    :rtype: numpy.ndarray
     """
 
     bin_range = (centers-np.roll(centers, 1))/2.
