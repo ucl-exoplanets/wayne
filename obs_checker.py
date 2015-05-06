@@ -48,7 +48,7 @@ psf_max = 4
 # exp_proof.generate_fits(outdir, '0001_proof.fits')
 
 obs = observation.Observation(planet, start_JD, num_orbits, det, g141, NSAMP, SAMPSEQ, SUBARRAY, wl_p, f_bb_tmp,
-                              depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir)
+                              depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir, scan_speed_var=0.6)
 print('exptime per frame = ', obs.exptime)
 obs.show_lightcurve()
 # plt.show()

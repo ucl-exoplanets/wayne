@@ -25,7 +25,7 @@ __all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
 class Observation(object):
 
     def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
-                 planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir=''):
+                 planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir='', scan_speed_var=False):
         """ Builds a full observation running the visit planner to get exposure times, generates lightcurves for each
         wavelength element and sample time and then runs the exposure generator for each frame.
 
@@ -102,6 +102,8 @@ class Observation(object):
         self.wl = wl
         self.stellar_flux = stellar_flux
         self.planet_spectrum = planet_spectrum
+
+        self.scan_speed_var = scan_speed_var
 
         star = self.planet.star
         self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
@@ -230,7 +232,7 @@ class Observation(object):
 
         exp_frame = exp_gen.scanning_frame(self.x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
-                                           sample_durations, read_index)
+                                           sample_durations, read_index, scan_speed_var=self.scan_speed_var)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -295,7 +297,7 @@ class ExposureGenerator(object):
         }
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
-                       sample_mid_points=None, sample_durations=None, read_index=None):
+                       sample_mid_points=None, sample_durations=None, read_index=None, scan_speed_var=False):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a version to use with observation as i am already
@@ -324,6 +326,8 @@ class ExposureGenerator(object):
         :param sample_durations: duration of each sample, None to auto generate
         :param read_index: list of the sample indexes that are the final sample for that read, None for auto
         :type read_index: list
+
+        :param scan_speed_var: The % of the std(flux_per_pixel) the scan speed variations cause. Basic implementation.
 
         :return: array with the exposure
         """
@@ -357,11 +361,16 @@ class ExposureGenerator(object):
         # Zero Read
         self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
 
+        # y_ref per sample
+        # Scan speed variations handled here
+        s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed, scan_speed_var)
+
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
         pixel_array = self.detector.gen_pixel_array(light_sensitive=True)  # misses 5 pixel border
         for i, s_mid in enumerate(sample_mid_points):
-            s_y_ref = y_ref + (s_mid * scan_speed).to(u.pixel).value
+
+            s_y_ref = s_y_refs[i]
             s_dur = sample_durations[i]
 
             if planet_signal.ndim == 1:
@@ -384,6 +393,43 @@ class ExposureGenerator(object):
         self.exp_info['sim_time'] = (end_time - start_time) * u.s
 
         return self.exposure
+
+    def _gen_sample_yref(self, y_ref, mid_points, scan_speed, scan_speed_var=False):
+        """ Generates y_ref for each sample, without scan speed varaitions this is just
+
+        y_ref + (midpoint * scan speed)
+
+        With scan speed variations each point is dependant on the last and we need a loop.
+
+        :param y_ref:
+        :param midpoints:
+        :param scan_speed:
+        :param scan_speed_var:
+        :return:
+        """
+
+        if not scan_speed_var:
+            s_y_refs = y_ref + (mid_points * scan_speed).to(u.pixel).value
+        else:
+
+            avg_scan_speed = scan_speed.to(u.pix/u.ms)
+            speed_std = avg_scan_speed.value * (scan_speed_var / 100.)
+
+            # only change the speed modifier on a pixel scale to avoid speed -> mean due to CLT
+            sample_time = mid_points[1] - mid_points[0]
+            samps_per_pix = ((1*u.pixel/avg_scan_speed)/sample_time).to(u.dimensionless_unscaled).value
+            samps_per_pix = np.floor(samps_per_pix)
+
+            s_y_refs = np.zeros_like(mid_points.value)
+            last_y_ref = y_ref
+            for i, s_mid in enumerate(mid_points):
+                if not i % samps_per_pix:  # modifiy speed at 0 and multiples of samps_per_pix
+                    speed = np.random.normal(scan_speed.value, speed_std) * (u.pixel/u.ms)
+
+                s_y_ref = last_y_ref + (s_mid * speed).to(u.pixel).value
+                s_y_refs[i] = s_y_ref
+
+        return s_y_refs
 
     def _gen_scanning_sample_times(self, sample_rate):
         """ Generates several times to do with samples. Including samples up the ramp. exposures are sampled at the
