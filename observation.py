@@ -294,7 +294,8 @@ class ExposureGenerator(object):
             'SUBARRAY': self.SUBARRAY,
             'psf_max': None,
             'samp_time': 0*u.s,
-            'sim_time': 0*u.s
+            'sim_time': 0*u.s,
+            'scan_speed_var': False,
         }
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
@@ -349,6 +350,7 @@ class ExposureGenerator(object):
             'samp_rate': sample_rate,
             'x_ref': x_ref,
             'y_ref': y_ref,
+            'scan_speed_var': scan_speed_var,
         })
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
@@ -564,36 +566,18 @@ class ExposureGenerator(object):
 
         # TODO QE scaling, done in throughput?
 
-
-        # Integrate gaussian per wl - vectorised
-        # ---
         # the len limits are the same per trace, it is the values in pixel units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
         psf_len_limits = self._get_psf_len_limits(trace, psf_max)
-        counts_tp = counts_tp.to(u.ph).value  # remove the unit now we have "counts" so flux_to_psf works
 
-        psf_std = self.grism.wl_to_psf_std(wl)
-        psf_means = y_pos
-
-        # len limits are at 0, we need to shift them up to floor(y_ref). We do this because we are integrating
-        # over WHOLE pixels, The psf is centered on y_ref which handles intrapixel y_ref shifts.
-        # to integrate we need the (limits - mean)/std so we have (psf_len_limits + y_ - y)/std
-        y_pos_norm = (np.floor(y_pos) - psf_means)/psf_std
-
-        # create a 2d array of the len limits per wl in rows i.e [[-4, -3 ... 3, 4],...[100, 101, ... 105, 106]]
-        psf_y_limits = np.ones((len(y_pos_norm), len(psf_len_limits)))
-        psf_y_limits = psf_y_limits * psf_len_limits
-
-        # floored ypos value as we want pixel boundries (then adjust psf mean to y_ref)
-        # here we transpose y from 1xn to nx1 (need to reshape first to add dimension)
-        y_pos_vector_ = y_pos_norm.reshape(1, len(y_pos_norm)).T
-        psf_y_limits = psf_y_limits * y_pos_vector_
+        # This is a 2d array of the psf limits per wl element so we can integrate the whole sample at once
+        psf_limit_array = _build_2d_limits_array(psf_len_limits, self.grism, wl, y_pos)
 
         # now we just need to integrate between the limits on each row of this vector. scipy.stats.norm.cdf will return
         # values for 2d vectors.
         # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
         # integration to go from 1.8 to 10 or 1.9 to 10.9
-        binned_fluxes = self._integrate_2d_limits_array(psf_y_limits, counts_tp)
+        binned_fluxes = _integrate_2d_limits_array(psf_limit_array, counts_tp.to(u.ph).value)
 
         # each resolution element (wl, counts_tp)
         for i in xrange(len(wl)):
@@ -625,18 +609,6 @@ class ExposureGenerator(object):
                 pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
         return pixel_array
-
-    def _integrate_2d_limits_array(self, limit_array, counts):
-        """ Integrates the 2d array between limits. return array will have 1 less column
-        :return:
-        """
-
-        cdf = scipy.stats.norm.cdf(limit_array)
-        area = (np.roll(cdf, -1, axis=1) - cdf)[:,:-1]  # x+1 - x, [-1] is x_0 - x_n and unwanted
-
-        binned_flux = area * counts.reshape(1, len(counts)).T
-
-        return binned_flux
 
     def _overlap_detection(self, trace, wl, psf_max):
         """ Overlap detection see if element is split between columns. it does this by comparing the end points of the
@@ -747,7 +719,7 @@ class ExposureGenerator(object):
 
         return psf_len_limits
 
-    def combine_planet_stellar_spectrum(self, stellar, planet):
+    def combine_planet_stellar_spectrum(self, stellar_flux, planet_spectrum):
         """ combines the stellar and planetary spectrum
 
         combined_flux = F_\star * (1-transit_depth)
@@ -764,7 +736,7 @@ class ExposureGenerator(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
-        combined_flux = stellar * (1. - planet)
+        combined_flux = stellar_flux * (1. - planet_spectrum)
 
         return combined_flux
 
@@ -877,3 +849,44 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orb
     }
 
     return returnDict
+
+
+def _build_2d_limits_array(psf_len_limits, grism, wl, y_pos):
+    # Integrate gaussian per wl - vectorised
+    # ---
+
+    psf_std = grism.wl_to_psf_std(wl)
+    psf_means = y_pos
+
+    # len limits are at 0, we need to shift them up to floor(y_ref). We do this because we are integrating
+    # over WHOLE pixels, The psf is centered on y_ref which handles intrapixel y_ref shifts.
+    # to integrate we need the (limits - mean)/std so we have (psf_len_limits + y_ - y)/std
+    y_pos_norm = (np.floor(y_pos) - psf_means)
+
+    # create a 2d array of the len limits per wl in rows i.e [[-4, -3 ... 3, 4],...[100, 101, ... 105, 106]]
+    psf_limits_array = np.ones((len(y_pos_norm), len(psf_len_limits)))
+    psf_limits_array = psf_limits_array * psf_len_limits
+
+    # normalise by adding y_pos_norm and dividing off the stddev
+    # here we transpose y from 1xn to nx1 (need to reshape first to add dimension)
+    y_pos_vector = y_pos_norm.reshape(1, len(y_pos_norm)).T
+    psf_std_vector = psf_std.reshape(1, len(psf_std)).T
+
+    psf_limits_array = (psf_limits_array + y_pos_vector)/psf_std_vector
+
+    return psf_limits_array
+
+
+def _integrate_2d_limits_array(limit_array, counts):
+    """ Integrates the 2d array between limits. Must be normalised to a standard gaussian.
+     return array will have 1 less column.
+
+    :return:
+    """
+
+    cdf = scipy.stats.norm.cdf(limit_array)
+    area = (np.roll(cdf, -1, axis=1) - cdf)[:,:-1]  # x+1 - x, [-1] is x_0 - x_n and unwanted
+
+    binned_flux = area * counts.reshape(1, len(counts)).T
+
+    return binned_flux

@@ -56,3 +56,40 @@ class TestExposureGenerator(unittest.TestCase):
         numpy.testing.assert_array_almost_equal(mid_points, sample_mid_points.to(u.s).value, 3)
 
         numpy.testing.assert_array_equal(read_index, s_read_index)
+
+
+class Test_build_2d_limits_array(unittest.TestCase):
+
+    def test_works(self):
+
+        g141 = grism.Grism()
+        psf_len_limits = (-1, 0, 1)
+        wl = (1.1, 1.3, 1.6) * u.micron
+        y_pos = (4., 4.5, 4.9)
+
+        result = observation._build_2d_limits_array(psf_len_limits, g141, wl, y_pos)
+
+        # stdev = [ 0.43272946  0.45311318  0.49940122]
+        answer = np.array([[-2.31091269,  0.        ,  2.31091269],
+                           [-3.31043118,  -1.10347706,  1.10347706],
+                           [-3.80455618 ,  -1.80215819,  0.2002398]])
+
+        numpy.testing.assert_array_almost_equal(result, answer, 6)
+
+
+class Test_integrate_2d_limits_array(unittest.TestCase):
+
+    def test_works(self):
+        limit_array = np.array([[-0.5, 0., 0.5],
+                                [-0.4, 0.1, 0.6]])
+
+        counts = np.array([2., 5.])
+
+        result = observation._integrate_2d_limits_array(limit_array, counts)
+
+        # manually calculated for the given limits + counts
+        # raw probabilities = [0.19146246, 0.19146246], [0.19524958, 0.18591904]
+        answer = np.array([[0.3829249, 0.3829249],
+                          [0.9762479, 0.9295952]])
+
+        numpy.testing.assert_array_almost_equal(result, answer, 6)
