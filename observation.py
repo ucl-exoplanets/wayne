@@ -26,7 +26,8 @@ __all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
 class Observation(object):
 
     def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
-                 planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir='', scan_speed_var=False):
+                 planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir='', scan_speed_var=False,
+                 x_shifts=0):
         """ Builds a full observation running the visit planner to get exposure times, generates lightcurves for each
         wavelength element and sample time and then runs the exposure generator for each frame.
 
@@ -65,6 +66,11 @@ class Observation(object):
         the widest psf
         :param outdir: location on disk to save the output fits files to. Must exist.
         :type outdir: str
+
+        :param scan_speed_var: The % of the std(flux_per_pixel) the scan speed variations cause. Basic implementation.
+        :type scan_speed_var: float
+        :param x_shifts: pixel fraction to shift the starting x_ref position by for each exposure
+        :type x_shifts: float
 
         :return: Nothing, output is saved to outdir
         """
@@ -105,6 +111,7 @@ class Observation(object):
         self.planet_spectrum = planet_spectrum
 
         self.scan_speed_var = scan_speed_var
+        self.x_shifts = x_shifts
 
         star = self.planet.star
         self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')  # option to give limb darkening
@@ -115,7 +122,7 @@ class Observation(object):
         self.exp_start_times = self.visit_plan['exp_times'].to(u.day) + self.start_JD
 
         self.exptime = self.visit_plan['exptime']
-        logger.info("Each exposure will have a expsoure time of {}".format(self.exptime))
+        logger.info("Each exposure will have a exposure time of {}".format(self.exptime))
 
     def generate_lightcurves(self, time_array, depth=False):
         """ Generates lightcurves samples a the time array using pylightcurve. orbital parameters are pulled from the
@@ -233,7 +240,10 @@ class Observation(object):
         star_norm_flux = self.generate_lightcurves(time_array)
         planet_depths = 1 - star_norm_flux
 
-        exp_frame = exp_gen.scanning_frame(self.x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
+        # x shifts - linear shift with exposure
+        x_ref = self.x_ref + (self.x_shifts * number)
+
+        exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
                                            sample_durations, read_index, scan_speed_var=self.scan_speed_var)
 
@@ -332,6 +342,7 @@ class ExposureGenerator(object):
         :type read_index: list
 
         :param scan_speed_var: The % of the std(flux_per_pixel) the scan speed variations cause. Basic implementation.
+        :type scan_speed_var: float
 
         :return: array with the exposure
         """
