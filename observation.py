@@ -155,6 +155,8 @@ class Observation(object):
 
         models = np.zeros((len(time_array), len(planet_spectrum)))
 
+        planet_spectrum = np.sqrt(planet_spectrum)  # pylc wants Rp/Rs not transit depth
+
         logger.debug("Generating lightcurves with P={}, a={}, i={}, e={}, W={}, T14={}, mean_depth={}".format(
             P, a, i, e, W, transittime, np.mean(planet_spectrum)
         ))
