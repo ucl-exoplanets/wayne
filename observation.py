@@ -208,8 +208,11 @@ class Observation(object):
         # # pool = Pool(cpu_count())
         # # pool.map(gen_exp, run_params)
 
+        self._generate_direct_image()  # to calibrate x_ref and y_ref
+
         num_frames = len(self.exp_start_times)
         progress = Progress(num_frames)
+        progress.print_status_line('Generating frames 0/{} done'.format(num_frames))
 
         for i, start_time in enumerate(self.exp_start_times):
             filenum = i+1
@@ -240,8 +243,8 @@ class Observation(object):
         star_norm_flux = self.generate_lightcurves(time_array)
         planet_depths = 1 - star_norm_flux
 
-        # x shifts - linear shift with exposure
-        x_ref = self.x_ref + (self.x_shifts * number)
+        # x shifts - linear shift with exposure, second exposure shifted by x_shifts, direct image and first match
+        x_ref = self.x_ref + (self.x_shifts * (number - 1))  # -1 so first exposure is 0n x_ref
 
         exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
@@ -250,6 +253,18 @@ class Observation(object):
         exp_frame.generate_fits(self.outdir, filename)
 
         return exp_frame
+
+    def _generate_direct_image(self):
+        """ generate direct image (for wl calibration) - just assume happens 1 minute before the rest for now
+        """
+        filename = '0000_flt.fits'
+
+        di_start_JD = (self.exp_start_times[0] - 1*u.min).to(u.day)
+        di_exp_gen = ExposureGenerator(self.detector, self.grism, self.NSAMP, self.SAMPSEQ, self.SUBARRAY,
+                                    self.planet, filename, di_start_JD)
+
+        exp = di_exp_gen.direct_image(self.x_ref, self.y_ref)
+        exp.generate_fits(self.outdir, '0000_flt.fits')
 
 
 class ExposureGenerator(object):
@@ -305,10 +320,52 @@ class ExposureGenerator(object):
             'SAMPSEQ': self.SAMPSEQ,
             'SUBARRAY': self.SUBARRAY,
             'psf_max': None,
-            'samp_time': 0*u.s,
+            'samp_rate': 0*u.s,
             'sim_time': 0*u.s,
             'scan_speed_var': False,
         }
+
+    def direct_image(self, x_ref, y_ref):
+        """ This creates a direct image used to calibrate x_ref and y_ref from the observations
+
+        Currently this is very basic, outputting a standard unscaled 2d gaussian with no filter. it will only generate
+        a final read and zero read.
+
+        :param x_ref:
+        :param y_ref:
+
+        :return:
+        """
+
+        self.exp_info.update({
+            'OBSTYPE': 'IMAGING',
+            'x_ref': x_ref,
+            'NSAMP': 1,
+            'SAMP-SEQ': 'RAPID',
+            'y_ref': y_ref,
+        })
+
+        # Exposure class which holds the result
+        # TODO remove grism and add filter or something
+        self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
+
+        # Zero Read
+        self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
+
+        SUBARRAY = self.SUBARRAY
+
+        # Angelos code
+        y = np.arange(SUBARRAY, dtype=float)
+        x = np.arange(SUBARRAY, dtype=float)
+        x, y = np.meshgrid(x, y)
+        x0 = x_ref - ( 507.0 - SUBARRAY / 2.0 )
+        y0 = x_ref - ( 507.0 - SUBARRAY / 2.0 )
+        # generate a 2d gaussian
+        di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / 2.0)
+
+        self.exposure.reads.append(di_array)  # add read would try and crop it
+
+        return self.exposure
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
                        sample_mid_points=None, sample_durations=None, read_index=None, scan_speed_var=False):

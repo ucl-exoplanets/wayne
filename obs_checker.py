@@ -38,7 +38,7 @@ SUBARRAY = 512
 start_JD = float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # convert pq to u
 num_orbits = 2
 sample_rate = 50*u.ms
-scan_speed = 180*u.pixel/(111.8*u.s)
+scan_speed = 280*u.pixel/(111.8*u.s)
 outdir = '/Users/ryan/Dropbox/phd/wfc3sim/visit2'
 psf_max = 4
 
