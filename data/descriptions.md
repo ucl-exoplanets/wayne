@@ -3,4 +3,5 @@ The files here retain their less useful original names, so it is clear what file
 | Name | Description |
 |:-|:-|
 | wfc3-g141-fwhm.dat | Table of the FWHM with wavelength from ??? |
-| wfc3_ir_g141_src_004_syn.fits |  |
+| wfc3_ir_g141_src_004_syn.fits | G141 Grism throughput |
+| wfc3_ir_qe_003_syn.fits | WFC3 IR Quantum Efficiency |

@@ -5,6 +5,7 @@ import os.path
 
 import numpy as np
 from astropy import units as u
+import astropy.io.fits as fits
 import pandas as pd
 
 import params
@@ -31,6 +32,13 @@ class WFC3_IR(object):
 
         # Init
         self.modes_table = self._get_modes()
+
+        # QE
+        self.qe_file = os.path.join(params._data_dir, 'wfc3_ir_qe_003_syn.fits')
+        with fits.open(self.qe_file) as f:
+            tbl = f[1].data  # the table is in the data of the second HDU
+            self.qe_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(u.micron)
+            self.qe_val = tbl.field('THROUGHPUT')
 
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
@@ -161,6 +169,23 @@ class WFC3_IR(object):
         num_exp = int(np.floor(total_allowed_reads / headers_per_exp))
 
         return num_exp
+
+    def apply_quantum_efficiency(self, wl, counts):
+        """ Applies quantum efficiency corrections to the counts using the data in wfc3_ir_qe_003_syn.fits and linearly
+        interpolating the gaps
+
+        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+        :param counts: flux / acounts
+        :type counts: astropy.units.quantity.Quantity
+
+        :return: counts scaled by QE
+        :rtype: astropy.units.quantity.Quantity
+        """
+
+        throughput_values = np.interp(wl, self.qe_wl, self.qe_val, 0., 0.)
+
+        return counts * throughput_values
 
 
 class WFC3SimException(BaseException):

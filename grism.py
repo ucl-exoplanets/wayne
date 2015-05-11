@@ -241,22 +241,22 @@ class Grism(object):
 
         return bin_edges
 
-    def throughput(self, wl, flux):
+    def apply_throughput(self, wl, flux):
         """ Converts measurements of wavelength, flux to post grism values by multiplying by the throughput. A linear
         interpolation (numpy.interp) is used to generate values between sample points.
 
-        :param wl:
-        :type wl: numpy.ndarray
-        :param flux:
-        :type flux: numpy.ndarray
+        :param wl: wavelength of flux / counts
+        :type wl: astropy.units.quantity.Quantity
+        :param flux: flux / counts
+        :type flux: astropy.units.quantity.Quantity
 
         :return: flux, throughput corrected
-        :rtype: numpy.ndarray
+        :rtype: astropy.units.quantity.Quantity
         """
 
-        throughput_vales = np.interp(wl, self.throughput_wl, self.throughput_val, 0., 0.)
+        throughput_values = np.interp(wl, self.throughput_wl, self.throughput_val, 0., 0.)
 
-        return flux*throughput_vales
+        return flux * throughput_values
 
     def plot_throughput(self):
         """ Plots the throughput curve for the grism
@@ -268,18 +268,24 @@ class Grism(object):
         plt.ylabel("Throughput")
         plt.xlabel("$\lambda (\mu m)$")
 
-    def plot_spectrum_with_throughput(self, wl, flux):
+    def plot_spectrum_with_throughput(self, wl, flux, qe=True):
         """ Plots the spectrum before and after the throughput corrections
 
         :param wl:
         :type wl: numpy.ndarray
         :param flux:
         :type flux: numpy.ndarray
+        :param qe: Also plot version that has been correct for detector quantum efficiency
         """
 
         plt.figure()
         plt.plot(wl, flux, label="Input Spectra")
-        plt.plot(wl, self.throughput(wl, flux), label="Throughput Corrected")
+        flux_tp = self.apply_throughput(wl, flux)
+        plt.plot(wl, flux_tp, label="G141 TP Corrected")
+
+        if qe:
+            flux_tp_qe = self.detector.apply_quantum_efficiency(wl, flux_tp)
+            plt.plot(wl, flux_tp_qe, label="G141 TP + WFC3 IR QE Corrected")
 
         plt.title("Input Spectrum through the grism")
         plt.ylabel("Flux")  # really its normally transit depth

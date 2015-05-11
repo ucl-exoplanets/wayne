@@ -632,9 +632,9 @@ class ExposureGenerator(object):
         counts = (count_rate * exptime).to(u.photon)
 
         # Modify the counts by the grism throughput
-        counts_tp = self.grism.throughput(wl, counts)
+        counts = self.grism.apply_throughput(wl, counts)
 
-        # TODO QE scaling, done in throughput?
+        counts = self.detector.apply_quantum_efficiency(wl, counts)
 
         # the len limits are the same per trace, it is the values in pixel units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
@@ -647,7 +647,7 @@ class ExposureGenerator(object):
         # values for 2d vectors.
         # TODO currently the psf wings are uneven, while we may split 5.9 between 0 and 10 we could change the
         # integration to go from 1.8 to 10 or 1.9 to 10.9
-        binned_fluxes = _integrate_2d_limits_array(psf_limit_array, counts_tp.to(u.ph).value)
+        binned_fluxes = _integrate_2d_limits_array(psf_limit_array, counts.to(u.ph).value)
 
         # each resolution element (wl, counts_tp)
         for i in xrange(len(wl)):
