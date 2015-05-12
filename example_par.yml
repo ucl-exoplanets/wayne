@@ -1,0 +1,27 @@
+general:
+  # path to systems folder of the Open Exoplanet Catalogue
+  oec_location: /Users/ryan/git/open_exoplanet_catalogue/systems
+  outdir: '/Users/ryan/Dropbox/phd/wfc3sim/visittest'
+
+target:
+  name: 'WASP-18 b'  # exact match of a OEC planet
+  spectrum_file: 'hj_1000.dat'  # wl (microns) vs transit depth
+  flux_scale: 1e20  # stellar flux is a blackbody, scale this to get the required counts per pixel
+
+observation:
+  detector: 'WFC3IR'  # currently fixed
+  grism: 'G141'  # currently fixed
+  x_ref: 450
+  y_ref: 300
+  NSAMP: 15
+  SAMPSEQ: 'SPARS10'
+  SUBARRAY: 512
+  start_JD: float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # convert pq to u
+  num_orbits: 2
+  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
+  spatial_scan: True
+  scan_speed: 2.5 # 280 pixels/111.8 seconds  # pixels per second
+
+  psf_max: 4  # how many pixels to inegrate psf tails
+  scan_speed_var: 0.6  # scan speed variations, standard deviation of the flux as a %
+  x_shifts: 0.1  # linear shift in x position (pixels)
