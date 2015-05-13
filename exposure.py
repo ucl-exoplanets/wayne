@@ -68,12 +68,14 @@ class Exposure(object):
 
         hdulist = fits.HDUList([science_header])
 
+        compression = 'RICE_1'
+
         for i, data in enumerate(reversed(self.reads)):
 
             # data = np.flipud(data)  # hst fits files are the other way round
 
-            read_HDU = fits.ImageHDU(data)
-            error_array = fits.ImageHDU()
+            read_HDU = fits.CompImageHDU(data, compression_type=compression)
+            error_array = fits.CompImageHDU()
 
             """ This array contains 16 independent flags indicating various status and problem conditions associated
             with each corresponding pixel in the science image. Each flag has a true (set) or false (unset) state and is
@@ -81,7 +83,7 @@ class Exposure(object):
             simple integer, but must be converted to base-2 and each bit interpreted as a flag. Table 2.5 lists the WFC3
             data quality flags.
             """
-            data_quality_array = fits.ImageHDU()
+            data_quality_array = fits.CompImageHDU(compression_type=compression)
 
             """ This array is present only for IR data. It is a 16-bit integer array and contains the number of samples
             used to derive the corresponding pixel values in the science image. For raw and intermediate data files, the
@@ -91,7 +93,7 @@ class Exposure(object):
             pixels. Similarly, when multiple exposures (i.e., REPEAT-OBS) are combined to produce a single image,
             the SAMP array contains the total number of samples retained at each pixel for all the exposures.
             """
-            samples_HDU = fits.ImageHDU()
+            samples_HDU = fits.CompImageHDU(compression_type=compression)
 
             """ This array is present only for IR data. This is a floating-point array that contains the effective
             integration time associated with each corresponding science image pixel value. For raw and intermediate
@@ -100,7 +102,7 @@ class Exposure(object):
             exposures that were used to compute the final science image pixel value, after rejection of cosmic
             rays and saturated pixels from the intermediate data.
             """
-            integration_time_HDU = fits.ImageHDU()
+            integration_time_HDU = fits.CompImageHDU(compression_type=compression)
 
             hdulist.extend([read_HDU, error_array, data_quality_array, samples_HDU, integration_time_HDU])
 
