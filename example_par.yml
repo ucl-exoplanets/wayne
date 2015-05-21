@@ -23,5 +23,5 @@ observation:
   scan_speed: 2.5 # 280 pixels/111.8 seconds  # pixels per second
 
   psf_max: 4  # how many pixels to inegrate psf tails
-  scan_speed_var: 0.6  # scan speed variations, standard deviation of the flux as a %
+  scan_speed_var: 0.06  # scan speed variations, standard deviation of the flux as a %
   x_shifts: 0.1  # linear shift in x position (pixels)
