@@ -31,7 +31,7 @@ class WFC3_IR(object):
         self.detector_type = 'IR'
 
         # Init
-        self.modes_table = self._get_modes()
+        self.modes_exp_table, modes_calb_table = self._get_modes()
 
         # QE
         self.qe_file = os.path.join(params._data_dir, 'wfc3_ir_qe_003_syn.fits')
@@ -55,7 +55,7 @@ class WFC3_IR(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
-        mt = self.modes_table
+        mt = self.modes_exp_table
 
         exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] == NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]
 
@@ -119,7 +119,7 @@ class WFC3_IR(object):
         if not 1 <= NSAMP <= 15:
             raise WFC3SimSampleModeError("NSAMP must be an integer between 1 and 15, got {}".format(NSAMP))
 
-        mt = self.modes_table
+        mt = self.modes_exp_table
 
         exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] <= NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]['TIME']
 
@@ -136,11 +136,14 @@ class WFC3_IR(object):
         :rtype: pandas.DataFrame
         """
 
-        modes_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'), skiprows=1, dtype={
+        modes_exp_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'), skiprows=1, dtype={
             'SUBARRAY': np.int64, 'SAMPSEQ': np.object, 'NSAMP': np.int64, 'TIME':np.float},
                                   thousands=',')
 
-        return modes_table
+        modes_calb_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_calb.csv'), skiprows=1, dtype={
+            'SUBARRAY': np.int64, 'SAMPSEQ': np.object, 'dark': str})
+
+        return modes_exp_table, modes_calb_table
 
     def num_exp_per_buffer(self, NSAMP, SUBARRAY):
         """ calculates the maximum number of exposures that can be taken before buffer dumping. It does this by checking
