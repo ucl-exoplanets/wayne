@@ -191,7 +191,10 @@ class Exposure(object):
         h[''] = ''
         h['PSF-MAX'] = (exp_info['psf_max'], 'maximum width of psf tails (pix)')
         h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value, 'How often exposure is sampled (ms)')
-        h[''] = (exp_info['scan_speed_var'], 'Scan speed variations (stddev as a % of flux)')
+        h['SSV-SSD'] = (exp_info['scan_speed_var'], 'Scan speed variations (stddev as a % of flux)')
+        h['NOISE-MEAN'] = (exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
+        h['NOISE-SSD'] = (exp_info['noise_std'], 'std of normal noise (per s per pix)')
+
 
         # keywords for analysis (i.e. xref positions until)
         h['STARXI'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')

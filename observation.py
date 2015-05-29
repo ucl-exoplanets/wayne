@@ -27,7 +27,7 @@ class Observation(object):
 
     def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
                  planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir='', ssv_std=False,
-                 x_shifts=0):
+                 x_shifts=0, noise_mean=False, noise_std=False):
         """ Builds a full observation running the visit planner to get exposure times, generates lightcurves for each
         wavelength element and sample time and then runs the exposure generator for each frame.
 
@@ -71,6 +71,11 @@ class Observation(object):
         :type scan_speed_var: float
         :param x_shifts: pixel fraction to shift the starting x_ref position by for each exposure
         :type x_shifts: float
+
+        :param noise_mean: mean noise (per second, per pixel)
+        :type noise_mean: float
+        :param noise_std: standard deviation of the noise (per second, per pixel)
+        :type noise_std: float
 
         :return: Nothing, output is saved to outdir
         """
@@ -124,7 +129,8 @@ class Observation(object):
         self.exptime = self.visit_plan['exptime']
         logger.info("Each exposure will have a exposure time of {}".format(self.exptime))
 
-        self.ssv_period = 0.7
+        self.noise_mean = noise_mean
+        self.noise_std = noise_std
 
     def generate_lightcurves(self, time_array, depth=False):
         """ Generates lightcurves samples a the time array using pylightcurve. orbital parameters are pulled from the
@@ -250,7 +256,8 @@ class Observation(object):
 
         exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
-                                           sample_durations, read_index, ssv_std=self.ssv_std)
+                                           sample_durations, read_index, ssv_std=self.ssv_std,
+                                           noise_mean=self.noise_mean, noise_std=self.noise_std)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -325,7 +332,11 @@ class ExposureGenerator(object):
             'samp_rate': 0*u.s,
             'sim_time': 0*u.s,
             'scan_speed_var': False,
+            'noise_mean': False,
+            'noise_std': False,
         }
+
+        self.ssv_period = 0.7
 
     def direct_image(self, x_ref, y_ref):
         """ This creates a direct image used to calibrate x_ref and y_ref from the observations
@@ -370,7 +381,8 @@ class ExposureGenerator(object):
         return self.exposure
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
-                       sample_mid_points=None, sample_durations=None, read_index=None, ssv_std=False):
+                       sample_mid_points=None, sample_durations=None, read_index=None, ssv_std=False, noise_mean=False,
+                       noise_std=False):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a version to use with observation as i am already
@@ -403,6 +415,11 @@ class ExposureGenerator(object):
         :param scan_speed_var: The % of the std(flux_per_pixel) the scan speed variations cause. Basic implementation.
         :type scan_speed_var: float
 
+        :param noise_mean: mean noise (per second, per pixel)
+        :type noise_mean: float
+        :param noise_std: standard deviation of the noise (per second, per pixel)
+        :type noise_std: float
+
         :return: array with the exposure
         """
 
@@ -423,6 +440,8 @@ class ExposureGenerator(object):
             'x_ref': x_ref,
             'y_ref': y_ref,
             'scan_speed_var': ssv_std,
+            'noise_mean': noise_mean,
+            'noise_std': noise_std,
         })
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
@@ -444,6 +463,12 @@ class ExposureGenerator(object):
             ssv_scaling = self._flux_ssv_scaling(s_y_refs, ssv_std)
             self.exposure.ssv_scaling = ssv_scaling  # temp to see whats going on
             self.exposure.s_y_refs = s_y_refs
+
+        # Prep for random noise
+        if noise_mean and noise_std:
+            read_num = 0
+            read_exp_times = self.read_times.to(u.s)
+            previous_read_time = 0. * u.ms
 
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
@@ -471,6 +496,16 @@ class ExposureGenerator(object):
             pixel_array = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max)
 
             if i in read_index:  # trigger a read including final read
+                if noise_mean and noise_std:
+                    read_exp_time = (read_exp_times[read_num] - previous_read_time).to(u.s).value
+                    noise_array = self._gen_noise(noise_mean*read_exp_time, noise_std*read_exp_time)
+                    previous_read_time = read_exp_times[read_num]
+                    read_num += 1
+
+                    # Note noise is added to the full frame, in reality it will probably be centered around the scan!
+                    # possibility of noise -> mean due to CLT with more reads
+                    pixel_array += noise_array
+
                 self.exposure.add_read(self.detector.add_bias_pixels(pixel_array))
 
         assert(len(self.exposure.reads) == self.NSAMP + 1)  # check to make sure all reads were made
@@ -692,6 +727,8 @@ class ExposureGenerator(object):
                 # or a .reset() on the class
                 pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
 
+
+
         return pixel_array
 
     def _overlap_detection(self, trace, wl, psf_max):
@@ -823,6 +860,19 @@ class ExposureGenerator(object):
         combined_flux = stellar_flux * (1. - planet_spectrum)
 
         return combined_flux
+
+    def _gen_noise(self, mean, std):
+        """ Generates noise from a normal distribution at the mean and std given at the size of a subbarray-10
+        :param mean:
+        :param std:
+        :return:
+        """
+
+        # dim = self.SUBARRAY - 10
+        dim = 1014  # currently we deal with full arrays and crop them
+        noise = np.random.normal(mean, std, (dim, dim))
+
+        return noise
 
 
 def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3, time_per_orbit=54*u.min,
