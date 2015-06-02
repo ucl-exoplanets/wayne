@@ -2,6 +2,7 @@ general:
   # path to systems folder of the Open Exoplanet Catalogue
   oec_location: /Users/ryan/git/open_exoplanet_catalogue/systems
   outdir: '/Users/ryan/Dropbox/phd/wfc3sim/visittest'
+  seed: 1337
 
 target:
   name: 'WASP-18 b'  # exact match of a OEC planet

@@ -18,6 +18,7 @@ import observation
 import detector
 import grism
 import tools
+import params
 
 
 parser = argparse.ArgumentParser(description='Simulate a visit using WFC3Sim and a parameter file')
@@ -40,6 +41,11 @@ if not os.path.exists(outdir):
 shutil.copy2(args.parfile, os.path.join(outdir, os.path.basename(args.parfile)))  # copy parfile to output
 
 exodb = exodata.OECDatabase(cfg['general']['oec_location'])
+
+seed = cfg['general']['seed']
+np.random.seed(seed)
+params.seed = seed  # tell params what the seed is now we've change it
+
 planet = exodb.planetDict[cfg['target']['name']]
 
 source_spectra = np.loadtxt(cfg['target']['spectrum_file'])

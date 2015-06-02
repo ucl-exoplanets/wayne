@@ -4,7 +4,11 @@
 import os
 import os.path
 
+import numpy as np
+
 _rootdir = os.path.dirname(__file__)  # get current directory location
 _data_dir = os.path.join(_rootdir, 'data')
 
 _calb_dir = os.path.join(os.environ['PYSYN_CDBS'], 'calb', 'wfc3')  # darks, flats etc
+
+seed = np.random.get_state()[1][0]

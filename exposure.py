@@ -6,13 +6,14 @@ import datetime
 import os.path
 import sys
 
+import astropy
 import astropy.io.fits as fits
 import astropy.units as u
-
-import astropy
 import numpy
 import pandas
 import scipy
+
+import params
 
 class Exposure(object):
 
@@ -198,6 +199,8 @@ class Exposure(object):
         h['NSE-MEAN'] = (exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
         h['NSE-STD'] = (exp_info['noise_std'], 'std of normal noise (per s per pix)')
         h['ADD-DRK'] = (exp_info['add_dark'], 'dark current added (T/F)')
+        h['RANDSEED'] = (params.seed, 'seed used for the visit')
+
 
 
 
