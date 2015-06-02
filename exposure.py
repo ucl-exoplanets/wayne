@@ -73,7 +73,7 @@ class Exposure(object):
 
         hdulist = fits.HDUList([science_header])
 
-        compression = 'GZIP_1'
+        compression = 'RICE_1'
 
         for i, data in enumerate(reversed(self.reads)):
 

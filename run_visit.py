@@ -37,7 +37,7 @@ outdir = cfg['general']['outdir']
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
-shutil.copy2(args.parfile, os.path.join(outdir, args.parfile))  # copy parfile to output
+shutil.copy2(args.parfile, os.path.join(outdir, os.path.basename(args.parfile)))  # copy parfile to output
 
 exodb = exodata.OECDatabase(cfg['general']['oec_location'])
 planet = exodb.planetDict[cfg['target']['name']]
