@@ -27,7 +27,7 @@ class Observation(object):
 
     def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, wl, stellar_flux,
                  planet_spectrum, sample_rate, x_ref, y_ref, scan_speed, psf_max=4, outdir='', ssv_std=False,
-                 x_shifts=0, noise_mean=False, noise_std=False):
+                 x_shifts=0, noise_mean=False, noise_std=False, add_dark=True):
         """ Builds a full observation running the visit planner to get exposure times, generates lightcurves for each
         wavelength element and sample time and then runs the exposure generator for each frame.
 
@@ -131,6 +131,8 @@ class Observation(object):
 
         self.noise_mean = noise_mean
         self.noise_std = noise_std
+
+        self.add_dark = add_dark
 
     def generate_lightcurves(self, time_array, depth=False):
         """ Generates lightcurves samples a the time array using pylightcurve. orbital parameters are pulled from the
@@ -257,7 +259,8 @@ class Observation(object):
         exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
                                            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
                                            sample_durations, read_index, ssv_std=self.ssv_std,
-                                           noise_mean=self.noise_mean, noise_std=self.noise_std)
+                                           noise_mean=self.noise_mean, noise_std=self.noise_std,
+                                           add_dark=self.add_dark)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -334,6 +337,7 @@ class ExposureGenerator(object):
             'scan_speed_var': False,
             'noise_mean': False,
             'noise_std': False,
+            'add_dark': False,
         }
 
         self.ssv_period = 0.7
@@ -382,7 +386,7 @@ class ExposureGenerator(object):
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed, sample_rate, psf_max=4,
                        sample_mid_points=None, sample_durations=None, read_index=None, ssv_std=False, noise_mean=False,
-                       noise_std=False):
+                       noise_std=False, add_dark=True):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a version to use with observation as i am already
@@ -442,6 +446,7 @@ class ExposureGenerator(object):
             'scan_speed_var': ssv_std,
             'noise_mean': noise_mean,
             'noise_std': noise_std,
+            'add_dark': add_dark,
         })
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
@@ -506,7 +511,13 @@ class ExposureGenerator(object):
                     # possibility of noise -> mean due to CLT with more reads
                     pixel_array += noise_array
 
-                self.exposure.add_read(self.detector.add_bias_pixels(pixel_array))
+                pixel_array_full = self.detector.add_bias_pixels(pixel_array)
+
+                if add_dark:
+                    pixel_array_bias_full = self.detector.add_dark_current(pixel_array_full, self.NSAMP, self.SUBARRAY,
+                                                                          self.SAMPSEQ)
+
+                self.exposure.add_read(pixel_array_full)
 
         assert(len(self.exposure.reads) == self.NSAMP + 1)  # check to make sure all reads were made
 

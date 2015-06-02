@@ -12,10 +12,10 @@ observation:
   detector: 'WFC3IR'  # currently fixed
   grism: 'G141'  # currently fixed
   x_ref: 450
-  y_ref: 300
+  y_ref: 550
   NSAMP: 7
   SAMPSEQ: 'SPARS10'
-  SUBARRAY: 512
+  SUBARRAY: 256
   start_JD: float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # convert pq to u
   num_orbits: 2
   sample_rate: 50  # How often to generate a single frame (when scanning) in ms
@@ -23,8 +23,10 @@ observation:
   scan_speed: 1 # 280 pixels/111.8 seconds  # pixels per second
 
   psf_max: 4  # how many pixels to inegrate psf tails
-  ssv_std: False  # scan speed variations, standard deviation of the flux as a %
+  ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
   x_shifts: 0.1  # linear shift in x position (pixels)
 
   noise_mean: False
   noise_std: False
+
+  add_dark: True

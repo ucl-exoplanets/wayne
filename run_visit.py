@@ -75,9 +75,12 @@ x_shifts = cfg['observation']['x_shifts']
 noise_mean = cfg['observation']['noise_mean']
 noise_std = cfg['observation']['noise_std']
 
+add_dark = cfg['observation']['add_dark']
+
 obs = observation.Observation(planet, start_JD, num_orbits, det, g141, NSAMP, SAMPSEQ, SUBARRAY, wl_p, f_bb_tmp,
                               depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir,
-                              ssv_std=ssv_std, x_shifts=x_shifts, noise_mean=noise_mean, noise_std=noise_std)
+                              ssv_std=ssv_std, x_shifts=x_shifts, noise_mean=noise_mean, noise_std=noise_std,
+                              add_dark=add_dark)
 
 obs.show_lightcurve()
 # plt.show()

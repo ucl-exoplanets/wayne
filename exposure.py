@@ -78,8 +78,7 @@ class Exposure(object):
         for i, data in enumerate(reversed(self.reads)):
 
             read_HDU = fits.ImageHDU(data)  # compression disabled as its producing stripey data
-
-            error_array = fits.CompImageHDU()
+            error_array = fits.CompImageHDU(compression_type=compression)
 
             """ This array contains 16 independent flags indicating various status and problem conditions associated
             with each corresponding pixel in the science image. Each flag has a true (set) or false (unset) state and is
@@ -198,6 +197,8 @@ class Exposure(object):
         h['SSV-SSD'] = (exp_info['scan_speed_var'], 'Scan speed variations (stddev as a % of flux)')
         h['NSE-MEAN'] = (exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
         h['NSE-STD'] = (exp_info['noise_std'], 'std of normal noise (per s per pix)')
+        h['ADD-DRK'] = (exp_info['add_dark'], 'dark current added (T/F)')
+
 
 
         h[''] = ''

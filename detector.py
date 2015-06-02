@@ -31,7 +31,7 @@ class WFC3_IR(object):
         self.detector_type = 'IR'
 
         # Init
-        self.modes_exp_table, modes_calb_table = self._get_modes()
+        self.modes_exp_table, self.modes_calb_table = self._get_modes()
 
         # QE
         self.qe_file = os.path.join(params._data_dir, 'wfc3_ir_qe_003_syn.fits')
@@ -100,6 +100,41 @@ class WFC3_IR(object):
         full_array[5:-5, 5:-5] = pixel_array
 
         return full_array
+
+    def add_dark_current(self, pixel_array, NSAMP, SUBARRAY, SAMPSEQ):
+        """ Adds the exact contribution from dark current as specified in the super_dark for that mode, must
+        be done after bias pixels added
+
+        .. TODO : vary dark per pixel within error
+
+        :param pixel_array: light sensitive pixel array
+        :type pixel_array: np.ndarray
+        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :type NSAMP: int
+        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
+        :type SAMPSEQ: str
+        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :type SUBARRAY: int
+
+        :return: pixel array with dark current added
+        :rtype: numpy.ndarray
+        """
+
+        mt = self.modes_calb_table
+        dark_query = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['SUBARRAY'] == SUBARRAY)]
+
+        if dark_query.empty:
+            raise WFC3SimSampleModeError("No Dark file for SAMPSEQ = {}, NSAMP={}, SUBARRAY={}"
+                                         "".format(SAMPSEQ, NSAMP, SUBARRAY))
+        else:
+            dark_file = dark_query.dark.values[0]
+
+        with fits.open(dark_file) as f:
+
+            dark_array = f[NSAMP].data
+
+            return pixel_array + dark_array
 
     def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
