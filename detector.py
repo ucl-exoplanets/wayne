@@ -66,7 +66,7 @@ class WFC3_IR(object):
             exptime = exptime_table.TIME.values[0]
             return exptime * u.s
 
-    def gen_pixel_array(self, light_sensitive=True):
+    def gen_pixel_array(self, subarray, light_sensitive=True):
         """ Returns the pixel array as an array of zeroes
 
         this could return subarray types etc, but lets just keep it out of class for now
@@ -79,15 +79,18 @@ class WFC3_IR(object):
         """
 
         if light_sensitive:
-            return np.zeros((1024-10, 1024-10))
+            if subarray == 1024:
+                subarray = 1014
+            return np.zeros((subarray, subarray))
         else:
-            return np.zeros((1024, 1024))
+            size = subarray + 10
+            if size > 1024:
+                size = 1024
+            return np.zeros((size, size))
 
     def add_bias_pixels(self, pixel_array):
         """ converts a light sensitive array to one with the 5 pixel border. In future will simulate the function
         of bias pixels but for now returns zeroes.
-
-        input must be a full frame (for now)
 
         :param pixel_array: light sensitive pixel array
         :type pixel_array: np.ndarray
@@ -96,7 +99,14 @@ class WFC3_IR(object):
         :rtype: numpy.ndarray
         """
 
-        full_array = np.zeros((1024, 1024))
+        allowed_input = (1014, 512, 256, 128, 64)
+
+        array_size = len(pixel_array)
+
+        if not array_size in allowed_input:
+            raise ValueError('array size must be in {} got {}'.format(array_size, allowed_input))
+
+        full_array = np.zeros((array_size+10, array_size+10))
         full_array[5:-5, 5:-5] = pixel_array
 
         return full_array
@@ -128,9 +138,11 @@ class WFC3_IR(object):
             raise WFC3SimSampleModeError("No Dark file for SAMPSEQ = {}, NSAMP={}, SUBARRAY={}"
                                          "".format(SAMPSEQ, NSAMP, SUBARRAY))
         else:
-            dark_file = dark_query.dark.values[0]
+            dark_file = dark_query.Dark.values[0]
 
-        with fits.open(dark_file) as f:
+        dark_file_path = os.path.join(params._calb_dir, dark_file)
+
+        with fits.open(dark_file_path) as f:
 
             dark_array = f[NSAMP].data
 

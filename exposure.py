@@ -49,7 +49,6 @@ class Exposure(object):
         :return:
         """
 
-        data = self.crop_subarrray(data, self.subarray)
         self.reads.append(data)
 
     def generate_fits(self, out_dir='', filename=None):
@@ -111,23 +110,6 @@ class Exposure(object):
             hdulist.extend([read_HDU, error_array, data_quality_array, samples_HDU, integration_time_HDU])
 
         hdulist.writeto(out_path)
-
-    def crop_subarrray(self, data, subarray):
-        """ Takes a full frame array and crops it down to the subarray size.
-
-        :param data: data array
-        :type data: numpy.ndarray
-        :param subarray: subbarray mode (1024, 512, 256, 128, 64)
-        :type subarray: int
-
-        :return: cropped array
-        :rtype: numpy.ndarray
-        """
-
-        i_lower = (1024-subarray)/2
-        i_upper = i_lower + subarray
-
-        return data[i_lower:i_upper, i_lower:i_upper]
 
     def generate_science_header(self):
         """ Generates the primary science header to match HST plus some information about the simulation

@@ -367,7 +367,7 @@ class ExposureGenerator(object):
         self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
         # Zero Read
-        self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
+        self.exposure.add_read(self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
 
         SUBARRAY = self.SUBARRAY
 
@@ -458,7 +458,7 @@ class ExposureGenerator(object):
         self.exposure = exposure.Exposure(self.detector, self.grism, self.planet, self.exp_info)
 
         # Zero Read
-        self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
+        self.exposure.add_read(self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
 
         # y_ref per sample
         s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed)
@@ -477,7 +477,7 @@ class ExposureGenerator(object):
 
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
-        pixel_array = self.detector.gen_pixel_array(light_sensitive=True)  # misses 5 pixel border
+        pixel_array = self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=True)  # misses 5 pixel border
         for i, s_mid in enumerate(sample_mid_points):
 
             s_y_ref = s_y_refs[i]
@@ -514,7 +514,7 @@ class ExposureGenerator(object):
                 pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 
                 if add_dark:
-                    pixel_array_bias_full = self.detector.add_dark_current(pixel_array_full, self.NSAMP, self.SUBARRAY,
+                    pixel_array_full = self.detector.add_dark_current(pixel_array_full, self.NSAMP, self.SUBARRAY,
                                                                           self.SAMPSEQ)
 
                 self.exposure.add_read(pixel_array_full)
@@ -613,6 +613,9 @@ class ExposureGenerator(object):
 
     def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal, psf_max=4):
         """ Constructs a staring mode frame, given a source position and spectrum scaling
+
+        NOTE THAT THIS FUNCTION IS NOT AS UP TO DATE AS SCANNING AND PROBABLY WOTN BE UNTIL THE DEVELOPMENT PERIOD SLOWS
+         DOWN
 
         :param x_ref: pixel in x axis the reference should be located
         :type x_ref: int
@@ -720,6 +723,14 @@ class ExposureGenerator(object):
             # retrieve counts from vectorised integration
             flux_psf = binned_fluxes[i]
 
+            # we need to convert full frame numbers into subbarry numbers for indexing the array, the wl solution uses
+            # full frame numbers
+            sub_scale = 507-(self.SUBARRAY/2.)
+            y_sub_ = y_ - sub_scale
+            x_min_sub_ = x_min_ - sub_scale
+            x_max_sub_ = x_max_ - sub_scale
+            x_sub_ = x_ - sub_scale
+
             # Now we are checking if the widths overlap pixels, this is important at low R. Currently we assume the line
             # is still straight, calculate the proportion in the left and right pixels based on the y midpoint and
             # split accordingly. This doesnt account for cases where the top half may be in one column and the bottom
@@ -727,18 +738,16 @@ class ExposureGenerator(object):
             if not x_min_[i] == x_max_[i]:  # then the element is split across two columns
                 # calculate proportion going column x_min_ and x_max_
                 x_width = x_max[i] - x_min[i]
-                propxmin = (x_max_[i] - x_min[i])/x_width  # (floor(xmax) - xmin)/width = %
+                propxmin = (x_max_[i] - x_min[i]) / x_width  # (floor(xmax) - xmin)/width = %
                 propxmax = 1.-propxmin
 
-                pixel_array[y_-psf_max:y_+psf_max+1, int(x_min_[i])] += flux_psf * propxmin
-                pixel_array[y_-psf_max:y_+psf_max+1, int(x_max_[i])] += flux_psf * propxmax
+                pixel_array[y_sub_-psf_max:y_sub_+psf_max+1, int(x_min_sub_[i])] += flux_psf * propxmin
+                pixel_array[y_sub_-psf_max:y_sub_+psf_max+1, int(x_max_sub_[i])] += flux_psf * propxmax
             else:  # all flux goes into one column
                 # Note: Ideally we dont want to overwrite te detector, but have a function for the detector to give
                 # us a grid. there are other detector effects though so maybe wed prefer multiple detector classes
                 # or a .reset() on the class
-                pixel_array[y_-psf_max:y_+psf_max+1, x_] += flux_psf
-
-
+                pixel_array[y_sub_-psf_max:y_sub_+psf_max+1, x_sub_] += flux_psf
 
         return pixel_array
 
@@ -879,8 +888,11 @@ class ExposureGenerator(object):
         :return:
         """
 
-        # dim = self.SUBARRAY - 10
-        dim = 1014  # currently we deal with full arrays and crop them
+        dim = self.SUBARRAY
+
+        if dim == 1024:
+            dim = 1014
+
         noise = np.random.normal(mean, std, (dim, dim))
 
         return noise
