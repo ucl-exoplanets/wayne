@@ -4,10 +4,15 @@ to construct the output along with certain visualisation methods.
 
 import datetime
 import os.path
+import sys
 
 import astropy.io.fits as fits
 import astropy.units as u
 
+import astropy
+import numpy
+import pandas
+import scipy
 
 class Exposure(object):
 
@@ -68,13 +73,12 @@ class Exposure(object):
 
         hdulist = fits.HDUList([science_header])
 
-        compression = 'RICE_1'
+        compression = 'GZIP_1'
 
         for i, data in enumerate(reversed(self.reads)):
 
-            # data = np.flipud(data)  # hst fits files are the other way round
+            read_HDU = fits.ImageHDU(data)  # compression disabled as its producing stripey data
 
-            read_HDU = fits.CompImageHDU(data, compression_type=compression)
             error_array = fits.CompImageHDU()
 
             """ This array contains 16 independent flags indicating various status and problem conditions associated
@@ -194,6 +198,18 @@ class Exposure(object):
         h['SSV-SSD'] = (exp_info['scan_speed_var'], 'Scan speed variations (stddev as a % of flux)')
         h['NOISE-MEAN'] = (exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
         h['NOISE-SSD'] = (exp_info['noise_std'], 'std of normal noise (per s per pix)')
+
+
+        h[''] = ''
+        h[''] = '/ WFC3Sim Package Versions Used'
+        h[''] = ''
+        s = sys.version_info
+        py_ver = '{}.{}.{} {}'  .format(s.major, s.minor, s.micro, s.releaselevel)
+        h['V-PY'] = (py_ver, 'Python version used')
+        h['V-NP'] = (numpy.__version__, 'Numpy version used')
+        h['V-SP'] = (scipy.__version__, 'Scipy version used')
+        h['V-AP'] = (astropy.__version__, 'Astropy version used')
+        h['V-PD'] = (pandas.__version__, 'Pandas version used')
 
 
         # keywords for analysis (i.e. xref positions until)
