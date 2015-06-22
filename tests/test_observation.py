@@ -16,7 +16,7 @@ class TestExposureGenerator(unittest.TestCase):
     def setUp(self):
         self.planet = genExamplePlanet()
         self.det = detector.WFC3_IR()
-        self.g141 = grism.Grism()
+        self.g141 = grism.G141()
 
         self.wl = np.linspace(0.7, 1.8, 100) * u.micron
         self.star_flux = blackbody_lambda(self.wl, 3000) * u.sr
@@ -62,7 +62,7 @@ class Test_build_2d_limits_array(unittest.TestCase):
 
     def test_works(self):
 
-        g141 = grism.Grism()
+        g141 = grism.G141()
         psf_len_limits = (-1, 0, 1)
         wl = (1.1, 1.3, 1.6) * u.micron
         y_pos = (4., 4.5, 4.9)

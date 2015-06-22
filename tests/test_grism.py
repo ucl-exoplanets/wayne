@@ -8,12 +8,12 @@ from .. import grism
 from unittest_tools import assertArrayAlmostEqual
 
 
-class Test_Grism(unittest.TestCase):
+class Test_G141_Grism(unittest.TestCase):
     def setUp(self):
-        self.g141_grism = grism.Grism()
+        self.g141_grism = grism.G141()
 
     def test__init__(self):
-        grism.Grism()  # pass if no exceptions
+        grism.G141()  # pass if no exceptions
 
     def test_flux_to_psf_raises_TypeError_given_no_units(self):
         with self.assertRaises(TypeError):
@@ -88,11 +88,13 @@ class Test_Grism(unittest.TestCase):
 
 class Test_SpectrumTrace(unittest.TestCase):
     def test__init__(self):
-        grism.SpectrumTrace(50, 50)  # pass if no exceptions
+        grism._SpectrumTrace(50, 50, np.zeros(9), np.zeros(9))  # pass if no exceptions
+
+class Test_G141_Trace(unittest.TestCase):
 
     def test__get_wavelength_calibration_coeffs_50_50(self):
         # This test is failing yet the result given as not equal isequal :-S
-        g141_trace = grism.SpectrumTrace(50, 50)
+        g141_trace = grism.G141_Trace(50, 50)
 
         # This step is normally done at initialisation
         trace_50_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 50))

@@ -17,7 +17,7 @@ import params
 # Strictly the grism class should be non specfic and the G141 var / function should create one with g141 params.
 
 
-class Grism(object):
+class G141(object):
     """ Handles a grism object and can be used to perform calculation on it such as the psf given a flux and wavelength
 
     This class should not include observation data and instead be used to turn observational data into observed. An
@@ -45,7 +45,7 @@ class Grism(object):
         self.min_lambda = 1.075 * u.micron
         self.max_lambda = 1.700 * u.micron
 
-        # self.dispersion = 4.65 * pq.nm - The dispersion is actually dependant on x and y and not constant
+        # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually dependant on x and y and not constant
 
         ## PSF Information
         self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-g141-fwhm.dat'))
@@ -115,7 +115,6 @@ class Grism(object):
         std = FWHM / _gauss_StDev_to_FWHM
 
         return std
-
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
         """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
@@ -302,10 +301,46 @@ class Grism(object):
         :return: SpectrumTrace class
         """
 
-        return SpectrumTrace(x_ref, y_ref)
+        return G141_Trace(x_ref, y_ref)
 
 
-class SpectrumTrace(object):
+class G102(G141):
+    def __init__(self):
+        # Detector Values
+        # ---------------
+        # Note that most det values are being pulled directly from the detector class. Given that these two classes are
+        # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
+        self.detector = WFC3_IR()
+        self.name = 'G102'
+
+        # Grism Values
+        # ------------
+        self.min_lambda = 0.8 * u.micron
+        self.max_lambda = 1.15 * u.micron
+
+        # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually dependant on x and y and not constant
+
+        ## PSF Information
+        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-g141-fwhm.dat'))
+        # in future add option to set unit of data file but we work internally in microns
+        self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
+        self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
+
+        # we crop the input spectrum using this, the limiting factor here is psf
+        self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
+
+        # Throughput
+        self.throughput_file = os.path.join(params._data_dir, 'wfc3_ir_g102_src_mjd_003_syn.fits')
+        with fits.open(self.throughput_file) as f:
+            tbl = f[1].data  # the table is in the data of the second HDU
+            self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(u.micron)
+            self.throughput_val = tbl.field('THROUGHPUT')
+
+        # Non Grism Specific Constants
+        self._FWHM_to_StDev = 1./(2*np.sqrt(2*np.log(2)))
+
+
+class _SpectrumTrace(object):
     """ Calculates the equation of the spectrum trace given a source position. These are defined in the hubble documents
     and turn pixel number into wavelength (and vise versa).
 
@@ -314,7 +349,7 @@ class SpectrumTrace(object):
     $x>x_ref, y > y_ref$ and as such is not suitable for multi-object simulations
     """
 
-    def __init__(self, x_ref, y_ref):
+    def __init__(self, x_ref, y_ref, trace_coeff, wl_solution):
         """
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
@@ -322,6 +357,9 @@ class SpectrumTrace(object):
 
         self.x_ref = x_ref
         self.y_ref = y_ref
+
+        self.trace_coeff = trace_coeff
+        self.wl_solution = wl_solution
 
         self.m_t, self.c_t, self.m_w, self.c_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
         self.m_wl, self.c_wl = self._get_x_to_wl_poly_coeffs(x_ref, y_ref)
@@ -333,19 +371,19 @@ class SpectrumTrace(object):
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
 
-        :return: a_t, b_t, a_w, b_w
+        :return: m_t, c_t, m_w, c_w
         """
 
-        # TODO, make these coefficiants part of the input to set this class (so we can translate to the other grisms)
+        a = self.trace_coeff
+        b = self.wl_solution
+
         # Spectrum Trace
-        m_t = np.array(1.04275e-2 + (-7.96978e-6)*x_ref + (-2.49607e-6)*y_ref + (1.45963e-9)*x_ref**2 + (1.39757e-8)*x_ref*y_ref \
-                                                                                            + (4.84940e-10)*y_ref**2)
-        c_t = np.array(1.96882 + (9.09159e-5)*x_ref + (-1.93260e-3)*y_ref)
+        m_t = np.array(a[3] + a[4]*x_ref + a[5]*y_ref + a[6]*x_ref**2 + a[7]*x_ref*y_ref + a[8]*y_ref**2)
+        c_t = np.array(a[0] + a[1]*x_ref + a[2]*y_ref)
 
         # Wavelength Solution
-        m_w = np.array(4.51423e1 + (3.17239e-4)*x_ref + (2.17055e-3)*y_ref + (-7.42504e-7)*x_ref**2 + (3.48639e-7)*x_ref*y_ref \
-                                                                                            + (3.09213e-7)*y_ref**2)
-        c_w = np.array(8.95431e3 + (9.35925e-2)*x_ref)  # + (0)*y_ref
+        m_w = np.array(b[3] + b[4]*x_ref + b[5]*y_ref + b[6]*x_ref**2 + b[7]*x_ref*y_ref + b[8]*y_ref**2)
+        c_w = np.array(b[0] + b[1]*x_ref) + b[2]*y_ref
 
         return m_t, c_t, m_w, c_w
 
@@ -501,35 +539,6 @@ class SpectrumTrace(object):
 
         return x, y, m, c
 
-    def plot_trace(self):
-        """ plots the trace line on the detector grid with points for the source position and the start and end of the
-         spectrum.
-
-        :param fig: figure object
-        :return:
-        """
-
-        fig = plt.figure(figsize=(6, 6))
-        plt.title("WFC3 IR G141 Calibration")
-        plt.xlim(0, 1024)
-        plt.ylim(0, 1024)
-        plt.xlabel("x pixel number")
-        plt.ylabel("y pixel number")
-
-        x = np.arange(1024)
-        y = self.x_to_y(x)
-        plt.plot(x, y, c='b', label="trace line", lw=2)
-
-        plt.scatter(self.x_ref, self.y_ref, c='r', s=60, label="Source Position", zorder=10)
-
-        spec_wl = np.array([1.075, 1.7]) * u.micron
-        spec_x = self.wl_to_x(spec_wl)
-        spec_y = self.wl_to_y(spec_wl)
-        plt.scatter(spec_x, spec_y, c='g', s=60, label="Spectrum Position", zorder=10)
-        plt.legend()
-
-        return fig
-
     def xangle(self):
         """ get the angle from the x axis to the trace line using triganometry.
 
@@ -560,3 +569,64 @@ class SpectrumTrace(object):
         h = 1/np.cos(theta)
 
         return h
+
+    def plot_trace(self):
+        """ plots the trace line on the detector grid with points for the source position and the start and end of the
+         spectrum.
+
+        :param fig: figure object
+        :return:
+        """
+
+        fig = plt.figure(figsize=(6, 6))
+        plt.title("WFC3 IR {} Calibration".format(self.grism_name))
+        plt.xlim(0, 1024)
+        plt.ylim(0, 1024)
+        plt.xlabel("x pixel number")
+        plt.ylabel("y pixel number")
+
+        x = np.arange(1024)
+        y = self.x_to_y(x)
+        plt.plot(x, y, c='b', label="trace line", lw=2)
+
+        plt.scatter(self.x_ref, self.y_ref, c='r', s=60, label="Source Position", zorder=10)
+
+        spec_wl = np.array([1.075, 1.7]) * u.micron
+        spec_x = self.wl_to_x(spec_wl)
+        spec_y = self.wl_to_y(spec_wl)
+        plt.scatter(spec_x, spec_y, c='g', s=60, label="Spectrum Position", zorder=10)
+        plt.legend()
+
+        return fig
+
+
+g141_trace_coeff = [1.96882, 9.09159E-5, -1.93260E-3, 1.04275E-2, -7.96978E-6, -2.49607E-6, 1.45963E-9, 1.39757E-8,
+                    4.8494E-10]
+g141_trace_error = [8.09111E-2, 3.57223E-6, 3.12042E-6, 5.94731E-4, 4.34517E-7, 3.57986E-7, 3.87141E-10, 3.29421E-10,
+                    3.08712E-10]
+
+g102_trace_coeff = [-3.55018E-1, 3.28722E-5, -1.44571E-3, 1.42852E-2, -7.20713E-6, -2.42542E-6, 1.18294E-9, 1.19634E-8,
+                    6.17274E-10]
+g102_trace_error = [7.40459E-2, 4.4456E-6, 3.653212E-6, 3.86038E-4, 4.21303E-7, 3.42753E-7, 4.26462E-10, 3.51491E-10,
+                    3.02759E-10]
+
+g141_wl_solution = [8.95431E3, 9.35925E-2, 0, 4.51423E1, 3.17239E-4, 2.17055E-3, -7.42504E-7, 3.48639E-7, 3.09213E-7]
+g141_wl_solution_error = [8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4, 2.3185E-4, 4.45730E-7, 3.20519E-7, 2.16386E-7]
+
+g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4, 1.58739E-2, -4.25234E-7, -6.53726E-8]
+g102_wl_solution_error= [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4, 1.05015E-4, 1.80775E-7, 9.35939E-8]
+
+
+class G141_Trace(_SpectrumTrace):
+
+    def __init__(self, x_ref, y_ref):
+
+        _SpectrumTrace.__init__(self, x_ref, y_ref, g141_trace_coeff, g141_wl_solution)
+        self.grism_name = 'G141'
+
+class G102_Trace(_SpectrumTrace):
+
+    def __init__(self, x_ref, y_ref):
+
+        _SpectrumTrace.__init__(self, x_ref, y_ref, g102_trace_coeff, g102_wl_solution)
+        self.grism_name = 'G102'
