@@ -48,7 +48,7 @@ class G141(object):
         # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually dependant on x and y and not constant
 
         ## PSF Information
-        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-g141-fwhm.dat'))
+        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
         # in future add option to set unit of data file but we work internally in microns
         self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
         self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
@@ -306,6 +306,9 @@ class G141(object):
 
 class G102(G141):
     def __init__(self):
+
+        G141.__init__(self)
+
         # Detector Values
         # ---------------
         # Note that most det values are being pulled directly from the detector class. Given that these two classes are
@@ -321,7 +324,7 @@ class G102(G141):
         # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually dependant on x and y and not constant
 
         ## PSF Information
-        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-g141-fwhm.dat'))
+        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
         # in future add option to set unit of data file but we work internally in microns
         self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
         self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
@@ -613,8 +616,8 @@ g102_trace_error = [7.40459E-2, 4.4456E-6, 3.653212E-6, 3.86038E-4, 4.21303E-7, 
 g141_wl_solution = [8.95431E3, 9.35925E-2, 0, 4.51423E1, 3.17239E-4, 2.17055E-3, -7.42504E-7, 3.48639E-7, 3.09213E-7]
 g141_wl_solution_error = [8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4, 2.3185E-4, 4.45730E-7, 3.20519E-7, 2.16386E-7]
 
-g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4, 1.58739E-2, -4.25234E-7, -6.53726E-8]
-g102_wl_solution_error= [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4, 1.05015E-4, 1.80775E-7, 9.35939E-8]
+g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4, 1.58739E-3, -4.25234E-7, -6.53726E-8, 0.]
+g102_wl_solution_error= [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4, 1.05015E-4, 1.80775E-7, 9.35939E-8, 0.]
 
 
 class G141_Trace(_SpectrumTrace):

@@ -1,4 +1,4 @@
-# FWHM with wavelength for the G141 Grism from WFC3 Inst handbook (cycle 23)
+# FWHM with wavelength for the WFC3 IR Channel from WFC3 Inst handbook (cycle 23)
 # sec 7.6.1 - page 140*
 # wavelength (nm) | FWHM (pixels)
  800  0.971
@@ -10,4 +10,4 @@
 1400  1.100
 1500  1.136
 1600  1.176
-1700  1.219 
+1700  1.219
