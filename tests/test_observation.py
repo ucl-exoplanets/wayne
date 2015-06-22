@@ -25,11 +25,11 @@ class TestExposureGenerator(unittest.TestCase):
         self.expgen = observation.ExposureGenerator(self.det, self.g141, 2, 'RAPID', 256, self.planet)
 
     def test_staring_frame(self):  # just testing it generates
-        exp = self.expgen.staring_frame(500, 500, self.wl, self.star_flux, self.planet_depth, 3)
+        exp = self.expgen.staring_frame(450, 450, self.wl, self.star_flux, self.planet_depth, 3)
         self.assertIsInstance(exp, exposure.Exposure)
 
     def test_scanning_frame(self):  # just testing it generates
-        exp = self.expgen.scanning_frame(500, 500, self.wl, self.star_flux,
+        exp = self.expgen.scanning_frame(450, 450, self.wl, self.star_flux,
                                          self.planet_depth, 1 * u.pixel / u.s, 0.2 * u.s, 3)
         self.assertIsInstance(exp, exposure.Exposure)
 

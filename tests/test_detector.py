@@ -17,11 +17,15 @@ class Test_Detector(unittest.TestCase):
     def test_get_modes(self):
         det = detector.WFC3_IR()
 
-        df = det._get_modes()
+        df, df2 = det._get_modes()
 
         self.assertIsInstance(df, pd.core.frame.DataFrame)
         self.assertEqual(len(df), 315)
         self.assertEqual(len(df.columns), 4)
+
+        self.assertIsInstance(df2, pd.core.frame.DataFrame)
+        self.assertEqual(len(df2), 19)
+        self.assertEqual(len(df2.columns), 3)
 
     def test_get_exptime_works(self):
         det = detector.WFC3_IR()

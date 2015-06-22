@@ -649,11 +649,11 @@ class ExposureGenerator(object):
         wl, flux = tools.crop_spectrum(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, flux)
 
         # Zero Read
-        self.exposure.add_read(self.detector.gen_pixel_array(light_sensitive=False))
+        self.exposure.add_read(self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
 
         # Generate first sample up the ramp
         first_read_time = self.read_times[0]
-        first_read_array = self.detector.gen_pixel_array(light_sensitive=True)
+        first_read_array = self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=True)
         first_read_array = self._gen_staring_frame(x_ref, y_ref, wl, flux, first_read_array, first_read_time, psf_max)
         self.exposure.add_read(self.detector.add_bias_pixels(first_read_array))
 
