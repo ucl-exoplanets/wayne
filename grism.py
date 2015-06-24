@@ -265,9 +265,9 @@ class G141(object):
         plt.plot(self.throughput_wl, self.throughput_val)
         plt.title("Grism Throughput")
         plt.ylabel("Throughput")
-        plt.xlabel("$\lambda (\mu m)$")
+        plt.xlabel("Wavelength ($\mu m$)")
 
-    def plot_spectrum_with_throughput(self, wl, flux, qe=True):
+    def plot_spectrum_with_throughput(self, wl, flux, qe=True, fig=None, show_input=True):
         """ Plots the spectrum before and after the throughput corrections
 
         :param wl:
@@ -277,18 +277,24 @@ class G141(object):
         :param qe: Also plot version that has been correct for detector quantum efficiency
         """
 
-        plt.figure()
-        plt.plot(wl, flux, label="Input Spectra")
+        if fig is None:
+            plt.figure()
+
+        if show_input:
+            plt.plot(wl, flux, label="Input Spectra")
+
         flux_tp = self.apply_throughput(wl, flux)
-        plt.plot(wl, flux_tp, label="G141 TP Corrected")
+        plt.plot(wl, flux_tp, label="{} TP Corrected".format(self.name))
 
         if qe:
             flux_tp_qe = self.detector.apply_quantum_efficiency(wl, flux_tp)
-            plt.plot(wl, flux_tp_qe, label="G141 TP + WFC3 IR QE Corrected")
+            plt.plot(wl, flux_tp_qe, label="{} TP + WFC3 IR QE Corrected".format(self.name))
 
         plt.title("Input Spectrum through the grism")
         plt.ylabel("Flux")  # really its normally transit depth
-        plt.xlabel("$\lambda (\mu m)$")
+        plt.xlabel("Wavelength ($\mu m$)")
+
+        plt.xlim(self.throughput_wl[0].value, self.throughput_wl[-1].value)  # otherwise we scale to input spectrum
 
         plt.legend(loc="lower center")
 
