@@ -46,6 +46,9 @@ class G141(object):
         self.min_lambda = 1.075 * u.micron
         self.max_lambda = 1.700 * u.micron
 
+        self.trace_coeff = g141_trace_coeff
+        self.wl_solution = g141_wl_solution
+
         # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually dependant on x and y and not constant
 
         ## PSF Information
@@ -127,10 +130,9 @@ class G141(object):
         :return: a_t, b_t, a_w, b_w
         """
 
-        trace = self.trace(x_ref, y_ref)
-        a_t, b_t, a_w, b_w = trace._get_wavelength_calibration_coeffs(x_ref, y_ref)
+        m_t, c_t, m_w, c_w = wavelength_calibration_coeffs(x_ref, y_ref, self.trace_coeff, self.wl_solution)
 
-        return a_t, b_t, a_w, b_w
+        return m_t, c_t, m_w, c_w
 
     def get_pixel_wl(self, x_ref, y_ref, x_1, y_1):
         """ gives the wavelength of pixel x1, y1 given reference pixel x_ref, y_ref.
@@ -322,6 +324,9 @@ class G102(G141):
         self.min_lambda = 0.8 * u.micron
         self.max_lambda = 1.15 * u.micron
 
+        self.trace_coeff = g102_trace_coeff
+        self.wl_solution = g102_wl_solution
+
         # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually dependant on x and y and not constant
 
         ## PSF Information
@@ -378,16 +383,7 @@ class _SpectrumTrace(object):
         :return: m_t, c_t, m_w, c_w
         """
 
-        a = self.trace_coeff
-        b = self.wl_solution
-
-        # Spectrum Trace
-        m_t = np.array(a[3] + a[4]*x_ref + a[5]*y_ref + a[6]*x_ref**2 + a[7]*x_ref*y_ref + a[8]*y_ref**2)
-        c_t = np.array(a[0] + a[1]*x_ref + a[2]*y_ref)
-
-        # Wavelength Solution
-        m_w = np.array(b[3] + b[4]*x_ref + b[5]*y_ref + b[6]*x_ref**2 + b[7]*x_ref*y_ref + b[8]*y_ref**2)
-        c_w = np.array(b[0] + b[1]*x_ref) + b[2]*y_ref
+        m_t, c_t, m_w, c_w = wavelength_calibration_coeffs(x_ref, y_ref, self.trace_coeff, self.wl_solution)
 
         return m_t, c_t, m_w, c_w
 
@@ -622,6 +618,29 @@ g141_wl_solution_error = [8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4, 2.3185
 g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4, 1.58739E-3, -4.25234E-7, -6.53726E-8, 0.]
 g102_wl_solution_error= [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4, 1.05015E-4, 1.80775E-7, 9.35939E-8, 0.]
 
+
+def wavelength_calibration_coeffs(x_ref, y_ref, trace_coeff, wl_sol_coeff):
+    """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
+    Software manual and determined by (Knutschner 2009, calibration of the G141 Grism).
+
+    :param x_ref: The x position of the star on the reference frame
+    :param y_ref: The y position of the star on the reference frame
+
+    :return: m_t, c_t, m_w, c_w
+    """
+
+    a = trace_coeff
+    b = wl_sol_coeff
+
+    # Spectrum Trace
+    m_t = np.array(a[3] + a[4]*x_ref + a[5]*y_ref + a[6]*x_ref**2 + a[7]*x_ref*y_ref + a[8]*y_ref**2)
+    c_t = np.array(a[0] + a[1]*x_ref + a[2]*y_ref)
+
+    # Wavelength Solution
+    m_w = np.array(b[3] + b[4]*x_ref + b[5]*y_ref + b[6]*x_ref**2 + b[7]*x_ref*y_ref + b[8]*y_ref**2)
+    c_w = np.array(b[0] + b[1]*x_ref) + b[2]*y_ref
+
+    return m_t, c_t, m_w, c_w
 
 class G141_Trace(_SpectrumTrace):
 
