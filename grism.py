@@ -39,6 +39,7 @@ class G141(object):
         # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
         self.detector = WFC3_IR()
         self.name = 'G141'
+        self.trace = G141_Trace
 
         # Grism Values
         # ------------
@@ -126,15 +127,8 @@ class G141(object):
         :return: a_t, b_t, a_w, b_w
         """
 
-        # Spectrum Trace
-        a_t = 1.04275e-2 + (-7.96978e-6)*x_ref + (-2.49607e-6)*y_ref + (1.45963e-9)*x_ref**2 + (1.39757e-8)*x_ref*y_ref \
-                                                                                            + (4.84940e-10)*y_ref**2
-        b_t = 1.96882 + (9.09159e-5)*x_ref + (-1.93260e-3)*y_ref
-
-        # Wavelength Solution
-        a_w = 4.51423e1 + (3.17239e-4)*x_ref + (2.17055e-3)*y_ref + (-7.42504e-7)*x_ref**2 + (3.48639e-7)*x_ref*y_ref \
-                                                                                            + (3.09213e-7)*y_ref**2
-        b_w = 8.95431e3 + (9.35925e-2)*x_ref  # + (0)*y_ref
+        trace = self.trace(x_ref, y_ref)
+        a_t, b_t, a_w, b_w = trace._get_wavelength_calibration_coeffs(x_ref, y_ref)
 
         return a_t, b_t, a_w, b_w
 
@@ -321,6 +315,7 @@ class G102(G141):
         # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
         self.detector = WFC3_IR()
         self.name = 'G102'
+        self.trace = G102_Trace
 
         # Grism Values
         # ------------
@@ -579,7 +574,7 @@ class _SpectrumTrace(object):
 
         return h
 
-    def plot_trace(self):
+    def plot_trace(self, fig=None):
         """ plots the trace line on the detector grid with points for the source position and the start and end of the
          spectrum.
 
@@ -587,7 +582,9 @@ class _SpectrumTrace(object):
         :return:
         """
 
-        fig = plt.figure(figsize=(6, 6))
+        if fig is None:
+            fig = plt.figure(figsize=(6, 6))
+
         plt.title("WFC3 IR {} Calibration".format(self.grism_name))
         plt.xlim(0, 1024)
         plt.ylim(0, 1024)
