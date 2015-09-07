@@ -313,8 +313,11 @@ class WFC3_IR(object):
             c0, c1, c2, c3 = self.non_lin_coeff[i]
 
             # Now we need to find the root, per pixel!!!!
+        # INCOMPLETE
+        # TODO (ryan) join quadrants back up
 
-        # TODO join quadrants back up
+    def get_flat_field(self, pixel_array, ):
+        pass
 
 
 class WFC3SimException(BaseException):

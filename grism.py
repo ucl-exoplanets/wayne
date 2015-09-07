@@ -1,6 +1,7 @@
-""" Simulation for a grism, including templates for WFC3's on board G102 and G141 grisms. These classes take a raw
-spectrum (or in future through the instrument) and simulates its passing through the grism as a field. The detector class
-then maps the field to pixels.
+""" Simulation for a grism, including templates for WFC3's on board G102 and
+G141 grisms. These classes take a raw spectrum (or in future through the
+instrument) and simulates its passing through the grism as a field. The
+detector class then maps the field to pixels.
 """
 
 import os.path
@@ -29,13 +30,15 @@ class G141(object):
     """
 
     def __init__(self):
-        """ In future will take the vars that define a unique grism, for now this is kept WFC3 G141 specific, with all
-        params defined in __init__. this is mostly because i dont know what unique set of params will be required in the
-        end for each grism.
+        """ In future will take the vars that define a unique grism, for now
+        this is kept WFC3 G141 specific, with all params defined in __init__.
+        This is mostly because i dont know what unique set of params will be
+        required in the end for each grism.
 
-        self.detector = WFC3_IR()  # this should be called and set by an observation / instrument class
-        Remeber many parameters like dispersion here are intrinsically linked to the detector, so this is really
-        WFC3 G141 not G141 applicable to any instrument.
+        self.detector = WFC3_IR()  # this should be called and set by an
+        observation / instrument class. Remember many parameters like
+        dispersion here are intrinsically linked to the detector, so this is
+        really WFC3 G141 not G141 applicable to any instrument.
         """
 
         # Detector Values
@@ -59,6 +62,12 @@ class G141(object):
 
         # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually
         #  dependant on x and y and not constant
+
+        # Flat
+        # TODO (ryan) where does this file come fron, original name?
+        self.flat_file = os.path.join(params._calb_dir,
+                                       'WFC3.IR.G141.flat.2.fits')
+        self.flat_file2 = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
         ## PSF Information
         self._psf_file = np.loadtxt(
@@ -85,20 +94,23 @@ class G141(object):
 
     def flux_to_psf(self, wavelength, flux, y_pos=0.):
         """
-        Given a wavelength and flux this function returns the gaussian function for the observation at the wl given
-         (linearly interpolated using numpy.interp)
+        Given a wavelength and flux this function returns the gaussian function
+        for the observation at the wl given (linearly interpolated using
+        numpy.interp)
 
-        The FWHM at each wavelength should be defined in a textfile loaded by self._psf_file
+        The FWHM at each wavelength should be defined in a textfile loaded by
+         self._psf_file
 
-        We assume the psf can be represented by a gaussian, this is true for WFC3 G141 (*WFC3 inst handbook (cycle 23)
+        We assume the psf can be represented by a gaussian, this is true for
+        WFC3 G141 (*WFC3 inst handbook (cycle 23)
          - sec 7.6.1 - page 140*).
 
         :param wavelength: wavelength to sample (unit length) singular
         :type wavelength: astropy.units.quantity.Quantity
         :param flux: The flux at the wavelength (i.e the area under the gaussian)
         :type flux: float
-        :param y_pos: optionally set ypos. this means you can integrate over the same values as pixels set mean=2.1 and
-          integrate from 2 to 3
+        :param y_pos: optionally set ypos. this means you can integrate over
+        the same values as pixels set mean=2.1 and integrate from 2 to 3
         :type y_pos: float
 
         :return:
@@ -110,7 +122,8 @@ class G141(object):
 
         mean = y_pos  # this is the center of the guassian
 
-        # linear interpolation of the FWHM given in self._psf_file TODO quadratic interp / fit a function?
+        # linear interpolation of the FWHM given in self._psf_file
+        #  TODO quadratic interp / fit a function?
         FWHM = np.interp(wavelength.to(u.micron).value,
                          self.psf_wavelength.to(u.micron).value,
                          self.psf_fwhm, left=0., right=0.)
@@ -120,8 +133,9 @@ class G141(object):
         return gaussian_model
 
     def wl_to_psf_std(self, wavelengths):
-        """ This is an optimised function to return the standard deviations of the gaussians at each wavelength for
-        each flux. looks up FWHM then converts to stddev.
+        """ This is an optimised function to return the standard deviations of
+        the gaussians at each wavelength for each flux. looks up FWHM then
+        converts to stddev.
 
         :param wavelengths:
 
@@ -182,22 +196,26 @@ class G141(object):
         return wl
 
     def get_pixel_wl_per_row(self, x_ref, y_ref, x_values=None, y_value=None):
-        """ Given the star position (x_ref, y_ref) this function will return the wavelengths for the pixels in the row
-        y_ref. If x_values is given, this function will return the values for x_values rather than the whole row
+        """ Given the star position (x_ref, y_ref) this function will return the
+         wavelengths for the pixels in the row
+        y_ref. If x_values is given, this function will return the values for
+         x_values rather than the whole row
 
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
-        :param x_values: list of pixel numbers to obtain wavelengths for, can be fractional
+        :param x_values: list of pixel numbers to obtain wavelengths for, can
+         be fractional
         :param y_value: y value of the row, if None will use y_ref
 
-        :notes: takes around 0.33 seconds to compute each row, on 1024 grid. ~170x faster than each pixel individually
+        :notes: takes around 0.33 seconds to compute each row, on 1014 grid.
+         ~170x faster than each pixel individually
 
-        :return: wavelengths for the row at y_ref for all pixels or all values of x_values
+        :return: wavelengths for the row at y_ref for all pixels or all values
+        of x_values
         """
 
-        if x_values is None:
-            x_values = np.arange(
-                1024)  # TODO set pixel numbers in detector class
+        if x_values is None:  # TODO set pixel numbers in detector class
+            x_values = np.arange(1014)
         else:
             x_values = np.array(x_values)
 
@@ -216,14 +234,31 @@ class G141(object):
 
         return wl_values
 
+    def get_pixel_wl_whole_detector(self, x_ref, y_ref):
+        """ Calculates the mid wavelength of each pixel in the detector
+        :param x_ref:
+        :param y_ref:
+        :return:
+        """
+
+        wl_grid = np.zeros((1014, 1014))
+
+        for i in xrange(1014):
+            wl_grid[i] = self.get_pixel_wl_per_row(x_ref, y_ref, None, i)
+
+        return wl_grid
+
     def get_pixel_edges_wl_per_row(self, x_ref, y_ref, x_centers=None,
                                    y_value=None, pixel_size=1.):
-        """ Calculates the wavelength inbetween each pixel defined in x_centers. For example x_centers = 1,2,3 and the
-        return will give the wavelengths for 0.5, 1.5, 2.5, 3.5. This is the same as
+        """ Calculates the wavelength inbetween each pixel defined in
+        x_centers. For example x_centers = 1,2,3 and the return will give
+        the wavelengths for 0.5, 1.5, 2.5, 3.5. This is the same as
 
-            self.get_pixel_row_wl(x_ref, y_ref, x_values=self._bin_centers_to_limits(x_centers, pixel_size), y_value)
+            self.get_pixel_row_wl(x_ref, y_ref, x_values= \
+                self._bin_centers_to_limits(x_centers, pixel_size), y_value)
 
-        And is used to get the limits to pass to a binning function to reduce the input spectra to pixels
+        And is used to get the limits to pass to a binning function to reduce
+        the input spectra to pixels
 
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
@@ -231,9 +266,11 @@ class G141(object):
         :param y_value: y value of the row, if None will use y_ref
         :param pixel_size: size of pixel (same units as centers)
 
-        :notes: takes around 0.33 seconds to compute each row, on 1024 grid. ~170x faster than each pixel individually
+        :notes: takes around 0.33 seconds to compute each row, on 1024 grid.
+        ~170x faster than each pixel individually
 
-        :return: wavelengths for the row at y_ref for all pixels or all values of x_values
+        :return: wavelengths for the row at y_ref for all pixels or all values
+        of x_values
         """
 
         x_values = self._bin_centers_to_limits(x_centers, pixel_size)
@@ -242,14 +279,15 @@ class G141(object):
         return wl_values
 
     def _bin_centers_to_limits(self, centers, bin_size=1.):
-        """ Converts a list of bin centers into limits (edges) given a (constant) bin size. Can be fractional.
+        """ Converts a list of bin centers into limits (edges) given a
+        (constant) bin size. Can be fractional.
 
         This is used to convert raw pixel numbers into limits
             i.e 1, 2, 3 -> 0.5, 1.5, 2.5, 3.5
         in order to then determine the spectral contribution in that pixel
 
-        No effort is made to see if you gave a constant bin, you will just get an incorrect result.
-            i.e. 1, 5, 7 -> 0.5, 4.5, 6.5, 7.5
+        No effort is made to see if you gave a constant bin, you will just get
+        an incorrect result. i.e. 1, 5, 7 -> 0.5, 4.5, 6.5, 7.5
 
         :param centers: array of bin centers
         :param bin_size: size of bin (same units as centers)
@@ -265,8 +303,9 @@ class G141(object):
         return bin_edges
 
     def apply_throughput(self, wl, flux):
-        """ Converts measurements of wavelength, flux to post grism values by multiplying by the throughput. A linear
-        interpolation (numpy.interp) is used to generate values between sample points.
+        """ Converts measurements of wavelength, flux to post grism values by
+        multiplying by the throughput. A linear interpolation (numpy.interp)
+        is used to generate values between sample points.
 
         :param wl: wavelength of flux / counts
         :type wl: astropy.units.quantity.Quantity
@@ -330,13 +369,49 @@ class G141(object):
     def get_trace(self, x_ref, y_ref):
         """ Get the spectrum trace, in order to convert between x, y and wl.
 
-        This function should setup the trace class wth the x_ref and y_ref values given along with the calibration
-        coefficients
+        This function should setup the trace class wth the x_ref and y_ref
+        values given along with the calibration coefficients
 
         :return: SpectrumTrace class
         """
 
         return G141_Trace(x_ref, y_ref)
+
+    def get_flat_field(self, x_ref, y_ref):
+        """ Uses the pixel-to-pixel flat to generate a wavelength depend flat
+        to correct for (or in this case add in) the effect of gain.
+
+        :param x_ref:
+        :param y_ref:
+        :return:
+        """
+
+        wl_array = self.get_pixel_wl_whole_detector(x_ref, y_ref)
+
+        with fits.open(self.flat_file) as flat:
+            wmin = flat[0].header['WMIN']
+            wmax = flat[0].header['WMAX']
+            f0 = flat[0].data
+            f1 = flat[1].data
+            f2 = flat[2].data
+            f3 = flat[3].data
+
+        # turn into format for flat equations
+        wl_array_norm = (wl_array - wmin) / (wmax - wmin)
+
+        with fits.open(self.flat_file2) as flat2:
+            # TODO (ryan) what is this?
+            flat_data = flat2[1].data[5:-5, 5:-5]
+
+
+        flatfield = (f0 + f1 * wl_array_norm + f2 * (wl_array_norm**2) +
+                     f3 * (wl_array_norm**3))
+
+        flatfield = flatfield / flat_data
+
+        return flatfield
+
+
 
 
 class G102(G141):
@@ -389,12 +464,15 @@ class G102(G141):
 
 
 class _SpectrumTrace(object):
-    """ Calculates the equation of the spectrum trace given a source position. These are defined in the hubble documents
-    and turn pixel number into wavelength (and vise versa).
+    """ Calculates the equation of the spectrum trace given a source position.
+    These are defined in the hubble documents  and turn pixel number into
+    wavelength (and vise versa).
 
-    This is in effect a special type of polynomial class which converts between the x and y pixel positions
-    (called x and y) herein and the wavelength of these positions. This class only operates on the trace, and for
-    $x>x_ref, y > y_ref$ and as such is not suitable for multi-object simulations
+    This is in effect a special type of polynomial class which converts between
+    the x and y pixel positions (called x and y) herein and the wavelength
+    of these positions. This class only operates on the trace, and for
+    $x>x_ref, y > y_ref$ and as such is not suitable for multi-object
+    simulations
     """
 
     def __init__(self, x_ref, y_ref, trace_coeff, wl_solution):
@@ -409,8 +487,9 @@ class _SpectrumTrace(object):
         self.trace_coeff = trace_coeff
         self.wl_solution = wl_solution
 
-        self.m_t, self.c_t, self.m_w, self.c_w = self._get_wavelength_calibration_coeffs(
-            x_ref, y_ref)
+        self.m_t, self.c_t, self.m_w, self.c_w = \
+            self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+
         self.m_wl, self.c_wl = self._get_x_to_wl_poly_coeffs(x_ref, y_ref)
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
@@ -459,21 +538,25 @@ class _SpectrumTrace(object):
         return ((y - self.y_ref - self.c_t) / self.m_t) + self.x_ref
 
     def _get_x_to_wl_poly_coeffs(self, x_ref, y_ref):
-        """ This function finds the polynomial that maps x position to the wavelength. Note this only valid for
-        $x > x_ref and y > y_ref$ although for performance we don't check that here as we are only interested in the
-        produced spectrum.
+        """ This function finds the polynomial that maps x position to the
+        wavelength. Note this only valid for $x > x_ref and y > y_ref$
+        although for performance we don't check that here as we are only
+        interested in the produced spectrum.
 
-        This function works by plotting two points at x_ref+10 and x_ref+20, calculating y using `self.x_to_y` and then
-        converting the result to $\lambda$. (10 and 20 could be any combinations of positive numbers). d is the distance
-        between $(x_*, y_*)$ and (x, y) on the trace.
+        This function works by plotting two points at x_ref+10 and x_ref+20,
+        calculating y using `self.x_to_y` and then converting the result to
+        $\lambda$. (10 and 20 could be any combinations of positive numbers).
+        d is the distance between $(x_*, y_*)$ and (x, y) on the trace.
 
         $d = \sqrt{(y-y_*)^2+(x-x_*)^2}$
 
-        we can then get the wl (a factor of 10,000 is used to convert the result to microns)
+        we can then get the wl (a factor of 10,000 is used to convert the
+        result to microns)
 
         $\lambda = (a_w d + b_w) / 10000$
 
-        And then finding the equation of the line given ($\lambda_{10}, $\\x_{10}) and ($\lambda_{20}, $\\x_{20})$$
+        And then finding the equation of the line given ($\lambda_{10},
+        $\\x_{10}) and ($\lambda_{20}, $\\x_{20})$$
 
         $y_{\lambda} = m_{\lambda}x+c_{\lambda}$
 
@@ -481,8 +564,9 @@ class _SpectrumTrace(object):
 
         $c{\lambda} = y_{10} - my_\lambda x_{10}$
 
-        The actual solution is a v shape, increasing, not decreasing for $x < x_ref$ and as such this solution is only
-        valid for $x>x_ref$ but the class makes no attempt to check inputs for this
+        The actual solution is a v shape, increasing, not decreasing for
+        $x < x_ref$ and as such this solution is only valid for $x>x_ref$
+        but the class makes no attempt to check inputs for this
 
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
@@ -505,7 +589,8 @@ class _SpectrumTrace(object):
         return m_wl, c_wl
 
     def x_to_wl(self, x):
-        """ Converts x to wavelength using coeffs from `self._get_x_to_wl_poly_coeffs`, only valid for $x > x_ref$
+        """ Converts x to wavelength using coeffs from
+        `self._get_x_to_wl_poly_coeffs`, only valid for $x > x_ref$
 
         $\lambda = m_{\lambda}x + c_{\lambda}$
 
@@ -519,7 +604,8 @@ class _SpectrumTrace(object):
         return self.m_wl * x + self.c_wl
 
     def y_to_wl(self, y):
-        """ Converts y to wavelength using `self.y_to_x` then `self.x_to_wl`. only valid for $y > y_ref$
+        """ Converts y to wavelength using `self.y_to_x` then `self.x_to_wl`.
+         only valid for $y > y_ref$
 
         $\lambda = m_{\lambda}x + c_{\lambda}$
 
@@ -534,8 +620,10 @@ class _SpectrumTrace(object):
         return self.x_to_wl(x)
 
     def wl_to_x(self, wl):
-        """ Converts wavelength to x using coeffs from `self._get_x_to_wl_poly_coeffs`, this is more dangerous as it is
-         still only valid for $x > x_ref$ which equates to $\lambda > 1. \mu m$ but should only be considered valid in
+        """ Converts wavelength to x using coeffs from
+        `self._get_x_to_wl_poly_coeffs`, this is more dangerous as it is
+         still only valid for $x > x_ref$ which equates to $\lambda > 1.
+         \mu m$ but should only be considered valid in
          the grisms wavelength range, as outside this it has no real meaning.
 
         $x = \frac{\lambda - c_{\lambda}}{m_{\lambda}}$
@@ -550,9 +638,11 @@ class _SpectrumTrace(object):
         return (wl - self.c_wl) / self.m_wl
 
     def wl_to_y(self, wl):
-        """ Converts wavelength to y using coeffs from `self._get_x_to_wl_poly_coeffs` and then `self.x_to_y`. This is
-        more dangerous as it is still only valid for $y > y_ref$ which equates to $\lambda > 1. \mu m$ but should only
-        be considered valid in the grisms wavelength range, as outside this it has no real meaning.
+        """ Converts wavelength to y using coeffs from
+        `self._get_x_to_wl_poly_coeffs` and then `self.x_to_y`. This is
+        more dangerous as it is still only valid for $y > y_ref$ which
+        equates to $\lambda > 1. \mu m$ but should only be considered valid
+        in the grisms wavelength range, as outside this it has no real meaning.
 
         :param wl: numpy array of wl values
         :type wl: numpy.ndarray
@@ -599,11 +689,13 @@ class _SpectrumTrace(object):
         return theta
 
     def psf_length_per_pixel(self):
-        """ Calculates the length of the line perpendicular to the trace that will fit inside 1 pixel. This is used
-        to calculate how much flux should be binned per pixel.
+        """ Calculates the length of the line perpendicular to the trace that
+        will fit inside 1 pixel. This is used to calculate how much flux
+        should be binned per pixel.
 
-        To do this we draw triangle in with the psf line being h, adjacent on the y axis (and equal 1) and opposite on
-        the x axis. The angle is the same at xangle
+        To do this we draw triangle in with the psf line being h, adjacent on
+        the y axis (and equal 1) and opposite on the x axis. The angle is
+        the same at xangle
 
         :return:
         """
