@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # We want to see how changing the sampling effects the generated exposure.
@@ -14,10 +13,10 @@ import detector
 import grism
 import tools
 
-
 plt.style.use('ggplot')
 
-exodata = exodata.OECDatabase('/Users/ryan/git/open_exoplanet_catalogue/systems')
+exodata = exodata.OECDatabase(
+    '/Users/ryan/git/open_exoplanet_catalogue/systems')
 gj1214b = exodata.planetDict['Gliese 1214 b']
 
 source_spectra = np.loadtxt('hj_10000.dat')
@@ -33,7 +32,7 @@ g141 = grism.Grism()
 pixel_unit = g141.detector.pixel_unit
 
 wl_p = source_spectra[0] * u.micron
-depth_p = source_spectra[1] 
+depth_p = source_spectra[1]
 
 wl_bb = wl_p
 f_bb = blackbody_lambda(wl_bb, planet.star.T)
@@ -46,13 +45,17 @@ f_bb_tmp = f_bb * u.sr / 1e20  # temp factor to account for distance
 
 def gen_frame((samp, psf_max)):
     exp_scan = observation.ExposureGenerator(detector.WFC3_IR(), g141,
-                                                 NSAMP=15, SAMPSEQ='RAPID', SUBARRAY=256, planet=gj1214b)
+                                             NSAMP=15, SAMPSEQ='RAPID',
+                                             SUBARRAY=256, planet=gj1214b)
 
-    exp_scan_data = exp_scan.scanning_frame(x_ref, y_ref, wl_p, f_bb_tmp, depth_p, 1*u.pixel/u.s, samp, psf_max)
+    exp_scan_data = exp_scan.scanning_frame(x_ref, y_ref, wl_p, f_bb_tmp,
+                                            depth_p, 1 * u.pixel / u.s, samp,
+                                            psf_max)
 
     # exp_scan_data.generate_fits('output/', 'R1000_256_RAPID_15_1ps_{}ms_{}psf.fits'.format(
     #     int(samp.to(u.ms).value), psf_max
     # ))
+
 
 # to_run = [
 #     (500*u.ms, 5),
@@ -69,7 +72,4 @@ def gen_frame((samp, psf_max)):
 # pool.map(gen_frame, to_run)
 
 
-gen_frame((500*u.ms, 4))
-
-
-
+gen_frame((500 * u.ms, 4))

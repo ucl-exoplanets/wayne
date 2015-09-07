@@ -14,15 +14,20 @@ from models import GaussianModel1D, _gauss_StDev_to_FWHM
 from detector import WFC3_IR
 import params
 
-# Strictly the grism class should be non specfic and the G141 var / function should create one with g141 params.
+
+# Strictly the grism class should be non specfic and the G141 var / function
+#  should create one with g141 params.
 
 
 class G141(object):
-    """ Handles a grism object and can be used to perform calculation on it such as the psf given a flux and wavelength
+    """ Handles a grism object and can be used to perform calculation on it
+     such as the psf given a flux and wavelength
 
-    This class should not include observation data and instead be used to turn observational data into observed. An
-    observation / combined detector grism class can do this. calling each component as its needed.
+    This class should not include observation data and instead be used to turn
+     observational data into observed. An observation / combined detector
+     grism class can do this. calling each component as its needed.
     """
+
     def __init__(self):
         """ In future will take the vars that define a unique grism, for now this is kept WFC3 G141 specific, with all
         params defined in __init__. this is mostly because i dont know what unique set of params will be required in the
@@ -35,8 +40,11 @@ class G141(object):
 
         # Detector Values
         # ---------------
-        # Note that most det values are being pulled directly from the detector class. Given that these two classes are
-        # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
+        # Note that most det values are being pulled directly from the detector
+        #  class. Given that these two classes are intrinsically linked this
+        #  is probably ok, but can be changed if needed.
+        # (i.e. self.detector.pixel_unit)
+
         self.detector = WFC3_IR()
         self.name = 'G141'
         self.trace = G141_Trace
@@ -49,11 +57,14 @@ class G141(object):
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
 
-        # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually dependant on x and y and not constant
+        # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually
+        #  dependant on x and y and not constant
 
         ## PSF Information
-        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
-        # in future add option to set unit of data file but we work internally in microns
+        self._psf_file = np.loadtxt(
+            os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
+        # in future add option to set unit of data file but we work internally
+        #  in microns
         self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
         self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
 
@@ -61,14 +72,16 @@ class G141(object):
         self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
 
         # Throughput
-        self.throughput_file = os.path.join(params._data_dir, 'wfc3_ir_g141_src_004_syn.fits')
+        self.throughput_file = os.path.join(params._data_dir,
+                                            'wfc3_ir_g141_src_004_syn.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(u.micron)
+            self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
+                u.micron)
             self.throughput_val = tbl.field('THROUGHPUT')
 
         # Non Grism Specific Constants
-        self._FWHM_to_StDev = 1./(2*np.sqrt(2*np.log(2)))
+        self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
 
     def flux_to_psf(self, wavelength, flux, y_pos=0.):
         """
@@ -92,12 +105,14 @@ class G141(object):
         """
 
         if not isinstance(wavelength, u.Quantity):
-            raise TypeError("Wavelength must be given in units, got {}".format(type(wavelength)))
+            raise TypeError("Wavelength must be given in units, got {}".format(
+                type(wavelength)))
 
         mean = y_pos  # this is the center of the guassian
 
         # linear interpolation of the FWHM given in self._psf_file TODO quadratic interp / fit a function?
-        FWHM = np.interp(wavelength.to(u.micron).value, self.psf_wavelength.to(u.micron).value,
+        FWHM = np.interp(wavelength.to(u.micron).value,
+                         self.psf_wavelength.to(u.micron).value,
                          self.psf_fwhm, left=0., right=0.)
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
@@ -113,7 +128,8 @@ class G141(object):
         :return: standard deviations of the gaussian for each lambda
         """
 
-        FWHM = np.interp(wavelengths.to(u.micron).value, self.psf_wavelength.to(u.micron).value,
+        FWHM = np.interp(wavelengths.to(u.micron).value,
+                         self.psf_wavelength.to(u.micron).value,
                          self.psf_fwhm, left=0., right=0.)
 
         std = FWHM / _gauss_StDev_to_FWHM
@@ -121,8 +137,9 @@ class G141(object):
         return std
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
-        """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
-        Software manual and determined by (Knutschner 2009, calibration of the G141 Grism).
+        """ Returns the coefficients to compute the spectrum trace and the
+        wavelength calibration as defined in the Axe Software manual and
+        determined by (Knutschner 2009, calibration of the G141 Grism).
 
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
@@ -130,28 +147,34 @@ class G141(object):
         :return: a_t, b_t, a_w, b_w
         """
 
-        m_t, c_t, m_w, c_w = wavelength_calibration_coeffs(x_ref, y_ref, self.trace_coeff, self.wl_solution)
+        m_t, c_t, m_w, c_w = wavelength_calibration_coeffs(x_ref, y_ref,
+                                                           self.trace_coeff,
+                                                           self.wl_solution)
 
         return m_t, c_t, m_w, c_w
 
     def get_pixel_wl(self, x_ref, y_ref, x_1, y_1):
-        """ gives the wavelength of pixel x1, y1 given reference pixel x_ref, y_ref.
+        """ gives the wavelength of pixel x1, y1 given reference pixel
+         x_ref, y_ref.
 
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
         :param x_1:
         :param y_1:
 
-        :notes: takes around 5.6 seconds to compute each pixel separately on a 1024x1024 grid
+        :notes: takes around 5.6 seconds to compute each pixel separately
+         on a 1024x1024 grid
 
         :return: the wavelength of pixel (x_1, y_1)
         """
 
-        a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
-        a_t_i = 1/a_t  # the inverse
+        a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref,
+                                                                     y_ref)
+        a_t_i = 1 / a_t  # the inverse
 
         # Distance between the reference and required point on the trace
-        d = np.sqrt((y_ref-y_1+a_t_i*x_ref-a_t_i*x_1)**2/(a_t_i**2+1))
+        d = np.sqrt((y_ref - y_1 + a_t_i * x_ref - a_t_i * x_1) ** 2 / (
+        a_t_i ** 2 + 1))
 
         # Determination of wavelength
         wl = a_w * d + b_w
@@ -173,23 +196,28 @@ class G141(object):
         """
 
         if x_values is None:
-            x_values = np.arange(1024)  # TODO set pixel numbers in detector class
+            x_values = np.arange(
+                1024)  # TODO set pixel numbers in detector class
         else:
             x_values = np.array(x_values)
 
         if y_value is None:
             y_value = y_ref
 
-        a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
-        a_t_i = 1/a_t  # the inverse
+        a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref,
+                                                                     y_ref)
+        a_t_i = 1 / a_t  # the inverse
 
-        d_values = np.sqrt((y_ref-y_value+a_t_i*x_ref-a_t_i*x_values)**2/(a_t_i**2+1))
+        d_values = np.sqrt(
+            (y_ref - y_value + a_t_i * x_ref - a_t_i * x_values) ** 2 / (
+            a_t_i ** 2 + 1))
 
         wl_values = a_w * d_values + b_w
 
         return wl_values
 
-    def get_pixel_edges_wl_per_row(self, x_ref, y_ref, x_centers=None, y_value=None, pixel_size=1.):
+    def get_pixel_edges_wl_per_row(self, x_ref, y_ref, x_centers=None,
+                                   y_value=None, pixel_size=1.):
         """ Calculates the wavelength inbetween each pixel defined in x_centers. For example x_centers = 1,2,3 and the
         return will give the wavelengths for 0.5, 1.5, 2.5, 3.5. This is the same as
 
@@ -230,9 +258,9 @@ class G141(object):
         """
 
         centers = np.array(centers)
-        half_bin = bin_size/2.
+        half_bin = bin_size / 2.
 
-        bin_edges = np.append(centers-half_bin, centers[-1]+half_bin)
+        bin_edges = np.append(centers - half_bin, centers[-1] + half_bin)
 
         return bin_edges
 
@@ -249,7 +277,8 @@ class G141(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
-        throughput_values = np.interp(wl, self.throughput_wl, self.throughput_val, 0., 0.)
+        throughput_values = np.interp(wl, self.throughput_wl,
+                                      self.throughput_val, 0., 0.)
 
         return flux * throughput_values
 
@@ -263,14 +292,16 @@ class G141(object):
         plt.ylabel("Throughput")
         plt.xlabel("Wavelength ($\mu m$)")
 
-    def plot_spectrum_with_throughput(self, wl, flux, qe=True, fig=None, show_input=True):
+    def plot_spectrum_with_throughput(self, wl, flux, qe=True, fig=None,
+                                      show_input=True):
         """ Plots the spectrum before and after the throughput corrections
 
         :param wl:
         :type wl: numpy.ndarray
         :param flux:
         :type flux: numpy.ndarray
-        :param qe: Also plot version that has been correct for detector quantum efficiency
+        :param qe: Also plot version that has been correct for detector
+         quantum efficiency
         """
 
         if fig is None:
@@ -284,13 +315,15 @@ class G141(object):
 
         if qe:
             flux_tp_qe = self.detector.apply_quantum_efficiency(wl, flux_tp)
-            plt.plot(wl, flux_tp_qe, label="{} TP + WFC3 IR QE Corrected".format(self.name))
+            plt.plot(wl, flux_tp_qe,
+                     label="{} TP + WFC3 IR QE Corrected".format(self.name))
 
         plt.title("Input Spectrum through the grism")
         plt.ylabel("Flux")  # really its normally transit depth
         plt.xlabel("Wavelength ($\mu m$)")
 
-        plt.xlim(self.throughput_wl[0].value, self.throughput_wl[-1].value)  # otherwise we scale to input spectrum
+        plt.xlim(self.throughput_wl[0].value, self.throughput_wl[
+            -1].value)  # otherwise we scale to input spectrum
 
         plt.legend(loc="lower center")
 
@@ -308,13 +341,14 @@ class G141(object):
 
 class G102(G141):
     def __init__(self):
-
         G141.__init__(self)
 
         # Detector Values
         # ---------------
-        # Note that most det values are being pulled directly from the detector class. Given that these two classes are
-        # intrinsically linked this is probably ok, but can be changed if needed. (i.e. self.detector.pixel_unit)
+        # Note that most det values are being pulled directly from the detector
+        #  class. Given that these two classes are intrinsically linked this
+        #  is probably ok, but can be changed if needed.
+        #  (i.e. self.detector.pixel_unit)
         self.detector = WFC3_IR()
         self.name = 'G102'
         self.trace = G102_Trace
@@ -327,11 +361,14 @@ class G102(G141):
         self.trace_coeff = g102_trace_coeff
         self.wl_solution = g102_wl_solution
 
-        # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually dependant on x and y and not constant
+        # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually
+        #  dependant on x and y and not constant
 
         ## PSF Information
-        self._psf_file = np.loadtxt(os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
-        # in future add option to set unit of data file but we work internally in microns
+        self._psf_file = np.loadtxt(
+            os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
+        # in future add option to set unit of data file but we work internally
+        #  in microns
         self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
         self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
 
@@ -339,14 +376,16 @@ class G102(G141):
         self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
 
         # Throughput
-        self.throughput_file = os.path.join(params._data_dir, 'wfc3_ir_g102_src_mjd_003_syn.fits')
+        self.throughput_file = os.path.join(params._data_dir,
+                                            'wfc3_ir_g102_src_mjd_003_syn.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(u.micron)
+            self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
+                u.micron)
             self.throughput_val = tbl.field('THROUGHPUT')
 
         # Non Grism Specific Constants
-        self._FWHM_to_StDev = 1./(2*np.sqrt(2*np.log(2)))
+        self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
 
 
 class _SpectrumTrace(object):
@@ -370,12 +409,14 @@ class _SpectrumTrace(object):
         self.trace_coeff = trace_coeff
         self.wl_solution = wl_solution
 
-        self.m_t, self.c_t, self.m_w, self.c_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+        self.m_t, self.c_t, self.m_w, self.c_w = self._get_wavelength_calibration_coeffs(
+            x_ref, y_ref)
         self.m_wl, self.c_wl = self._get_x_to_wl_poly_coeffs(x_ref, y_ref)
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
-        """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
-        Software manual and determined by (Knutschner 2009, calibration of the G141 Grism).
+        """ Returns the coefficients to compute the spectrum trace and the
+         wavelength calibration as defined in the Axe Software manual and
+         determined by (Knutschner 2009, calibration of the G141 Grism).
 
         :param x_ref: The x position of the star on the reference frame
         :param y_ref: The y position of the star on the reference frame
@@ -383,7 +424,9 @@ class _SpectrumTrace(object):
         :return: m_t, c_t, m_w, c_w
         """
 
-        m_t, c_t, m_w, c_w = wavelength_calibration_coeffs(x_ref, y_ref, self.trace_coeff, self.wl_solution)
+        m_t, c_t, m_w, c_w = wavelength_calibration_coeffs(x_ref, y_ref,
+                                                           self.trace_coeff,
+                                                           self.wl_solution)
 
         return m_t, c_t, m_w, c_w
 
@@ -399,7 +442,7 @@ class _SpectrumTrace(object):
         :rtype: numpy.ndarray
         """
 
-        return self.m_t * (x-self.x_ref) + self.c_t + self.y_ref
+        return self.m_t * (x - self.x_ref) + self.c_t + self.y_ref
 
     def y_to_x(self, y):
         """ array of y values to convert to x (from the trace)
@@ -413,7 +456,7 @@ class _SpectrumTrace(object):
         :rtype: numpy.ndarray
         """
 
-        return ((y-self.y_ref-self.c_t)/self.m_t)+self.x_ref
+        return ((y - self.y_ref - self.c_t) / self.m_t) + self.x_ref
 
     def _get_x_to_wl_poly_coeffs(self, x_ref, y_ref):
         """ This function finds the polynomial that maps x position to the wavelength. Note this only valid for
@@ -448,16 +491,16 @@ class _SpectrumTrace(object):
         :rtype: numpy.ndarray
         """
 
-        x = np.array([x_ref+10, x_ref+20])
+        x = np.array([x_ref + 10, x_ref + 20])
         y = self.x_to_y(x)
 
-        d = np.sqrt((y - y_ref)**2 + (x-x_ref)**2)
+        d = np.sqrt((y - y_ref) ** 2 + (x - x_ref) ** 2)
 
-        wl = (self.m_w * d + self.c_w)*u.angstrom
+        wl = (self.m_w * d + self.c_w) * u.angstrom
         wl = wl.to(u.micron)
 
         m_wl = (wl[1] - wl[0]) / (x[1] - x[0])
-        c_wl = wl[0] - m_wl*x[0]
+        c_wl = wl[0] - m_wl * x[0]
 
         return m_wl, c_wl
 
@@ -473,7 +516,7 @@ class _SpectrumTrace(object):
         :rtype: numpy.ndarray
         """
 
-        return self.m_wl*x + self.c_wl
+        return self.m_wl * x + self.c_wl
 
     def y_to_wl(self, y):
         """ Converts y to wavelength using `self.y_to_x` then `self.x_to_wl`. only valid for $y > y_ref$
@@ -504,7 +547,7 @@ class _SpectrumTrace(object):
         :rtype: numpy.ndarray
         """
 
-        return (wl-self.c_wl)/self.m_wl
+        return (wl - self.c_wl) / self.m_wl
 
     def wl_to_y(self, wl):
         """ Converts wavelength to y using coeffs from `self._get_x_to_wl_poly_coeffs` and then `self.x_to_y`. This is
@@ -518,12 +561,13 @@ class _SpectrumTrace(object):
         :rtype: numpy.ndarray
         """
 
-        x = (wl-self.c_wl)/self.m_wl
+        x = (wl - self.c_wl) / self.m_wl
 
         return self.x_to_y(x)
 
     def psf_line(self, wl):
-        """ Gives the intercept points and the coefficients of the psf lines at the wavelengths wl
+        """ Gives the intercept points and the coefficients of the psf lines
+         at the wavelengths wl
 
         :param wl: numpy array of wl values
         :type wl: numpy.ndarray
@@ -534,8 +578,8 @@ class _SpectrumTrace(object):
         x = self.wl_to_x(wl)
         y = self.wl_to_y(wl)
 
-        m = -np.array(1.)/self.m_t  # so m is an array
-        c = y - m*x
+        m = -np.array(1.) / self.m_t  # so m is an array
+        c = y - m * x
 
         return x, y, m, c
 
@@ -550,7 +594,7 @@ class _SpectrumTrace(object):
         a1 = x[1] - x[0]
         o1 = y[1] - y[0]
 
-        theta = np.arctan(o1/a1)
+        theta = np.arctan(o1 / a1)
 
         return theta
 
@@ -566,13 +610,13 @@ class _SpectrumTrace(object):
 
         theta = self.xangle()
 
-        h = 1/np.cos(theta)
+        h = 1 / np.cos(theta)
 
         return h
 
     def plot_trace(self, fig=None):
-        """ plots the trace line on the detector grid with points for the source position and the start and end of the
-         spectrum.
+        """ plots the trace line on the detector grid with points for the
+        source position and the start and end of the spectrum.
 
         :param fig: figure object
         :return:
@@ -591,37 +635,46 @@ class _SpectrumTrace(object):
         y = self.x_to_y(x)
         plt.plot(x, y, c='b', label="trace line", lw=2)
 
-        plt.scatter(self.x_ref, self.y_ref, c='r', s=60, label="Source Position", zorder=10)
+        plt.scatter(self.x_ref, self.y_ref, c='r', s=60,
+                    label="Source Position", zorder=10)
 
         spec_wl = np.array([1.075, 1.7]) * u.micron
         spec_x = self.wl_to_x(spec_wl)
         spec_y = self.wl_to_y(spec_wl)
-        plt.scatter(spec_x, spec_y, c='g', s=60, label="Spectrum Position", zorder=10)
+        plt.scatter(spec_x, spec_y, c='g', s=60, label="Spectrum Position",
+                    zorder=10)
         plt.legend()
 
         return fig
 
 
-g141_trace_coeff = [1.96882, 9.09159E-5, -1.93260E-3, 1.04275E-2, -7.96978E-6, -2.49607E-6, 1.45963E-9, 1.39757E-8,
-                    4.8494E-10]
-g141_trace_error = [8.09111E-2, 3.57223E-6, 3.12042E-6, 5.94731E-4, 4.34517E-7, 3.57986E-7, 3.87141E-10, 3.29421E-10,
+g141_trace_coeff = [1.96882, 9.09159E-5, -1.93260E-3, 1.04275E-2, -7.96978E-6,
+                    -2.49607E-6, 1.45963E-9, 1.39757E-8, 4.8494E-10]
+g141_trace_error = [8.09111E-2, 3.57223E-6, 3.12042E-6, 5.94731E-4, 4.34517E-7,
+                    3.57986E-7, 3.87141E-10, 3.29421E-10,
                     3.08712E-10]
 
-g102_trace_coeff = [-3.55018E-1, 3.28722E-5, -1.44571E-3, 1.42852E-2, -7.20713E-6, -2.42542E-6, 1.18294E-9, 1.19634E-8,
+g102_trace_coeff = [-3.55018E-1, 3.28722E-5, -1.44571E-3, 1.42852E-2,
+                    -7.20713E-6, -2.42542E-6, 1.18294E-9, 1.19634E-8,
                     6.17274E-10]
-g102_trace_error = [7.40459E-2, 4.4456E-6, 3.653212E-6, 3.86038E-4, 4.21303E-7, 3.42753E-7, 4.26462E-10, 3.51491E-10,
-                    3.02759E-10]
+g102_trace_error = [7.40459E-2, 4.4456E-6, 3.653212E-6, 3.86038E-4, 4.21303E-7,
+                    3.42753E-7, 4.26462E-10, 3.51491E-10, 3.02759E-10]
 
-g141_wl_solution = [8.95431E3, 9.35925E-2, 0, 4.51423E1, 3.17239E-4, 2.17055E-3, -7.42504E-7, 3.48639E-7, 3.09213E-7]
-g141_wl_solution_error = [8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4, 2.3185E-4, 4.45730E-7, 3.20519E-7, 2.16386E-7]
+g141_wl_solution = [8.95431E3, 9.35925E-2, 0, 4.51423E1, 3.17239E-4,
+                    2.17055E-3, -7.42504E-7, 3.48639E-7, 3.09213E-7]
+g141_wl_solution_error = [8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4,
+                          2.3185E-4, 4.45730E-7, 3.20519E-7, 2.16386E-7]
 
-g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4, 1.58739E-3, -4.25234E-7, -6.53726E-8, 0.]
-g102_wl_solution_error= [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4, 1.05015E-4, 1.80775E-7, 9.35939E-8, 0.]
+g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4,
+                    1.58739E-3, -4.25234E-7, -6.53726E-8, 0.]
+g102_wl_solution_error = [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4,
+                          1.05015E-4, 1.80775E-7, 9.35939E-8, 0.]
 
 
 def wavelength_calibration_coeffs(x_ref, y_ref, trace_coeff, wl_sol_coeff):
-    """ Returns the coefficients to compute the spectrum trace and the wavelength calibration as defined in the Axe
-    Software manual and determined by (Knutschner 2009, calibration of the G141 Grism).
+    """ Returns the coefficients to compute the spectrum trace and the
+     wavelength calibration as defined in the Axe Software manual and
+     determined by (Knutschner 2009, calibration of the G141 Grism).
 
     :param x_ref: The x position of the star on the reference frame
     :param y_ref: The y position of the star on the reference frame
@@ -633,25 +686,27 @@ def wavelength_calibration_coeffs(x_ref, y_ref, trace_coeff, wl_sol_coeff):
     b = wl_sol_coeff
 
     # Spectrum Trace
-    m_t = np.array(a[3] + a[4]*x_ref + a[5]*y_ref + a[6]*x_ref**2 + a[7]*x_ref*y_ref + a[8]*y_ref**2)
-    c_t = np.array(a[0] + a[1]*x_ref + a[2]*y_ref)
+    m_t = np.array(a[3] + a[4] * x_ref + a[5] * y_ref + a[6] * x_ref ** 2 +
+                   a[7] * x_ref * y_ref + a[8] * y_ref ** 2)
+    c_t = np.array(a[0] + a[1] * x_ref + a[2] * y_ref)
 
     # Wavelength Solution
-    m_w = np.array(b[3] + b[4]*x_ref + b[5]*y_ref + b[6]*x_ref**2 + b[7]*x_ref*y_ref + b[8]*y_ref**2)
-    c_w = np.array(b[0] + b[1]*x_ref) + b[2]*y_ref
+    m_w = np.array(b[3] + b[4] * x_ref + b[5] * y_ref + b[6] * x_ref ** 2 +
+                   b[7] * x_ref * y_ref + b[8] * y_ref ** 2)
+    c_w = np.array(b[0] + b[1] * x_ref) + b[2] * y_ref
 
     return m_t, c_t, m_w, c_w
 
+
 class G141_Trace(_SpectrumTrace):
-
     def __init__(self, x_ref, y_ref):
-
-        _SpectrumTrace.__init__(self, x_ref, y_ref, g141_trace_coeff, g141_wl_solution)
+        _SpectrumTrace.__init__(self, x_ref, y_ref, g141_trace_coeff,
+                                g141_wl_solution)
         self.grism_name = 'G141'
 
+
 class G102_Trace(_SpectrumTrace):
-
     def __init__(self, x_ref, y_ref):
-
-        _SpectrumTrace.__init__(self, x_ref, y_ref, g102_trace_coeff, g102_wl_solution)
+        _SpectrumTrace.__init__(self, x_ref, y_ref, g102_trace_coeff,
+                                g102_wl_solution)
         self.grism_name = 'G102'

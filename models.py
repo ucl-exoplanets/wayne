@@ -6,16 +6,20 @@ _gauss_StDev_to_FWHM = (2*np.sqrt(2*np.log(2)))  # conversion constant
 
 
 class GaussianModel1D(astropy.modeling.models.Gaussian1D):
-    """ Improvement on the astropy gaussian function to provide integration abilities and some basic conversions.
+    """ Improvement on the astropy gaussian function to provide integration
+     abilities and some basic conversions.
 
-        A Gaussian is described by 3 terms, the height a, the position of the center / mean b and the stdev c.
+        A Gaussian is described by 3 terms, the height a, the position of the
+         center / mean b and the stdev c.
 
         $f\left(x\right) = a \exp{\left(- { \frac{(x-b)^2 }{ 2 c^2} } \right)}$
     """
 
-    def __init__(self, amplitude=None, mean=0., stddev=None, fwhm=None, flux=None, **kwargs):
-        """ This improves on the standard gaussian in astropy by allowing you to define a gaussian by the integral and
-        the FWHM in class. This results in somevar checking in initialisation.
+    def __init__(self, amplitude=None, mean=0., stddev=None, fwhm=None,
+                 flux=None, **kwargs):
+        """ This improves on the standard gaussian in astropy by allowing you
+        to define a gaussian by the integral and the FWHM in class. This
+        results in somevar checking in initialisation.
 
         You must give the stddev OR FWHM, and the flux OR the amplitude
 
@@ -32,15 +36,18 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         """
 
         if not((stddev is not None) ^ (fwhm is not None)):
-            raise ValueError("You must set either fwhm OR stdev, not both or neither. got stdev={} fwhm={}".format(
-                stddev, fwhm))
+            raise ValueError(
+                "You must set either fwhm OR stdev, not both or  neither. "
+                "got stdev={} fwhm={}".format(stddev, fwhm))
 
         if not((flux is not None) ^ (amplitude is not None)):
-            raise ValueError("You must set either amplitude OR flux, not both or neither. got amplitude={} "
-                             "flux={}".format(amplitude, flux))
+            raise ValueError(
+                "You must set either amplitude OR flux, not both or neither."
+                " got amplitude={} flux={}".format(amplitude, flux))
 
         # initialise empty gaussian, then we fill in values
-        astropy.modeling.models.Gaussian1D.__init__(self, 1., mean, 1., **kwargs)
+        astropy.modeling.models.Gaussian1D.__init__(self,
+                                                    1., mean, 1., **kwargs)
 
         if stddev is not None:
             self.stddev = stddev
@@ -54,9 +61,11 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
     @property
     def flux(self):
-        """ Calculates the Flux of the gaussian model (integration between infinities)
+        """ Calculates the Flux of the gaussian model (integration between
+         infinities)
 
-        $\text{flux} = \int_{-\infty}^\infty a e^{- { (x-b)^2 \over 2 c^2 } }\,dx=ac\cdot\sqrt{2\pi}.$
+        $\text{flux} = \int_{-\infty}^\infty a e^{- { (x-b)^2 \over 2 c^2 } }\,
+        dx=ac\cdot\sqrt{2\pi}.$
 
         :return: the flux
         """
@@ -66,9 +75,11 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
     @flux.setter
     def flux(self, flux):
-        """ Sets the height of the gaussian given a flux. This uses the stdev and so that should be set first.
+        """ Sets the height of the gaussian given a flux. This uses the stdev
+         and so that should be set first.
 
-         $\text{flux} = \int_{-\infty}^\infty a e^{- { (x-b)^2 \over 2 c^2 } }\,dx=ac\cdot\sqrt{2\pi}.$
+         $\text{flux} = \int_{-\infty}^\infty a e^{- { (x-b)^2 \over 2 c^2 } }
+         \,dx=ac\cdot\sqrt{2\pi}.$
          $a = \frac{\text{flux}}{c \sqrt{2 \pi}}$
 
         :param flux:
@@ -81,9 +92,11 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
     @property
     def fwhm(self):
-        """ The FWHM is defined as $\mathrm{FWHM} = 2 \sqrt{2 \ln 2}\ c \approx 2.35482 c.$
+        """ The FWHM is defined as $\mathrm{FWHM} = 2 \sqrt{2 \ln 2}\ c \approx
+         2.35482 c.$
 
-        This function uses the constant _gauss_StDev_to_FWHM defined at the top of this file
+        This function uses the constant _gauss_StDev_to_FWHM defined at the top
+         of this file
 
         :return: fwhm
         """
@@ -97,7 +110,8 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
 
         $\mathrm{FWHM} = 2 \sqrt{2 \ln 2}\ c \approx 2.35482 c.$
 
-        This function uses the constant _gauss_FWHM_to_StDev defined at the top of this file
+        This function uses the constant _gauss_FWHM_to_StDev defined at the
+         top of this file
 
 
         :param fwhm: Full width at half maximum
@@ -108,20 +122,26 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         self.stddev = fwhm / _gauss_StDev_to_FWHM
 
     def integrate(self, limits):
-        """ Integrates the model over the given limits (i.e [0,1,2] would give 0->1, 1->2) using the cumulative
-         distribution function $\Phi$ (scipy.stats.norm.cdf) to obtain the flux binned between the limits.
+        """ Integrates the model over the given limits (i.e [0,1,2] would
+         give 0->1, 1->2) using the cumulative distribution function $\Phi$
+         (scipy.stats.norm.cdf) to obtain the flux binned between the limits.
 
-        $\Phi (z) = \mathrm{Pr}(Z < z) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^z \mathrm{exp}\left( -\frac{u^2}{2} \right) \mathrm{d}u$
-        $\mathrm{Pr}(a < X \le b) = \Phi\left(\frac{b-\mu}{\sigma} \right) - \Phi\left(\frac{a-\mu}{\sigma} \right) $
+        $\Phi (z) = \mathrm{Pr}(Z < z) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^z
+         \mathrm{exp}\left( -\frac{u^2}{2} \right) \mathrm{d}u$
+        $\mathrm{Pr}(a < X \le b) = \Phi\left(\frac{b-\mu}{\sigma} \right)
+        - \Phi\left(\frac{a-\mu}{\sigma} \right) $
 
-        This probability is then turned into a binned flux by multiplying it by the total flux
+        This probability is then turned into a binned flux by multiplying it by
+         the total flux
 
         :param limits: array of limits, i.e [0,1,2]
         :type limits: numpy.ndarray
         """
 
         cdf = scipy.stats.norm.cdf(limits, self.mean, self.stddev)
-        area = (np.roll(cdf, -1) - cdf)[:-1]  # x+1 - x, [-1] is x_0 - x_n and unwanted
+
+        # x+1 - x, [-1] is x_0 - x_n and unwanted
+        area = (np.roll(cdf, -1) - cdf)[:-1]
 
         binned_flux = area * self.flux
         return binned_flux

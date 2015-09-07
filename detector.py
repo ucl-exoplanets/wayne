@@ -1,4 +1,5 @@
-""" The detector class should map any fields from the telescope to a pixel map on the detector.
+""" The detector class should map any fields from the telescope to a pixel map
+ on the detector.
 """
 
 import os.path
@@ -22,7 +23,8 @@ class WFC3_IR(object):
 
         # Start with a single 1024x1024 array, add complexity in when we need it.
         self._pixel_array = np.zeros((1024, 1024))
-        self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron, doc='Pixel size for the HST WFC3 IR detector')
+        self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron,
+                                 doc='Pixel size for the HST WFC3 IR detector')
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
 
         # General Info
@@ -48,10 +50,12 @@ class WFC3_IR(object):
 
         :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
         :type NSAMP: int
-        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        :param SAMPSEQ: Sample sequence to use, effects exposure time
+        ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
         'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
         :type SAMPSEQ: str
-        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :param SUBARRAY: subarray to use, effects exposure time and array size.
+         (1024, 512, 256, 128, 64)
         :type SUBARRAY: int
 
         :return: exposure time
@@ -60,11 +64,14 @@ class WFC3_IR(object):
 
         mt = self.modes_exp_table
 
-        exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] == NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]
+        exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) &
+                              (mt['NSAMP'] == NSAMP) &
+                              (mt['SUBARRAY'] == SUBARRAY)]
 
         if exptime_table.empty:
-            raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
-                                         "".format(SAMPSEQ, NSAMP, SUBARRAY))
+            raise WFC3SimSampleModeError(
+                "SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
+                "".format(SAMPSEQ, NSAMP, SUBARRAY))
         else:
             exptime = exptime_table.TIME.values[0]
             return exptime * u.s
@@ -72,9 +79,11 @@ class WFC3_IR(object):
     def gen_pixel_array(self, subarray, light_sensitive=True):
         """ Returns the pixel array as an array of zeroes
 
-        this could return subarray types etc, but lets just keep it out of class for now
+        this could return subarray types etc, but lets just keep it out of
+         class for now
 
-        :param light_sensitive: only return the light sensitive parts (neglecting 5 pixel border)
+        :param light_sensitive: only return the light sensitive parts
+         (neglecting 5 pixel border)
         :type light_sensitive: bool
 
         :return: full frame array of zeroes (based on set subarray)
@@ -92,7 +101,8 @@ class WFC3_IR(object):
             return np.zeros((size, size))
 
     def add_bias_pixels(self, pixel_array):
-        """ converts a light sensitive array to one with the 5 pixel border. In future will simulate the function
+        """ converts a light sensitive array to one with the 5 pixel border.
+         In future will simulate the function
         of bias pixels but for now returns zeroes.
 
         :param pixel_array: light sensitive pixel array
@@ -107,7 +117,8 @@ class WFC3_IR(object):
         array_size = len(pixel_array)
 
         if not array_size in allowed_input:
-            raise ValueError('array size must be in {} got {}'.format(array_size, allowed_input))
+            raise ValueError('array size must be in {} got {}'.format(
+                array_size, allowed_input))
 
         full_array = np.zeros((array_size+10, array_size+10))
         full_array[5:-5, 5:-5] = pixel_array
@@ -115,19 +126,22 @@ class WFC3_IR(object):
         return full_array
 
     def add_dark_current(self, pixel_array, NSAMP, SUBARRAY, SAMPSEQ):
-        """ Adds the exact contribution from dark current as specified in the super_dark for that mode, must
-        be done after bias pixels added
+        """ Adds the exact contribution from dark current as specified in
+         the super_dark for that mode, must be done after bias pixels added
 
         .. TODO : vary dark per pixel within error
 
         :param pixel_array: light sensitive pixel array
         :type pixel_array: np.ndarray
-        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :param NSAMP: number of sample up the ramp, effects exposure time
+         (1 to 15)
         :type NSAMP: int
-        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        :param SAMPSEQ: Sample sequence to use, effects exposure time
+         ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
         'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
         :type SAMPSEQ: str
-        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :param SUBARRAY: subarray to use, effects exposure time and array size.
+         (1024, 512, 256, 128, 64)
         :type SUBARRAY: int
 
         :return: pixel array with dark current added
@@ -135,11 +149,13 @@ class WFC3_IR(object):
         """
 
         mt = self.modes_calb_table
-        dark_query = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['SUBARRAY'] == SUBARRAY)]
+        dark_query = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) &
+                           (mt['SUBARRAY'] == SUBARRAY)]
 
         if dark_query.empty:
-            raise WFC3SimSampleModeError("No Dark file for SAMPSEQ = {}, NSAMP={}, SUBARRAY={}"
-                                         "".format(SAMPSEQ, NSAMP, SUBARRAY))
+            raise WFC3SimSampleModeError(
+                "No Dark file for SAMPSEQ = {}, NSAMP={}, SUBARRAY={}"
+                "".format(SAMPSEQ, NSAMP, SUBARRAY))
         else:
             dark_file = dark_query.Dark.values[0]
 
@@ -156,10 +172,12 @@ class WFC3_IR(object):
 
         :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
         :type NSAMP: int
-        :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
+        :param SAMPSEQ: Sample sequence to use, effects exposure time
+        ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
         'SPARS100', 'SPARS200', 'STEP25', 'STEP50', 'STEP100', 'STEP200', 'STEP400'
         :type SAMPSEQ: str
-        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :param SUBARRAY: subarray to use, effects exposure time and array size.
+         (1024, 512, 256, 128, 64)
         :type SUBARRAY: int
 
         :return: array of read times for each sample up the ramp to NSAMP
@@ -167,42 +185,53 @@ class WFC3_IR(object):
         """
 
         if not 1 <= NSAMP <= 15:
-            raise WFC3SimSampleModeError("NSAMP must be an integer between 1 and 15, got {}".format(NSAMP))
+            raise WFC3SimSampleModeError(
+                "NSAMP must be an integer between 1 and 15, got {}".format(NSAMP))
 
         mt = self.modes_exp_table
 
-        exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) & (mt['NSAMP'] <= NSAMP) & (mt['SUBARRAY'] == SUBARRAY)]['TIME']
+        exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) &
+                              (mt['NSAMP'] <= NSAMP) &
+                              (mt['SUBARRAY'] == SUBARRAY)]['TIME']
 
         if exptime_table.empty:
-            raise WFC3SimSampleModeError("SAMPSEQ = {}, NSAMP={}, SUBARRAY={} is not a permitted combination"
-                                         "".format(SAMPSEQ, NSAMP, SUBARRAY))
+            raise WFC3SimSampleModeError(
+                "SAMPSEQ = {}, NSAMP={}, SUBARRAY={}  is not a permitted "
+                "combination".format(SAMPSEQ, NSAMP, SUBARRAY))
 
         return np.array(exptime_table) * u.s
 
     def _get_modes(self):
-        """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and SUBARRAY type from data directory.
+        """ Retrieves table of exposure time for each NSAMP, SAMPSEQ and
+         SUBARRAY type from data directory.
 
         :return: modes table
         :rtype: pandas.DataFrame
         """
 
-        modes_exp_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'), skiprows=1, dtype={
-            'SUBARRAY': np.int64, 'SAMPSEQ': np.object, 'NSAMP': np.int64, 'TIME':np.float},
+        modes_exp_table = pd.read_csv(
+            os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'),
+            skiprows=1, dtype={ 'SUBARRAY': np.int64, 'SAMPSEQ': np.object,
+                                'NSAMP': np.int64, 'TIME':np.float},
                                   thousands=',')
 
-        modes_calb_table = pd.read_csv(os.path.join(params._data_dir, 'wfc3_ir_mode_calb.csv'), skiprows=1, dtype={
-            'SUBARRAY': np.int64, 'SAMPSEQ': np.object, 'dark': str})
+        modes_calb_table = pd.read_csv(
+            os.path.join(params._data_dir, 'wfc3_ir_mode_calb.csv'),
+            skiprows=1, dtype={'SUBARRAY': np.int64, 'SAMPSEQ': np.object,
+                                'dark': str})
 
         return modes_exp_table, modes_calb_table
 
     def num_exp_per_buffer(self, NSAMP, SUBARRAY):
-        """ calculates the maximum number of exposures that can be taken before buffer dumping. It does this by checking
-        HST's limits on the number of frames (including sample up the ramps) of 304 and the size limit of 2 full frame
-        16 sample exposures.
+        """ calculates the maximum number of exposures that can be taken before
+         buffer dumping. It does this by checking HST's limits on the number
+         of frames (including sample up the ramps) of 304 and the size limit of
+         2 full frame 16 sample exposures.
 
         :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
         :type NSAMP: int
-        :param SUBARRAY: subarray to use, effects exposure time and array size. (1024, 512, 256, 128, 64)
+        :param SUBARRAY: subarray to use, effects exposure time and array size.
+         (1024, 512, 256, 128, 64)
         :type SUBARRAY: int
 
         :return:  maximum number of exposures before a buffer dump
@@ -224,10 +253,12 @@ class WFC3_IR(object):
         return num_exp
 
     def apply_quantum_efficiency(self, wl, counts):
-        """ Applies quantum efficiency corrections to the counts using the data in wfc3_ir_qe_003_syn.fits and linearly
+        """ Applies quantum efficiency corrections to the counts using the
+        data in wfc3_ir_qe_003_syn.fits and linearly
         interpolating the gaps
 
-        :param wl: array of wavelengths (corresponding to stellar flux and planet spectrum) in u.microns
+        :param wl: array of wavelengths (corresponding to stellar flux and
+         planet spectrum) in u.microns
         :type wl: astropy.units.quantity.Quantity
         :param counts: flux / acounts
         :type counts: astropy.units.quantity.Quantity
@@ -257,13 +288,15 @@ class WFC3_IR(object):
             c2 = f[3].data
             c3 = f[4].data
 
-            for i, (y_v, x_v) in enumerate(((400, 400), (400, 600), (600, 400), (600, 600))):
+            for i, (y_v, x_v) in enumerate(((400, 400), (400, 600), (600, 400),
+                                            (600, 600))):
                 coeffs[i] = [c0[y_v:x_v], c1[y_v:x_v], c2[y_v:x_v], c3[y_v:x_v]]
 
         return coeffs
 
     def apply_non_linearity(self, pixel_array):
-        """ This uses the non linearity correction (in reverse) to give the detector a non linear response.
+        """ This uses the non linearity correction (in reverse) to give the
+         detector a non linear response.
         :param pixel_array:
         :return:
         """
@@ -271,8 +304,10 @@ class WFC3_IR(object):
         # treat each quadrant in turn.
         arr_limit = len(pixel_array)/2  # want an int, should only be even
 
-        quads = (pixel_array[:arr_limit, :arr_limit], pixel_array[:arr_limit, arr_limit:],
-                 pixel_array[arr_limit:, :arr_limit], pixel_array[arr_limit:, arr_limit:])
+        quads = (pixel_array[:arr_limit, :arr_limit],
+                 pixel_array[:arr_limit, arr_limit:],
+                 pixel_array[arr_limit:, :arr_limit],
+                 pixel_array[arr_limit:, arr_limit:])
 
         for i in enumerate(quads):
             c0, c1, c2, c3 = self.non_lin_coeff[i]

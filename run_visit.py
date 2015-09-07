@@ -1,5 +1,5 @@
-""" This script allows you to run a visit from a parameter file. Currently parameter files are in python format, see
-example_par.py.
+""" This script allows you to run a visit from a parameter file. Currently
+ parameter files are in python format, see example_par.py.
 """
 
 import argparse
@@ -21,7 +21,8 @@ import tools
 import params
 
 
-parser = argparse.ArgumentParser(description='Simulate a visit using WFC3Sim and a parameter file')
+parser = argparse.ArgumentParser(description='Simulate a visit using WFC3Sim'
+                                             ' and a parameter file')
 parser.add_argument('-p', required=True, dest='parfile', type=str,
                    help='location of a WFC3Sim parameter file')
 
@@ -38,7 +39,8 @@ outdir = cfg['general']['outdir']
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
-shutil.copy2(args.parfile, os.path.join(outdir, os.path.basename(args.parfile)))  # copy parfile to output
+ # copy parfile to output
+shutil.copy2(args.parfile, os.path.join(outdir, os.path.basename(args.parfile)))
 
 exodb = exodata.OECDatabase(cfg['general']['oec_location'])
 
@@ -69,7 +71,8 @@ NSAMP = cfg['observation']['NSAMP']
 SAMPSEQ = cfg['observation']['SAMPSEQ']
 SUBARRAY = cfg['observation']['SUBARRAY']
 
-start_JD = float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # convert pq to u
+# convert pq to u
+start_JD = float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day
 num_orbits = cfg['observation']['num_orbits']
 sample_rate = cfg['observation']['sample_rate'] * u.ms
 scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
@@ -83,10 +86,12 @@ noise_std = cfg['observation']['noise_std']
 
 add_dark = cfg['observation']['add_dark']
 
-obs = observation.Observation(planet, start_JD, num_orbits, det, g141, NSAMP, SAMPSEQ, SUBARRAY, wl_p, f_bb_tmp,
-                              depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir,
-                              ssv_std=ssv_std, x_shifts=x_shifts, noise_mean=noise_mean, noise_std=noise_std,
-                              add_dark=add_dark)
+# TODO (ryan) this level of input is insane and annoying, simplify
+obs = observation.Observation(
+    planet, start_JD, num_orbits, det, g141, NSAMP, SAMPSEQ, SUBARRAY, wl_p,
+    f_bb_tmp, depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir,
+    ssv_std=ssv_std, x_shifts=x_shifts, noise_mean=noise_mean,
+    noise_std=noise_std, add_dark=add_dark)
 
 obs.show_lightcurve()
 # plt.show()
