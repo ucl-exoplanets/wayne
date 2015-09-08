@@ -18,6 +18,7 @@ from progress import Progress
 from wfc3simlog import logger
 import tools
 import exposure
+import trendgenerators
 
 __all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
 
@@ -440,7 +441,8 @@ class ExposureGenerator(object):
                        scan_speed, sample_rate, psf_max=4,
                        sample_mid_points=None, sample_durations=None,
                        read_index=None, ssv_std=False, noise_mean=False,
-                       noise_std=False, add_dark=True, add_flat=True):
+                       noise_std=False, add_dark=True, add_flat=True,
+                       add_cosmics=True, sky_background=1*u.count/u.s):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a
@@ -537,11 +539,10 @@ class ExposureGenerator(object):
             self.exposure.ssv_scaling = ssv_scaling  # temp to see whats going on
             self.exposure.s_y_refs = s_y_refs
 
-        # Prep for random noise
-        if noise_mean and noise_std:
-            read_num = 0
-            read_exp_times = self.read_times.to(u.s)
-            previous_read_time = 0. * u.ms
+        # Prep for random noise and other trends / noise sources
+        read_num = 0
+        read_exp_times = self.read_times.to(u.s)
+        previous_read_time = 0. * u.ms
 
         # we want to treat the sample at the mid point state not the beginning
         # s_ denotes variables that change per sample
@@ -576,19 +577,30 @@ class ExposureGenerator(object):
                                                   pixel_array, s_dur, psf_max)
 
             if i in read_index:  # trigger a read including final read
-                if noise_mean and noise_std:
-                    read_exp_time = (
+
+                # TODO (ryan) export all this reduction stuff to own function
+                read_exp_time = (
                     read_exp_times[read_num] - previous_read_time).to(
                         u.s).value
+
+                array_size = pixel_array.shape[0]  # shouldnt this be subarray?
+
+                if noise_mean and noise_std:
                     noise_array = self._gen_noise(noise_mean * read_exp_time,
                                                   noise_std * read_exp_time)
-                    previous_read_time = read_exp_times[read_num]
-                    read_num += 1
 
                     # Note noise is added to the full frame, in reality it will
                     # probably be centered around the scan!
                     # possibility of noise -> mean due to CLT with more reads
                     pixel_array += noise_array
+
+                if add_cosmics:  # TODO allow manual setting of cosmic gen
+                    cosmic_gen = \
+                        trendgenerators.MinMaxPossionCosmicGenerator()
+
+                    cosmic_array = cosmic_gen.cosmic_frame(read_exp_time,
+                                                           array_size)
+                    pixel_array += cosmic_array
 
                 if add_flat:
                     flat_field = self.grism.get_flat_field(x_ref, y_ref,
@@ -603,6 +615,9 @@ class ExposureGenerator(object):
                         self.SAMPSEQ)
 
                 self.exposure.add_read(pixel_array_full)
+
+                previous_read_time = read_exp_times[read_num]
+                read_num += 1
 
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP + 1)

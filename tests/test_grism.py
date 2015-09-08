@@ -57,7 +57,8 @@ class Test_G141_Grism(unittest.TestCase):
     # self.assertAlmostEqual(self.g141_grism.get_pixel_wl(60, 50, 2000, 2000), 10770.4, 1)
 
     def test_get_pixel_wl_per_row(self):
-        wl = self.g141_grism.get_pixel_wl_per_row(50, 50)
+        # TODO (ryan) should this be 1024 or 1014 in length?
+        wl = self.g141_grism.get_pixel_wl_per_row(50, 50, np.arange(1024))
 
         self.assertEqual(len(wl), 1024)
         self.assertAlmostEqual(wl.mean(), 29961.2, 1)

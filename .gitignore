@@ -56,3 +56,4 @@ target/
 prof
 run_test.png
 stats*.txt
+tests/.hypothesis
