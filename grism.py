@@ -69,6 +69,10 @@ class G141(object):
                                        'WFC3.IR.G141.flat.2.fits')
         self.flat_file2 = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
+        # Sky
+        self.sky_file = os.path.join(params._calb_dir,
+                                       'WFC3.IR.G141.sky.V1.0.fits')
+
         ## PSF Information
         self._psf_file = np.loadtxt(
             os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
@@ -415,7 +419,19 @@ class G141(object):
 
         return flatfield
 
+    def get_master_sky(self, size=None):
+        """ Returns the master sky from WFC3.IR.G141.sky.V1.0.fits
+        :param size:
+        :return:
+        """
 
+        with fits.open(self.sky_file) as f:
+            sky_array = f[0].data
+
+        if size is not None:
+            sky_array = crop_central_box(sky_array, size)
+
+        return sky_array
 
 
 class G102(G141):

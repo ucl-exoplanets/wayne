@@ -566,8 +566,8 @@ class ExposureGenerator(object):
             else:
                 s_flux = self.combine_planet_stellar_spectrum(stellar_flux,
                                                               planet_signal[i])
-                # TODO handling cropping elsewhere to avoid doing it all the
-                #  time, crop flux + depth together
+                # TODO (ryan) handling cropping elsewhere to avoid doing it
+                #  all the time, crop flux + depth together
                 s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
                                                    self.grism.wl_limits[-1],
                                                    wl, s_flux)
@@ -579,6 +579,10 @@ class ExposureGenerator(object):
             if i in read_index:  # trigger a read including final read
 
                 # TODO (ryan) export all this reduction stuff to own function
+
+                # TODO (ryan) check order of effects is correct
+
+                # TODO (ryan) check scaling i.e. DN vs e
                 read_exp_time = (
                     read_exp_times[read_num] - previous_read_time).to(
                         u.s).value
@@ -602,6 +606,10 @@ class ExposureGenerator(object):
                                                            array_size)
                     pixel_array += cosmic_array
 
+                # TODO (ryan) bias
+
+                # TODO (ryan) bad pixels
+
                 if add_flat:
                     flat_field = self.grism.get_flat_field(x_ref, y_ref,
                                                            self.SUBARRAY)
@@ -609,10 +617,21 @@ class ExposureGenerator(object):
 
                 pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 
+                if sky_background:
+                    bg_count_sec = sky_background.to(u.count/u.s).value
+                    master_sky = self.grism.get_master_sky(array_size)
+                    bg_count = bg_count_sec * read_exp_time
+
+                    master_sky *= bg_count
+
+                    pixel_array += master_sky
+
                 if add_dark:
                     pixel_array_full = self.detector.add_dark_current(
                         pixel_array_full, self.NSAMP, self.SUBARRAY,
                         self.SAMPSEQ)
+
+                # TODO (ryan) read noise
 
                 self.exposure.add_read(pixel_array_full)
 
