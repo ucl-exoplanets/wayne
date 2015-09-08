@@ -440,7 +440,7 @@ class ExposureGenerator(object):
                        scan_speed, sample_rate, psf_max=4,
                        sample_mid_points=None, sample_durations=None,
                        read_index=None, ssv_std=False, noise_mean=False,
-                       noise_std=False, add_dark=True):
+                       noise_std=False, add_dark=True, add_flat=True):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a
@@ -589,6 +589,11 @@ class ExposureGenerator(object):
                     # probably be centered around the scan!
                     # possibility of noise -> mean due to CLT with more reads
                     pixel_array += noise_array
+
+                if add_flat:
+                    flat_field = self.grism.get_flat_field(x_ref, y_ref,
+                                                           self.SUBARRAY)
+                    pixel_array *= flat_field
 
                 pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 

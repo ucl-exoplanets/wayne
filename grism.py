@@ -377,12 +377,13 @@ class G141(object):
 
         return G141_Trace(x_ref, y_ref)
 
-    def get_flat_field(self, x_ref, y_ref):
+    def get_flat_field(self, x_ref, y_ref, size=None):
         """ Uses the pixel-to-pixel flat to generate a wavelength depend flat
         to correct for (or in this case add in) the effect of gain.
 
         :param x_ref:
         :param y_ref:
+        :param size: crops the flat feild to the array size given
         :return:
         """
 
@@ -408,6 +409,9 @@ class G141(object):
                      f3 * (wl_array_norm**3))
 
         flatfield = flatfield / flat_data
+
+        if size is not None:
+            flatfield = crop_central_box(flatfield, size)
 
         return flatfield
 
@@ -802,3 +806,13 @@ class G102_Trace(_SpectrumTrace):
         _SpectrumTrace.__init__(self, x_ref, y_ref, g102_trace_coeff,
                                 g102_wl_solution)
         self.grism_name = 'G102'
+
+
+def crop_central_box(array, size):
+    """ Crops the central size of pixels, Array must be square, and probably
+     even numbered
+    """
+
+    index = (len(array) - size) / 2
+
+    return array[index:-index, index:-index]
