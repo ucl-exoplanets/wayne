@@ -1,13 +1,14 @@
 import unittest
+
 import numpy as np
 
-from .. import trendgenerators
+from ...trend_generators import cosmic_rays
 
 
 class Test_BaseCosmicGenerator(unittest.TestCase):
 
     def setUp(self):
-        self.cosmic_gen = trendgenerators.BaseCosmicGenerator()
+        self.cosmic_gen = cosmic_rays.BaseCosmicGenerator()
 
     def test__number_of_cosmics(self):
         self.assertEqual(self.cosmic_gen._number_of_cosmics(1),
@@ -47,7 +48,7 @@ class Test_MinMaxPossionCosmicGenerator(unittest.TestCase):
 
     def setUp(self):
         self.cosmic_gen = \
-            trendgenerators.MinMaxPossionCosmicGenerator(11, 10000, 35000)
+            cosmic_rays.MinMaxPossionCosmicGenerator(11, 10000, 35000)
 
     def test__number_of_cosmics(self):
 

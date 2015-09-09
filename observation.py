@@ -18,7 +18,7 @@ from progress import Progress
 from wfc3simlog import logger
 import tools
 import exposure
-import trendgenerators
+from trend_generators import cosmic_rays
 
 __all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
 
@@ -28,7 +28,8 @@ class Observation(object):
                  SAMPSEQ, SUBARRAY, wl, stellar_flux,
                  planet_spectrum, sample_rate, x_ref, y_ref, scan_speed,
                  psf_max=4, outdir='', ssv_std=False,
-                 x_shifts=0, noise_mean=False, noise_std=False, add_dark=True):
+                 x_shifts=0, noise_mean=False, noise_std=False, add_dark=True,
+                 ramp_coefficients=None):
         """ Builds a full observation running the visit planner to get exposure
          times, generates lightcurves for each wavelength element and sample
           time and then runs the exposure generator for each frame.
@@ -156,6 +157,8 @@ class Observation(object):
 
         self.add_dark = add_dark
 
+        self.ramp_coefficients = ramp_coefficients
+
     def generate_lightcurves(self, time_array, depth=False):
         """ Generates lightcurves samples a the time array using pylightcurve.
          orbital parameters are pulled from the planet object given in
@@ -228,7 +231,7 @@ class Observation(object):
         plt.ylabel("Transit Depth")
         plt.title("Normalised White Light Curve of observation")
 
-        return fig
+        return time_array, lc_model
 
     def run_observation(self):
         """ Runs the observation by calling self._generate_exposure for each
@@ -291,6 +294,10 @@ class Observation(object):
         #  x_shifts, direct image and first match
         x_ref = self.x_ref + (
         self.x_shifts * (number - 1))  # -1 so first exposure is 0n x_ref
+
+        if self.ramp_coefficients:
+
+            t0 = self._generate_t_0()
 
         exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl,
                                            self.stellar_flux, planet_depths,
@@ -601,7 +608,7 @@ class ExposureGenerator(object):
                 # TODO allow manual setting of cosmic gen
                 if cosmic_rate is not None:
                     cosmic_gen = \
-                        trendgenerators.MinMaxPossionCosmicGenerator(
+                        cosmic_rays.MinMaxPossionCosmicGenerator(
                             cosmic_rate)
 
                     cosmic_array = cosmic_gen.cosmic_frame(read_exp_time,
