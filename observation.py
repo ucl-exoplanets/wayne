@@ -18,7 +18,7 @@ from progress import Progress
 from wfc3simlog import logger
 import tools
 import exposure
-from trend_generators import cosmic_rays
+from trend_generators import cosmic_rays, visit_trends
 
 __all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
 
@@ -28,8 +28,7 @@ class Observation(object):
                  SAMPSEQ, SUBARRAY, wl, stellar_flux,
                  planet_spectrum, sample_rate, x_ref, y_ref, scan_speed,
                  psf_max=4, outdir='', ssv_std=False,
-                 x_shifts=0, noise_mean=False, noise_std=False, add_dark=True,
-                 ramp_coefficients=None):
+                 x_shifts=0, noise_mean=False, noise_std=False, add_dark=True):
         """ Builds a full observation running the visit planner to get exposure
          times, generates lightcurves for each wavelength element and sample
           time and then runs the exposure generator for each frame.
@@ -149,6 +148,11 @@ class Observation(object):
             u.day) + self.start_JD
 
         self.exptime = self.visit_plan['exptime']
+
+        # So this is a weird thing to do, maybe the JD should be added in the
+        # visit planner - used in visit trend generation
+        self.visit_plan['exp_start_times'] = self.exp_start_times
+
         logger.info("Each exposure will have a exposure time of {}".format(
             self.exptime))
 
@@ -157,7 +161,7 @@ class Observation(object):
 
         self.add_dark = add_dark
 
-        self.ramp_coefficients = ramp_coefficients
+        self._visit_trend = None  # must add with add_visit_trend
 
     def generate_lightcurves(self, time_array, depth=False):
         """ Generates lightcurves samples a the time array using pylightcurve.
@@ -224,6 +228,11 @@ class Observation(object):
 
         lc_model = self.generate_lightcurves(time_array,
                                              self.planet.calcTransitDepth())
+
+        if self._visit_trend is not None:
+            trend_model = self._visit_trend.scale_factors
+            # have to convert weird model format to flat array
+            lc_model = trend_model * lc_model.T[0]
 
         fig = plt.figure()
         plt.scatter(time_array, lc_model)
@@ -295,9 +304,10 @@ class Observation(object):
         x_ref = self.x_ref + (
         self.x_shifts * (number - 1))  # -1 so first exposure is 0n x_ref
 
-        if self.ramp_coefficients:
-
-            t0 = self._generate_t_0()
+        if self._visit_trend is not None:
+            scale_factor = self._visit_trend.get_scale_factor(number)
+        else:
+            scale_factor = None
 
         exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl,
                                            self.stellar_flux, planet_depths,
@@ -307,7 +317,8 @@ class Observation(object):
                                            ssv_std=self.ssv_std,
                                            noise_mean=self.noise_mean,
                                            noise_std=self.noise_std,
-                                           add_dark=self.add_dark)
+                                           add_dark=self.add_dark,
+                                           scale_factor=scale_factor)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -326,6 +337,16 @@ class Observation(object):
 
         exp = di_exp_gen.direct_image(self.x_ref, self.y_ref)
         exp.generate_fits(self.outdir, '0000_flt.fits')
+
+    def add_visit_trend(self, visit_trend_coeffs):
+        """ Adds a visit long trend to the simulation
+        :param coeffs: list of coeffs for the trend.
+
+        In future will include multiple trends
+        """
+
+        self._visit_trend = visit_trends.HookAndLongTermRamp(
+            self.visit_plan, visit_trend_coeffs)
 
 
 class ExposureGenerator(object):
@@ -449,7 +470,8 @@ class ExposureGenerator(object):
                        sample_mid_points=None, sample_durations=None,
                        read_index=None, ssv_std=False, noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
-                       cosmic_rate=None, sky_background=1*u.count/u.s):
+                       cosmic_rate=None, sky_background=1*u.count/u.s,
+                       scale_factor=None):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a
@@ -492,6 +514,9 @@ class ExposureGenerator(object):
         :type noise_mean: float
         :param noise_std: standard deviation of the noise (per second, per pixel)
         :type noise_std: float
+
+        :param scale_factor: Scales the whole frame (per read) by a factor,
+          used for visit long trends
 
         :return: array with the exposure
         """
@@ -641,6 +666,9 @@ class ExposureGenerator(object):
                         self.SAMPSEQ)
 
                 # TODO (ryan) read noise
+
+                if scale_factor is not None:
+                    pixel_array_full *= scale_factor
 
                 self.exposure.add_read(pixel_array_full)
 

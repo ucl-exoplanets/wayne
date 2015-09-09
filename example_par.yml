@@ -5,7 +5,7 @@ general:
   seed: 1337
 
 target:
-  name: 'WASP-18 b'  # exact match of a OEC planet
+  name: 'Gliese 1214 b'  # exact match of a OEC planet
   spectrum_file: 'hj_1000.dat'  # wl (microns) vs transit depth
   flux_scale: 1e20  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
@@ -31,3 +31,7 @@ observation:
   noise_std: False
 
   add_dark: True
+
+trends:
+  #                                must be 1.e for some odd reason
+  visit_trend_coeffs: [1, -0.0005, 1.e-3, 500]  # visit ramp / hook model coeffs

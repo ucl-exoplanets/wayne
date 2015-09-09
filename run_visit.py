@@ -55,7 +55,7 @@ source_spectra = source_spectra.T  # turn to (wl list, flux list)
 source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 
 # if, else in future
-g141 = grism.Grism()
+g141 = grism.G141()
 det = detector.WFC3_IR()
 
 wl_p = source_spectra[0] * u.micron
@@ -93,7 +93,12 @@ obs = observation.Observation(
     ssv_std=ssv_std, x_shifts=x_shifts, noise_mean=noise_mean,
     noise_std=noise_std, add_dark=add_dark)
 
-obs.show_lightcurve()
-# plt.show()
+visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']
 
-obs.run_observation()
+if visit_trend_coeffs is not None:
+    obs.add_visit_trend(visit_trend_coeffs)
+
+obs.show_lightcurve()
+plt.show()
+
+# obs.run_observation()

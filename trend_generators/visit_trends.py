@@ -25,7 +25,7 @@ class BaseVisitTrend(object):
 
     def _gen_scaling_factors(self, visit_plan, coeffs):
 
-        return np.ones(len(visit_plan['exp_times']))
+        return np.ones(len(visit_plan['exp_start_times']))
 
 
     def get_scale_factor(self, exp_num):
@@ -52,6 +52,8 @@ class HookAndLongTermRamp(BaseVisitTrend):
         :return: ramp_model
         """
 
+        print t, t_v, t_0, a1, a2, b1, b2
+
         t = np.array(t)  # wipes units if any
         t_v = np.array(t_v)
 
@@ -59,8 +61,8 @@ class HookAndLongTermRamp(BaseVisitTrend):
         return ramp
 
     def _gen_scaling_factors(self, visit_plan, coeffs):
-        t = visit_plan['exp_times']
-        t_v = visit_plan['exp_times'][0]
+        t = visit_plan['exp_start_times']
+        t_v = t[0]
         t_0 = gen_orbit_start_times_per_exp(t, visit_plan['orbit_start_index'])
 
         ramp = self.ramp_model(t, t_v, t_0, *coeffs)

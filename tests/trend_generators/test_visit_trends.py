@@ -10,7 +10,7 @@ from .. import unittest_tools
 class Test_BaseVisitTrend(unittest.TestCase):
 
     def setUp(self):
-        self.visit_plan = {'exp_times': [1*u.day, 2*u.day, 3*u.day]}
+        self.visit_plan = {'exp_start_times': [1*u.day, 2*u.day, 3*u.day]}
         self.visit_trend = visit_trends.BaseVisitTrend(self.visit_plan, None)
 
     def test__gen_scaling_factors(self):
@@ -32,7 +32,8 @@ class Test_HookAndLongTermRamp(unittest.TestCase):
 
     def test__gen_scaling_factors(self):
         self.visit_plan = {
-            'exp_times': (np.array([6, 9, 12, 95, 98, 101])*u.min).to(u.day),
+            'exp_start_times': (
+                np.array([6, 9, 12, 95, 98, 101])*u.min).to(u.day),
             'orbit_start_index': [0, 3],
         }
 
