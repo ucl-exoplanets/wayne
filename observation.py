@@ -442,7 +442,7 @@ class ExposureGenerator(object):
                        sample_mid_points=None, sample_durations=None,
                        read_index=None, ssv_std=False, noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
-                       add_cosmics=True, sky_background=1*u.count/u.s):
+                       cosmic_rate=None, sky_background=1*u.count/u.s):
         """ Generates a spatially scanned frame.
 
         Note, i need to seperate this into a user friendly version and a
@@ -598,9 +598,11 @@ class ExposureGenerator(object):
                     # possibility of noise -> mean due to CLT with more reads
                     pixel_array += noise_array
 
-                if add_cosmics:  # TODO allow manual setting of cosmic gen
+                # TODO allow manual setting of cosmic gen
+                if cosmic_rate is not None:
                     cosmic_gen = \
-                        trendgenerators.MinMaxPossionCosmicGenerator()
+                        trendgenerators.MinMaxPossionCosmicGenerator(
+                            cosmic_rate)
 
                     cosmic_array = cosmic_gen.cosmic_frame(read_exp_time,
                                                            array_size)
@@ -1161,12 +1163,16 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3,
 
     # TODO spacecraft manuvers IR 23 pg 206 for scanning
     exp_times = []
+    orbit_start_index = []
+    buffer_dump_index = []
     for orbit_n in xrange(num_orbits):
         if orbit_n == 0:
             guide_star_aq = 6 * u.min
         else:
             guide_star_aq = 5 * u.min
 
+        # record the expnum of each orbit start
+        orbit_start_index.append(len(exp_times))
         start_time = hst_period * orbit_n
 
         visit_time = start_time + guide_star_aq
@@ -1188,6 +1194,8 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3,
                 visit_time += time_buffer_dump
                 exp_n = 0
 
+                buffer_dump_index.append(len(exp_times))
+
     returnDict = {
         'exp_times': np.array(exp_times) * u.min,  # start_times?
         'NSAMP': NSAMP,
@@ -1199,6 +1207,8 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3,
         'exp_overhead': exp_overhead,
         'time_per_orbit': time_per_orbit,
         'hst_period': hst_period,
+        'buffer_dump_index': buffer_dump_index,
+        'orbit_start_index': orbit_start_index,
     }
 
     return returnDict
