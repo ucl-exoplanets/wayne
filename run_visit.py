@@ -98,7 +98,6 @@ visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']
 if visit_trend_coeffs is not None:
     obs.add_visit_trend(visit_trend_coeffs)
 
-obs.show_lightcurve()
-plt.show()
-
-# obs.run_observation()
+# obs.show_lightcurve()
+# plt.show()
+obs.run_observation()

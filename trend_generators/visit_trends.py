@@ -52,8 +52,6 @@ class HookAndLongTermRamp(BaseVisitTrend):
         :return: ramp_model
         """
 
-        print t, t_v, t_0, a1, a2, b1, b2
-
         t = np.array(t)  # wipes units if any
         t_v = np.array(t_v)
 
