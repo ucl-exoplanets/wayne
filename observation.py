@@ -285,6 +285,8 @@ class Observation(object):
         :rtype: exposure.Exposure
         """
 
+        index_number = number-1  # for zero indexing
+
         filename = '{:04d}_raw.fits'.format(number)
 
         exp_gen = ExposureGenerator(self.detector, self.grism, self.NSAMP,
@@ -305,7 +307,7 @@ class Observation(object):
         self.x_shifts * (number - 1))  # -1 so first exposure is 0n x_ref
 
         if self._visit_trend is not None:
-            scale_factor = self._visit_trend.get_scale_factor(number)
+            scale_factor = self._visit_trend.get_scale_factor(index_number)
         else:
             scale_factor = None
 
@@ -447,8 +449,8 @@ class ExposureGenerator(object):
                                           self.planet, self.exp_info)
 
         # Zero Read
-        self.exposure.add_read(self.detector.gen_pixel_array(self.SUBARRAY,
-                                                             light_sensitive=False))
+        self.exposure.add_read(
+            self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
 
         SUBARRAY = self.SUBARRAY
 
@@ -461,7 +463,7 @@ class ExposureGenerator(object):
         # generate a 2d gaussian
         di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / 2.0)
 
-        self.exposure.reads.append(di_array)  # add read would try and crop it
+        self.exposure.add_read(di_array)
 
         return self.exposure
 
@@ -670,7 +672,11 @@ class ExposureGenerator(object):
                 if scale_factor is not None:
                     pixel_array_full *= scale_factor
 
-                self.exposure.add_read(pixel_array_full)
+                read_info = {
+                    'sample_time': read_exp_time,
+                }
+
+                self.exposure.add_read(pixel_array_full, read_info)
 
                 previous_read_time = read_exp_times[read_num]
                 read_num += 1
@@ -819,8 +825,8 @@ class ExposureGenerator(object):
                                        self.grism.wl_limits[-1], wl, flux)
 
         # Zero Read
-        self.exposure.add_read(self.detector.gen_pixel_array(self.SUBARRAY,
-                                                             light_sensitive=False))
+        self.exposure.add_read(
+            self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
 
         # Generate first sample up the ramp
         first_read_time = self.read_times[0]

@@ -41,7 +41,7 @@ class Exposure(object):
 
         self.reads = []  # read 0 ->
 
-    def add_read(self, data):
+    def add_read(self, data, read_info=None):
         """ Adds the read to the exposure, will probably need some header
          information to in future.
 
@@ -52,7 +52,12 @@ class Exposure(object):
         :return:
         """
 
-        self.reads.append(data)
+        if read_info is not None:
+            header = self.generate_read_header(read_info)
+        else:
+            header = fits.Header()
+
+        self.reads.append((data, header))
 
     def generate_fits(self, out_dir='', filename=None):
         """ Saves the exposure as a HST style fits file.
@@ -78,9 +83,10 @@ class Exposure(object):
 
         compression = 'RICE_1'
 
-        for i, data in enumerate(reversed(self.reads)):
-            read_HDU = fits.ImageHDU(
-                data)  # compression disabled as its producing stripey data
+        for i, (data, header) in enumerate(reversed(self.reads)):
+            # compression currently disabled as its producing stripey data
+            read_HDU = fits.ImageHDU(data, header)
+
             error_array = fits.CompImageHDU(compression_type=compression)
 
             """ This array contains 16 independent flags indicating various
@@ -166,10 +172,10 @@ class Exposure(object):
         h[''] = ''
         h['TARGNAME'] = (self.planet.name, 'proposer\'s target name')
         # TODO format is wrong, 00 00 00 vs 2.405492604190E+02
-        h['RA_TARG'] = (
-        self.planet.ra, 'right ascension of the target (deg) (J2000)')
-        h['DEC_TARG'] = (
-        self.planet.dec, 'declination of the target (deg) (J2000)')
+        h['RA_TARG'] = (self.planet.ra.degree,
+                        'right ascension of the target (deg) (J2000)')
+        h['DEC_TARG'] = (self.planet.dec.degree,
+                         'declination of the target (deg) (J2000)')
 
         h[''] = ''
         h[''] = '/ EXPOSURE INFORMATION'
@@ -230,7 +236,7 @@ class Exposure(object):
 
 
         # keywords for analysis (i.e. xref positions until)
-        h['STARXI'] = (
+        h['STARX'] = (
         exp_info['x_ref'], 'x position of star on frame (full frame))')
 
         h[''] = ''
@@ -262,8 +268,24 @@ class Exposure(object):
             exp_info['SUBARRAY'])  # TODO (ryan) fix for non grism
         h['APERTURE'] = (APNAME, 'aperture name')
         h['PROPAPER'] = ('', 'proposed aperture name')  # is this always null?
-        h['DIRIMAGE'] = ('NONE',
-                         # TODO (ryan) change when true
+        h['DIRIMAGE'] = ('NONE', # TODO (ryan) change when true
                          'direct image for grism or prism exposure')
 
         return science_header
+
+    def generate_read_header(self, read_info):
+        """ generates the header for a single data read
+
+        :param read_info: dictionary of parameters from the simulation
+        :return:
+        """
+
+        read_header = fits.Header()
+        h = read_header
+
+        h['CRPIX1'] = 0
+
+        h['SAMPTIME'] = (read_info['sample_time'], 'total integration time (sec)')
+
+
+        return read_header
