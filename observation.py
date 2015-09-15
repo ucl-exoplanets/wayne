@@ -162,6 +162,11 @@ class Observation(object):
             u.day) + self.start_JD
 
     def setup_reductions(self, add_dark=True, add_flat=True):
+        """
+        :param add_dark:
+        :param add_flat:
+        :return:
+        """
         self.add_dark = add_dark
         self.add_flat = add_flat
 

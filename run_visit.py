@@ -85,18 +85,26 @@ noise_mean = cfg['observation']['noise_mean']
 noise_std = cfg['observation']['noise_std']
 
 add_dark = cfg['observation']['add_dark']
+add_flat = cfg['observation']['add_flat']
 
-# TODO (ryan) this level of input is insane and annoying, simplify
-obs = observation.Observation(
-    planet, start_JD, num_orbits, det, g141, NSAMP, SAMPSEQ, SUBARRAY, wl_p,
-    f_bb_tmp, depth_p, sample_rate, x_ref, y_ref, scan_speed, psf_max, outdir,
-    ssv_std=ssv_std, x_shifts=x_shifts, noise_mean=noise_mean,
-    noise_std=noise_std, add_dark=add_dark)
+
+obs = observation.Observation(outdir)
+
+obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
+obs.setup_grism(g141)
+obs.setup_target(planet, wl_p, f_bb_tmp, depth_p)
+obs.setup_visit(start_JD, num_orbits)
+obs.setup_reductions(add_dark, add_flat)
+obs.setup_observation(x_ref, y_ref, scan_speed)
+obs.setup_simulator(sample_rate, psf_max)
+obs.setup_trends(ssv_std, x_shifts)
+obs.setup_noise_sources()  # TODO
+obs.setup_gaussian_noise(noise_mean, noise_std)
 
 visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']
 
 if visit_trend_coeffs is not None:
-    obs.add_visit_trend(visit_trend_coeffs)
+    obs.setup_visit_trend(visit_trend_coeffs)
 
 # obs.show_lightcurve()
 # plt.show()
