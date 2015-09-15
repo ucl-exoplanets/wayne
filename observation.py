@@ -24,144 +24,185 @@ __all__ = ('Observation', 'ExposureGenerator', 'visit_planner')
 
 
 class Observation(object):
-    def __init__(self, planet, start_JD, num_orbits, detector, grism, NSAMP,
-                 SAMPSEQ, SUBARRAY, wl, stellar_flux,
-                 planet_spectrum, sample_rate, x_ref, y_ref, scan_speed,
-                 psf_max=4, outdir='', ssv_std=False,
-                 x_shifts=0, noise_mean=False, noise_std=False, add_dark=True):
+    def __init__(self, outdir=''):
         """ Builds a full observation running the visit planner to get exposure
-         times, generates lightcurves for each wavelength element and sample
-          time and then runs the exposure generator for each frame.
+        times, generates lightcurves for each wavelength element and sample
+        time and then runs the exposure generator for each frame.
 
+        You must now call each setup function separately
+
+        :param outdir: location on disk to save the output fits files to. Must exist.
+        :type outdir: str
+
+        :return: Nothing, output is saved to outdir
+        """
+
+        # TODO (ryan) option to set default values across the board
+        # TOOD (ryan) validation to instruct which ones need calling
+
+        self.scanning = True
+        self.outdir = outdir
+
+    def setup_observation(self, x_ref, y_ref, scan_speed):
+        """
+
+        :param x_ref: pixel in x axis the reference should be located
+        :type x_ref: int
+
+        :param y_ref: pixel in y axis the reference should be located
+        :type y_ref: int
+
+        :param scan_speed: rate of scan in pixels/second
+        :type scan_speed: astropy.units.quantity.Quantity
+        :return:
+        """
+        self.x_ref = x_ref
+        self.y_ref = y_ref
+        self.scan_speed = scan_speed
+
+    def setup_simulator(self, sample_rate, psf_max=4):
+        """
+        :param sample_rate: How often to sample the exposure (time units)
+        :type sample_rate: astropy.units.quantity.Quantity
+
+        :param psf_max: how many pixels the psf tails span,
+         0.9999999999999889% of flux between is between -4 and 4 of
+        the widest psf
+        """
+        """
+        :param sample_rate:
+        :param psf_max:
+        :return:
+        """
+        self.sample_rate = sample_rate
+        self.psf_max = psf_max
+
+    def setup_target(self, planet, wl, stellar_flux, planet_spectrum):
+        """
         :param planet: An ExoData type planet object your observing (holds
          observables like Rp, Rs, i, e, etc)
         :type: exodata.astroclasses.Planet
-        :param start_JD: The JD the entire visit should start (without overheads)
-        :type: float
-        :param num_orbits: number of orbits to generate for
-        :type: int
+
+        :param wl: array of wavelengths (corresponding to stellar flux and
+         planet spectrum) in u.microns
+        :type wl: astropy.units.quantity.Quantity
+
+        :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
+        :type stellar_flux: astropy.units.quantity.Quantity
+
+        :param planet_spectrum: array of the transit depth for the planet spectrum
+        :type planet_spectrum: numpy.ndarray
+        """
+        self.planet = planet
+        self.wl = wl
+        self.stellar_flux = stellar_flux
+        self.planet_spectrum = planet_spectrum
+        self._generate_star_information()
+
+    def _generate_star_information(self):
+        star = self.planet.star
+        # TODO (ryan) option to give limb darkening
+        self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')
+        logger.info(
+            "Looked up Limb Darkening coeffs of {}".format(self.ldcoeffs))
+
+    def setup_detector(self, detector, NSAMP, SAMPSEQ, SUBARRAY):
+        """
         :param detector: The detector to use
         :type: detector.WFC3_IR
-        :param grism: The grism to use
-        :type: grism.grism
+
         :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
         :type NSAMP: int
+
         :param SAMPSEQ: Sample sequence to use, effects exposure time ('RAPID',
          'SPARS10', 'SPARS25', 'SPARS50', 'SPARS100', 'SPARS200', 'STEP25',
          'STEP50', 'STEP100', 'STEP200', 'STEP400'
         :type SAMPSEQ: str
+
         :param SUBARRAY: subarray to use, effects exposure time and array size.
          (1024, 512, 256, 128, 64)
         :type SUBARRAY: int
-        :param wl: array of wavelengths (corresponding to stellar flux and
-         planet spectrum) in u.microns
-        :type wl: astropy.units.quantity.Quantity
-        :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
-        :type stellar_flux: astropy.units.quantity.Quantity
-        :param planet_spectrum: array of the transit depth for the planet spectrum
-        :type planet_spectrum: numpy.ndarray
-        :param sample_rate: How often to sample the exposure (time units)
-        :type sample_rate: astropy.units.quantity.Quantity
-        :param x_ref: pixel in x axis the reference should be located
-        :type x_ref: int
-        :param y_ref: pixel in y axis the reference should be located
-        :type y_ref: int
-        :param scan_speed: rate of scan in pixels/second
-        :type scan_speed: astropy.units.quantity.Quantity
-        :param psf_max: how many pixels the psf tails span,
-         0.9999999999999889% of flux between is between -4 and 4 of
-        the widest psf
-        :param outdir: location on disk to save the output fits files to. Must exist.
-        :type outdir: str
-
-        :param ssv_std: The % of the std(flux_per_pixel) the scan speed
-         variations cause. Basic implementation.
-        :type scan_speed_var: float
-        :param x_shifts: pixel fraction to shift the starting x_ref position by
-         for each exposure
-        :type x_shifts: float
-
-        :param noise_mean: mean noise (per second, per pixel)
-        :type noise_mean: float
-        :param noise_std: standard deviation of the noise (per second, per pixel)
-        :type noise_std: float
-
-        :return: Nothing, output is saved to outdir
         """
-        #  initialise all parameters here for now. There could be many options
-        #  entered through a Parameter file but this could be done with an
-        # interface.
-        #  mode handles exp time (NSAMP, SAMPSEQ, SUBARRAY)
-
-        # My current thought is a detector instance should be given per frame,
-        #  the exposure is then stored in the detector class which can also
-        # handle reads, flats, subbarays, and perhaps even translating the
-        #  coordinates from full frame to etc. This was the point of the
-        # exposure frame, but the main reason for that is output and
-        # it is detector specific! so perhaps theese should be merged
-
-        logger.info(
-            "Initialising Observation: startJD={}, num_orbits={}, detector={},"
-            " grism={}, NSAMP={}, SAMPSEQ={}, SUBARRAY={}, sample_rate={},"
-            " x_ref={}, y_ref={}, scan_speed={}, psf_max={}, outdir={}"
-            "".format(start_JD, num_orbits, detector, grism, NSAMP, SAMPSEQ,
-                       SUBARRAY, sample_rate, x_ref, y_ref, scan_speed,
-                       psf_max, outdir))
-
         self.detector = detector
-        self.grism = grism
-        self.scanning = True
-
-        self.num_orbits = num_orbits
         self.NSAMP = NSAMP
         self.SAMPSEQ = SAMPSEQ
         self.SUBARRAY = SUBARRAY
 
-        self.sample_rate = sample_rate
-        self.x_ref = x_ref
-        self.y_ref = y_ref
-        self.scan_speed = scan_speed
-        self.psf_max = psf_max
-        self.outdir = outdir
+    def setup_grism(self, grism):
+        """
+        :param grism: The grism to use
+        :type: grism.grism
+        """
+        self.grism = grism
 
-        self.planet = planet
+    def setup_visit(self, start_JD, num_orbits):
+        """ Sets up visit information,
+
+        :param start_JD: The JD the entire visit should start (without overheads)
+        :type: float
+        :param num_orbits: number of orbits to generate for
+        :type: int
+        """
         self.start_JD = start_JD  # in days
-        self.wl = wl
-        self.stellar_flux = stellar_flux
-        self.planet_spectrum = planet_spectrum
+        self.num_orbits = num_orbits
 
-        self.ssv_std = ssv_std
-        self.x_shifts = x_shifts
+    def _generate_visit_plan(self):
+        """ Generates the visit plan, requires both setup_detector and
+        setup_visit
 
-        star = self.planet.star
-        self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(),
-                                     'I')  # option to give limb darkening
-        logger.info(
-            "Looked up Limb Darkening coeffs of {}".format(self.ldcoeffs))
-
+        :return:
+        """
         self.visit_plan = visit_planner(self.detector, self.NSAMP,
                                         self.SAMPSEQ, self.SUBARRAY,
                                         self.num_orbits,
                                         # TEMP! to make observations sparser
                                         exp_overhead=3 * u.min)
+
         self.exp_start_times = self.visit_plan['exp_times'].to(
             u.day) + self.start_JD
 
-        self.exptime = self.visit_plan['exptime']
+    def setup_reductions(self, add_dark=True, add_flat=True):
+        self.add_dark = add_dark
+        self.add_flat = add_flat
 
-        # So this is a weird thing to do, maybe the JD should be added in the
-        # visit planner - used in visit trend generation
-        self.visit_plan['exp_start_times'] = self.exp_start_times
+    def setup_trends(self, ssv_std=False, x_shifts=0):
+        """
+        :param ssv_std: The % of the std(flux_per_pixel) the scan speed
+         variations cause. Basic implementation.
 
-        logger.info("Each exposure will have a exposure time of {}".format(
-            self.exptime))
+        :param x_shifts: pixel fraction to shift the starting x_ref position by
+         for each exposure
+        :type x_shifts: float
+        """
+        self.ssv_std = ssv_std
+        self.x_shifts = x_shifts
 
+    def setup_noise_sources(self, sky_background=1*u.count/u.s,
+                            cosmic_rate=11.):
+
+        self.sky_background = sky_background
+        self.cosmic_rate = cosmic_rate
+
+    def setup_gaussian_noise(self, noise_mean=False, noise_std=False):
+        """
+        :param noise_mean: mean noise (per second, per pixel)
+        :type noise_mean: float
+
+        :param noise_std: standard deviation of the noise (per second, per pixel)
+        :type noise_std: float
+        """
         self.noise_mean = noise_mean
         self.noise_std = noise_std
 
-        self.add_dark = add_dark
+    def setup_visit_trend(self, visit_trend_coeffs):
+        """ Adds a visit long trend to the simulation
+        :param coeffs: list of coeffs for the trend.
 
-        self._visit_trend = None  # must add with add_visit_trend
+        In future will include multiple trends
+        """
+
+        self._visit_trend = visit_trends.HookAndLongTermRamp(
+            self.visit_plan, visit_trend_coeffs)
 
     def generate_lightcurves(self, time_array, depth=False):
         """ Generates lightcurves samples a the time array using pylightcurve.
@@ -311,16 +352,14 @@ class Observation(object):
         else:
             scale_factor = None
 
-        exp_frame = exp_gen.scanning_frame(x_ref, self.y_ref, self.wl,
-                                           self.stellar_flux, planet_depths,
-                                           self.scan_speed, self.sample_rate,
-                                           self.psf_max, sample_mid_points,
-                                           sample_durations, read_index,
-                                           ssv_std=self.ssv_std,
-                                           noise_mean=self.noise_mean,
-                                           noise_std=self.noise_std,
-                                           add_dark=self.add_dark,
-                                           scale_factor=scale_factor)
+        exp_frame = exp_gen.scanning_frame(
+            x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
+            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
+            sample_durations, read_index, ssv_std=self.ssv_std,
+            noise_mean=self.noise_mean, noise_std=self.noise_std,
+            add_flat=self.add_flat, add_dark=self.add_dark,
+            scale_factor=scale_factor, sky_background=self.sky_background,
+            cosmic_rate=self.cosmic_rate)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -340,21 +379,10 @@ class Observation(object):
         exp = di_exp_gen.direct_image(self.x_ref, self.y_ref)
         exp.generate_fits(self.outdir, '0000_flt.fits')
 
-    def add_visit_trend(self, visit_trend_coeffs):
-        """ Adds a visit long trend to the simulation
-        :param coeffs: list of coeffs for the trend.
-
-        In future will include multiple trends
-        """
-
-        self._visit_trend = visit_trends.HookAndLongTermRamp(
-            self.visit_plan, visit_trend_coeffs)
-
 
 class ExposureGenerator(object):
     def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet,
-                 filename='0001_raw.fits',
-                 start_JD=0 * u.day):
+                 filename='0001_raw.fits', start_JD=0 * u.day,):
         """ Constructs exposures given a spectrum
 
         :param detector: detector class, i.e. WFC3_IR()
