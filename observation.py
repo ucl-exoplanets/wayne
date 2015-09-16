@@ -146,6 +146,9 @@ class Observation(object):
         self.start_JD = start_JD  # in days
         self.num_orbits = num_orbits
 
+        # TODO detector must be setup first but no indicator of this in code
+        self._generate_visit_plan()
+
     def _generate_visit_plan(self):
         """ Generates the visit plan, requires both setup_detector and
         setup_visit
@@ -160,6 +163,11 @@ class Observation(object):
 
         self.exp_start_times = self.visit_plan['exp_times'].to(
             u.day) + self.start_JD
+
+        # So this is a weird thing to do, maybe the JD should be added in the
+        # visit planner - used in visit trend generation
+        self.visit_plan['exp_start_times'] = self.exp_start_times
+
 
     def setup_reductions(self, add_dark=True, add_flat=True):
         """
