@@ -76,7 +76,7 @@ if __name__ == '__main__':
     SUBARRAY = cfg['observation']['SUBARRAY']
 
     # convert pq to u
-    start_JD = float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day
+    start_JD = float((planet.transittime - 0.16*pq.day).rescale(pq.day)) * u.day
     num_orbits = cfg['observation']['num_orbits']
     sample_rate = cfg['observation']['sample_rate'] * u.ms
     scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
@@ -91,6 +91,9 @@ if __name__ == '__main__':
     add_dark = cfg['observation']['add_dark']
     add_flat = cfg['observation']['add_flat']
 
+    sky_background = cfg['observation']['sky_background'] * u.count/u.s
+    cosmic_rate = cfg['observation']['cosmic_rate']
+
 
     obs = observation.Observation(outdir)
 
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, psf_max)
     obs.setup_trends(ssv_std, x_shifts)
-    obs.setup_noise_sources()  # TODO
+    obs.setup_noise_sources(sky_background, cosmic_rate)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 
     visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']
@@ -110,6 +113,8 @@ if __name__ == '__main__':
     if visit_trend_coeffs is not None:
         obs.setup_visit_trend(visit_trend_coeffs)
 
-    # obs.show_lightcurve()
-    # plt.show()
+    obs.show_lightcurve()
+    plt.savefig(os.path.join(outdir, 'visit_plan.png'))
+    plt.close()
+    
     obs.run_observation()

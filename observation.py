@@ -479,7 +479,7 @@ class ExposureGenerator(object):
         self.exp_info.update({
             'OBSTYPE': 'IMAGING',
             'x_ref': x_ref,
-            'NSAMP': 1,
+            'NSAMP': 2,
             'SAMP-SEQ': 'RAPID',
             'y_ref': y_ref,
         })
@@ -723,7 +723,7 @@ class ExposureGenerator(object):
                 read_num += 1
 
         # check to make sure all reads were made
-        assert (len(self.exposure.reads) == self.NSAMP + 1)
+        assert (len(self.exposure.reads) == self.NSAMP)
 
         end_time = time.clock()
 

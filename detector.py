@@ -48,7 +48,7 @@ class WFC3_IR(object):
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
 
-        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :param NSAMP: number of sample up the ramp, effects exposure time (2 to 16)
         :type NSAMP: int
         :param SAMPSEQ: Sample sequence to use, effects exposure time
         ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
@@ -62,10 +62,12 @@ class WFC3_IR(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
+        sample_number = NSAMP - 1  # EXPTIME tables quote samp num not NSAMP
+
         mt = self.modes_exp_table
 
         exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) &
-                              (mt['NSAMP'] == NSAMP) &
+                              (mt['SAMPNUM'] == sample_number) &
                               (mt['SUBARRAY'] == SUBARRAY)]
 
         if exptime_table.empty:
@@ -170,7 +172,7 @@ class WFC3_IR(object):
     def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
 
-        :param NSAMP: number of sample up the ramp, effects exposure time (1 to 15)
+        :param NSAMP: number of sample up the ramp, effects exposure time (2 to 16)
         :type NSAMP: int
         :param SAMPSEQ: Sample sequence to use, effects exposure time
         ('RAPID', 'SPARS10', 'SPARS25', 'SPARS50',
@@ -184,14 +186,16 @@ class WFC3_IR(object):
         :rtype: numpy.ndarray
         """
 
-        if not 1 <= NSAMP <= 15:
+        if not 2 <= NSAMP <= 16:
             raise WFC3SimSampleModeError(
-                "NSAMP must be an integer between 1 and 15, got {}".format(NSAMP))
+                "NSAMP must be an integer between 2 and 16, got {}".format(NSAMP))
+
+        sample_number = NSAMP - 1  # EXPTIME tables quote samp num not NSAMP
 
         mt = self.modes_exp_table
 
         exptime_table = mt.ix[(mt['SAMPSEQ'] == SAMPSEQ) &
-                              (mt['NSAMP'] <= NSAMP) &
+                              (mt['SAMPNUM'] <= sample_number) &
                               (mt['SUBARRAY'] == SUBARRAY)]['TIME']
 
         if exptime_table.empty:
@@ -212,7 +216,7 @@ class WFC3_IR(object):
         modes_exp_table = pd.read_csv(
             os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'),
             skiprows=1, dtype={ 'SUBARRAY': np.int64, 'SAMPSEQ': np.object,
-                                'NSAMP': np.int64, 'TIME':np.float},
+                                'SAMPNUM': np.int64, 'TIME':np.float},
                                   thousands=',')
 
         modes_calb_table = pd.read_csv(

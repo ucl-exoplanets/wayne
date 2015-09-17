@@ -70,7 +70,8 @@ class Exposure(object):
         :return:
         """
 
-        assert (len(self.reads) == (self.exp_info['NSAMP'] + 1))
+        assert (len(self.reads) == (self.exp_info['NSAMP'])),\
+            'Reads {} != NSAMP {}'.format(len(self.reads), self.exp_info['NSAMP'])
 
         if filename is None:
             filename = self.exp_info['filename']
