@@ -504,7 +504,11 @@ class ExposureGenerator(object):
         # generate a 2d gaussian
         di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / 2.0)
 
-        self.exposure.add_read(di_array)
+        read_info = {
+            'read_exp_time': 0,  # TODO add real value
+        }
+
+        self.exposure.add_read(di_array, read_info)
 
         return self.exposure
 

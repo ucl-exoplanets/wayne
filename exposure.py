@@ -253,18 +253,15 @@ class Exposure(object):
             SUBARRAY = True
         else:
             SUBARRAY = False
-        h['SUBARRAY'] = (
-        SUBARRAY, 'data from a subarray (T) or full frame (F)')
-        # h['SUBTYPE'] = () e.g 'SQ128SUB'
-        h['DETECTOR'] = (
-        self.detector.detector_type, 'detector in use: UVIS or IR')
+        h['SUBARRAY'] = (SUBARRAY, 'data from a subarray (T) or full frame (F)')
+        h['SUBTYPE'] = ('SQ{}SUB'.format(exp_info['SUBARRAY']))
+        h['DETECTOR'] = (self.detector.detector_type, 'detector in use: UVIS or IR')
         h['FILTER'] = (self.filter.name, 'element selected from filter wheel')
         h['SAMP_SEQ'] = (
         exp_info['SAMPSEQ'], 'MultiAccum exposure time sequence name')
         h['NSAMP'] = (exp_info['NSAMP'], 'number of MULTIACCUM samples')
-        h['SAMPZERO'] = (
-            # TODO (ryan) add when  known
-        0., 'sample time of the zeroth read (sec)')
+        # TODO (ryan) add when  known
+        h['SAMPZERO'] = (0., 'sample time of the zeroth read (sec)')
         APNAME = 'GRISM{}'.format(
             exp_info['SUBARRAY'])  # TODO (ryan) fix for non grism
         h['APERTURE'] = (APNAME, 'aperture name')
@@ -287,7 +284,7 @@ class Exposure(object):
         h['CRPIX1'] = 0
 
         # h['SAMPTIME'] = (read_info['cumulative_exp_time'], 'total integration time (sec)')
-        h['DELTATIM'] = (read_info['sample_time'], 'total integration time (sec)')
+        h['DELTATIM'] = (read_info['read_exp_time'], 'total integration time (sec)')
 
 
         return read_header
