@@ -20,9 +20,9 @@ observation:
   # TODO START JD IS NOT CURRENTLY SET HERE, SET IN RUNSIM
   start_JD: None
   num_orbits: 5
-  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
+  sample_rate: 30  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
-  scan_speed: 5.56 # 165/29.664  # pixels per second
+  scan_speed: 7.39 # 165/22.32  # pixels per second
 
   psf_max: 4  # how many pixels to inegrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %

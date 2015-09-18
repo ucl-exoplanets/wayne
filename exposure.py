@@ -286,7 +286,8 @@ class Exposure(object):
 
         h['CRPIX1'] = 0
 
-        h['SAMPTIME'] = (read_info['sample_time'], 'total integration time (sec)')
+        # h['SAMPTIME'] = (read_info['cumulative_exp_time'], 'total integration time (sec)')
+        h['DELTATIM'] = (read_info['sample_time'], 'total integration time (sec)')
 
 
         return read_header

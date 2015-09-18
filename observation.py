@@ -658,6 +658,7 @@ class ExposureGenerator(object):
                 # TODO (ryan) check order of effects is correct
 
                 # TODO (ryan) check scaling i.e. DN vs e
+                cumulative_exp_time = read_exp_times[read_num]
                 read_exp_time = (
                     read_exp_times[read_num] - previous_read_time).to(
                         u.s).value
@@ -714,7 +715,8 @@ class ExposureGenerator(object):
                     pixel_array_full *= scale_factor
 
                 read_info = {
-                    'sample_time': read_exp_time,
+                    'cumulative_exp_time': cumulative_exp_time,
+                    'read_exp_time': read_exp_time,
                 }
 
                 self.exposure.add_read(pixel_array_full, read_info)

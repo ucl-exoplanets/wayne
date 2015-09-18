@@ -116,5 +116,5 @@ if __name__ == '__main__':
     obs.show_lightcurve()
     plt.savefig(os.path.join(outdir, 'visit_plan.png'))
     plt.close()
-    
+
     obs.run_observation()
