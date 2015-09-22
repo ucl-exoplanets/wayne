@@ -281,7 +281,7 @@ class Exposure(object):
         read_header = fits.Header()
         h = read_header
 
-        h['CRPIX1'] = 0
+        h['CRPIX1'] = (read_info['CRPIX1'], 'x-coordinate of reference pixel')
 
         # h['SAMPTIME'] = (read_info['cumulative_exp_time'], 'total integration time (sec)')
         h['DELTATIM'] = (read_info['read_exp_time'], 'total integration time (sec)')

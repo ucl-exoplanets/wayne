@@ -506,6 +506,7 @@ class ExposureGenerator(object):
 
         read_info = {
             'read_exp_time': 0,  # TODO add real value
+            'CRPIX1': -5,
         }
 
         self.exposure.add_read(di_array, read_info)
@@ -688,8 +689,6 @@ class ExposureGenerator(object):
                                                            array_size)
                     pixel_array += cosmic_array
 
-                # TODO (ryan) bias
-
                 # TODO (ryan) bad pixels
 
                 if add_flat:
@@ -715,12 +714,17 @@ class ExposureGenerator(object):
 
                 # TODO (ryan) read noise
 
+                # TODO (ryan) non-linearity
+
+                # TODO (ryan) bias
+
                 if scale_factor is not None:
                     pixel_array_full *= scale_factor
 
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
                     'read_exp_time': read_exp_time,
+                    'CRPIX1': 0,
                 }
 
                 self.exposure.add_read(pixel_array_full, read_info)
