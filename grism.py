@@ -70,8 +70,7 @@ class G141(object):
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
         # Sky
-        self.sky_file = os.path.join(params._calb_dir,
-                                       'WFC3.IR.G141.sky.V1.0.fits')
+        self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
 
         ## PSF Information
         self._psf_file = np.loadtxt(
@@ -85,13 +84,15 @@ class G141(object):
         self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
 
         # Throughput
-        self.throughput_file = os.path.join(params._data_dir,
-                                            'wfc3_ir_g141_src_004_syn.fits')
+        self.throughput_file = os.path.join(
+            params._calb_dir, 'WFC3.IR.G141.1st.sens.2.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
+            self.throughput_units = (u.ph / (u.s * u.angstrom)) /\
+                                   (u.erg / (u.cm**2 * u.s *u.angstrom))
             self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
                 u.micron)
-            self.throughput_val = tbl.field('THROUGHPUT')
+            self.throughput_val = tbl.field('SENSITIVITY') * self.throughput_units
 
         # Non Grism Specific Constants
         self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
@@ -311,19 +312,21 @@ class G141(object):
         multiplying by the throughput. A linear interpolation (numpy.interp)
         is used to generate values between sample points.
 
+        Note this is now the sensitivity of th grism rather than throughput
+
         :param wl: wavelength of flux / counts
         :type wl: astropy.units.quantity.Quantity
-        :param flux: flux / counts
+        :param flux: flux in erg / (Angstrom cm2 s)
         :type flux: astropy.units.quantity.Quantity
 
-        :return: flux, throughput corrected
+        :return: flux, throughput corrected in e / (s A)
         :rtype: astropy.units.quantity.Quantity
         """
 
         throughput_values = np.interp(wl, self.throughput_wl,
                                       self.throughput_val, 0., 0.)
 
-        return flux * throughput_values
+        return flux * throughput_values * self.throughput_units
 
     def plot_throughput(self):
         """ Plots the throughput curve for the grism
@@ -332,7 +335,7 @@ class G141(object):
         plt.figure()
         plt.plot(self.throughput_wl, self.throughput_val)
         plt.title("Grism Throughput")
-        plt.ylabel("Throughput")
+        plt.ylabel("Sensitivity")
         plt.xlabel("Wavelength ($\mu m$)")
 
     def plot_spectrum_with_throughput(self, wl, flux, qe=True, fig=None,

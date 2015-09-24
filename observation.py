@@ -927,16 +927,18 @@ class ExposureGenerator(object):
         #  np.mean(effected_elements)*100)
         # self._overlap_detection(trace, x_pos, wl, psf_max)
 
+        # Modify the flux by the grism throughput Units e / (s A)
+        count_rate = self.grism.apply_throughput(wl, flux)
+        count_rate = count_rate.to(u.photon / u.s / u.angstrom)
+
         # Scale the flux to photon counts (per pixel / per second)
-        count_rate = self._flux_to_counts(flux, wl)
+        count_rate = self._flux_to_counts(count_rate, wl)
+        count_rate = count_rate.to(u.photon / u.s)
 
         # TODO (ryan) scale flux by stellar distance / require it already
         # scaled
 
         counts = (count_rate * exptime).to(u.photon)
-
-        # Modify the counts by the grism throughput
-        counts = self.grism.apply_throughput(wl, counts)
 
         counts = self.detector.apply_quantum_efficiency(wl, counts)
 
@@ -1099,10 +1101,10 @@ class ExposureGenerator(object):
 
         # throughput is considered elsewhere
 
-        counts = flux * A * delta_lambda * lam_hc
-        counts = counts.decompose()
-        counts = counts.to(
-            u.photon / u.s)  # final test to ensure we have eliminated all other units
+        counts = flux * delta_lambda
+        # counts = counts.decompose()
+        # final test to ensure we have eliminated all other units
+        counts = counts.to(u.photon / u.s)
 
         return counts
 
