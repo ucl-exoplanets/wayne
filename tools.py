@@ -125,6 +125,11 @@ def load_pheonix_stellar_grid_fits(fits_file):
         star_wl, star_flux = order_flux_grid(
             tab.data['Wavelength'], tab.data['Flux'])
 
+        # Remove duplicate wl values
+        idx = np.nonzero(np.diff(star_wl))
+        star_wl = star_wl[idx]
+        star_flux = star_flux[idx]
+
     return star_wl, star_flux
 
 
