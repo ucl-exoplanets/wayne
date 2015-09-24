@@ -77,24 +77,32 @@ class Observation(object):
         self.sample_rate = sample_rate
         self.psf_max = psf_max
 
-    def setup_target(self, planet, wl, stellar_flux, planet_spectrum):
+    def setup_target(self, planet, planet_spectrum, planet_wl, stellar_flux,
+                     stellar_wl=None):
         """
         :param planet: An ExoData type planet object your observing (holds
          observables like Rp, Rs, i, e, etc)
         :type: exodata.astroclasses.Planet
 
-        :param wl: array of wavelengths (corresponding to stellar flux and
+        :param planet_wl: array of wavelengths (corresponding to stellar flux and
          planet spectrum) in u.microns
-        :type wl: astropy.units.quantity.Quantity
+        :type planet_wl: astropy.units.quantity.Quantity
 
         :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
         :type stellar_flux: astropy.units.quantity.Quantity
 
         :param planet_spectrum: array of the transit depth for the planet spectrum
         :type planet_spectrum: numpy.ndarray
+
+        :param stellar_wl: If given the stellar flux and planet signal are
+        binned separately so we rebin the stellar spectrum to the planet bins
         """
+
+        if stellar_wl is not None:
+            stellar_flux = tools.rebin_spec(stellar_wl, stellar_flux, planet_wl)
+
         self.planet = planet
-        self.wl = wl
+        self.wl = planet_wl
         self.stellar_flux = stellar_flux
         self.planet_spectrum = planet_spectrum
         self._generate_star_information()
@@ -167,7 +175,6 @@ class Observation(object):
         # So this is a weird thing to do, maybe the JD should be added in the
         # visit planner - used in visit trend generation
         self.visit_plan['exp_start_times'] = self.exp_start_times
-
 
     def setup_reductions(self, add_dark=True, add_flat=True):
         """
@@ -522,6 +529,9 @@ class ExposureGenerator(object):
                        scale_factor=None):
         """ Generates a spatially scanned frame.
 
+        Note also that the stellar flux and planet signal MUST be binned the
+        same, this can be done with wfc3sim.tools.rebin_spec
+
         Note, i need to seperate this into a user friendly version and a
         version to use with observation as i am already
         seeing clashes (aka sample times generation).
@@ -637,15 +647,11 @@ class ExposureGenerator(object):
             if ssv_std:
                 s_dur *= ssv_scaling[i]
 
-            # add scan speed variations
-            # if ssv_std:
-            #     s_dur *= ssv_scaling[i]
-
             if planet_signal.ndim == 1:
                 pass  # handled above but leaving to point out this needs cleaning up
             else:
-                s_flux = self.combine_planet_stellar_spectrum(stellar_flux,
-                                                              planet_signal[i])
+                s_flux = self.combine_planet_stellar_spectrum(
+                    stellar_flux, planet_signal[i])
                 # TODO (ryan) handling cropping elsewhere to avoid doing it
                 #  all the time, crop flux + depth together
                 s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],

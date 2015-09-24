@@ -2,6 +2,8 @@
 """
 
 import numpy as np
+import pysynphot
+import astropy.io.fits as fits
 
 
 def crop_spectrum(min_wl, max_wl, wl, flux):
@@ -87,3 +89,57 @@ def bin_centers_to_widths(centers):
     bin_width = bin_range + bin_range_roll
 
     return bin_width
+
+
+def rebin_spec(wavelength, spectrum, new_wavelength):
+    """ Takes an input spectrum and rebins to new given wavelengths whilst
+    preserving flux
+
+    This function was modified from the original by Jessica Lu and John Johnson, taken from
+    http://www.astrobetter.com/blog/2013/08/12/python-tip-re-sampling-spectra-with-pysynphot/
+
+    :param wave: original wavelength
+    :param specin: original spectrum
+    :param wavnew: new wavlengths to bin to
+    :return: rebinned spectrum
+    """
+
+    spec = pysynphot.spectrum.ArraySourceSpectrum(wave=wavelength, flux=spectrum)
+    f = np.ones(len(wavelength))
+    filt = pysynphot.spectrum.ArraySpectralElement(wavelength, f, waveunits='angstrom')
+    obs = pysynphot.observation.Observation(spec, filt, binset=new_wavelength, force='taper')
+
+    return obs.binflux
+
+
+def load_pheonix_stellar_grid_fits(fits_file):
+    """ loads a phenoix stellar model precomputed wavelength grid in fits
+    format.
+
+    :param fits_file:
+    :return: wavelength, flux
+    """
+
+    with fits.open(fits_file) as f:
+        tab = f[1]
+        star_wl, star_flux = order_flux_grid(
+            tab.data['Wavelength'], tab.data['Flux'])
+
+    return star_wl, star_flux
+
+
+def order_flux_grid(wavelength, spectrum):
+    """ Given a wavelength and spectrum, will sort the wavelength in increasing
+    order. this is necessary for models like pheonix that have been computed
+    on clusters.
+
+    :param wavelength:
+    :param spectrum:
+    :return:
+    """
+
+    sorted_flux = np.array(sorted(zip(wavelength, spectrum)))
+    wl = sorted_flux[:, 0]
+    flux = sorted_flux[:, 1]
+
+    return wl, flux

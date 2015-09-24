@@ -67,7 +67,7 @@ class G141(object):
         # TODO (ryan) where does this file come fron, original name?
         self.flat_file = os.path.join(params._calb_dir,
                                        'WFC3.IR.G141.flat.2.fits')
-        self.flat_file2 = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
+        self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
         # Sky
         self.sky_file = os.path.join(params._calb_dir,
@@ -404,9 +404,8 @@ class G141(object):
         # turn into format for flat equations
         wl_array_norm = (wl_array - wmin) / (wmax - wmin)
 
-        with fits.open(self.flat_file2) as flat2:
-            # TODO (ryan) what is this?
-            flat_data = flat2[1].data[5:-5, 5:-5]
+        with fits.open(self.gain_file) as gain:
+            flat_data = gain[1].data[5:-5, 5:-5]
 
 
         flatfield = (f0 + f1 * wl_array_norm + f2 * (wl_array_norm**2) +

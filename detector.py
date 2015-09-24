@@ -320,9 +320,6 @@ class WFC3_IR(object):
         # INCOMPLETE
         # TODO (ryan) join quadrants back up
 
-    def get_flat_field(self, pixel_array, ):
-        pass
-
 
 class WFC3SimException(BaseException):
     pass

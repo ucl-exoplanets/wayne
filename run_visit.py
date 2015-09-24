@@ -19,6 +19,7 @@ import exodata
 import quantities as pq  # exodata still uses this
 import yaml
 import docopt
+import seaborn
 
 import observation
 import detector
@@ -26,6 +27,7 @@ import grism
 import tools
 import params
 
+seaborn.set_style("whitegrid")
 
 if __name__ == '__main__':
 
@@ -34,9 +36,6 @@ if __name__ == '__main__':
 
     with open(parameter_file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
-
-
-    plt.style.use('ggplot')
 
     outdir = cfg['general']['outdir']
 
@@ -54,7 +53,7 @@ if __name__ == '__main__':
 
     planet = exodb.planetDict[cfg['target']['name']]
 
-    source_spectra = np.loadtxt(cfg['target']['spectrum_file'])
+    source_spectra = np.loadtxt(cfg['target']['planet_spectrum_file'])
     source_spectra = source_spectra.T  # turn to (wl list, flux list)
     source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 
@@ -65,9 +64,18 @@ if __name__ == '__main__':
     wl_p = source_spectra[0] * u.micron
     depth_p = source_spectra[1]
 
-    wl_bb = wl_p
-    f_bb = blackbody_lambda(wl_bb, planet.star.T)
-    f_bb_tmp = f_bb * u.sr / cfg['target']['flux_scale']
+    stellar_spec_file = cfg['target']['stellar_spectrum_file']
+    if stellar_spec_file:
+        stellar_wl, stellar_flux = tools.load_pheonix_stellar_grid_fits(stellar_spec_file)
+
+        stellar_flux = tools.rebin_spec(stellar_wl, stellar_flux, np.array(wl_p))
+
+        flux_units = u.erg / (u.angstrom * u.s * u.sr * u.cm**2)
+        stellar_flux *= flux_units
+    else:  # use blackbody
+        stellar_flux = blackbody_lambda(wl_p, planet.star.T)
+
+    stellar_flux_scaled = stellar_flux * u.sr / cfg['target']['flux_scale']
 
     x_ref = cfg['observation']['x_ref']
     y_ref = cfg['observation']['y_ref']
@@ -94,12 +102,11 @@ if __name__ == '__main__':
     sky_background = cfg['observation']['sky_background'] * u.count/u.s
     cosmic_rate = cfg['observation']['cosmic_rate']
 
-
     obs = observation.Observation(outdir)
 
     obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
     obs.setup_grism(g141)
-    obs.setup_target(planet, wl_p, f_bb_tmp, depth_p)
+    obs.setup_target(planet, depth_p, wl_p, stellar_flux_scaled)
     obs.setup_visit(start_JD, num_orbits)
     obs.setup_reductions(add_dark, add_flat)
     obs.setup_observation(x_ref, y_ref, scan_speed)
