@@ -407,19 +407,21 @@ class G141(object):
         # turn into format for flat equations
         wl_array_norm = (wl_array - wmin) / (wmax - wmin)
 
-        with fits.open(self.gain_file) as gain:
-            flat_data = gain[1].data[5:-5, 5:-5]
-
 
         flatfield = (f0 + f1 * wl_array_norm + f2 * (wl_array_norm**2) +
                      f3 * (wl_array_norm**3))
-
-        flatfield = flatfield / flat_data
 
         if size is not None:
             flatfield = crop_central_box(flatfield, size)
 
         return flatfield
+
+    def get_gain(self):
+
+        with fits.open(self.gain_file) as gain:
+            gain_data = gain[1].data[5:-5, 5:-5]
+
+        return gain_data
 
     def get_master_sky(self, size=None):
         """ Returns the master sky from WFC3.IR.G141.sky.V1.0.fits

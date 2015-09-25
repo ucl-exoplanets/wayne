@@ -176,7 +176,7 @@ class Observation(object):
         # visit planner - used in visit trend generation
         self.visit_plan['exp_start_times'] = self.exp_start_times
 
-    def setup_reductions(self, add_dark=True, add_flat=True):
+    def setup_reductions(self, add_dark=True, add_flat=True, add_gain=True):
         """
         :param add_dark:
         :param add_flat:
@@ -184,6 +184,7 @@ class Observation(object):
         """
         self.add_dark = add_dark
         self.add_flat = add_flat
+        self.add_gain = add_gain
 
     def setup_trends(self, ssv_std=False, x_shifts=0):
         """
@@ -379,7 +380,7 @@ class Observation(object):
             noise_mean=self.noise_mean, noise_std=self.noise_std,
             add_flat=self.add_flat, add_dark=self.add_dark,
             scale_factor=scale_factor, sky_background=self.sky_background,
-            cosmic_rate=self.cosmic_rate)
+            cosmic_rate=self.cosmic_rate, add_gain=self.add_gain)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -526,7 +527,7 @@ class ExposureGenerator(object):
                        read_index=None, ssv_std=False, noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
-                       scale_factor=None):
+                       scale_factor=None, add_gain=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -704,7 +705,9 @@ class ExposureGenerator(object):
 
                     pixel_array += master_sky
 
-                # TODO (ryan) flat gain
+                if add_gain:
+                    gain_file = self.grism.get_gain
+                    pixel_array /= gain_file
 
                 # TODO allow manual setting of cosmic gen
                 if cosmic_rate is not None:
