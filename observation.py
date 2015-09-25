@@ -929,15 +929,16 @@ class ExposureGenerator(object):
 
         # Smooth spectrum (simulating spectral PSF) 4.5 is approximate stdev
         # remove the units first as the kernal dosent like it
+        # # TODO smoothing value depends on input resolution
+        # flux = tools.gaussian_smoothing(flux.value, 45)
+        # flux *= u.photon / u.s / u.angstrom
+        # flux = count_rate.to(u.photon / u.s / u.angstrom)
 
         # Modify the flux by the grism throughput Units e / (s A)
+        np.savetxt('spec-before-tp.txt', [wl, flux])
         count_rate = self.grism.apply_throughput(wl, flux)
         count_rate = count_rate.to(u.photon / u.s / u.angstrom)
-
-        # TODO (ryan) smoothing value depends on input resolution
-        count_rate = tools.gaussian_smoothing(count_rate.value, 45)
-        count_rate *= u.photon / u.s / u.angstrom
-        count_rate = count_rate.to(u.photon / u.s / u.angstrom)
+        np.savetxt('spec-after-tp.txt', [wl, count_rate])
 
         # Scale the flux to photon counts (per pixel / per second)
         count_rate = self._flux_to_counts(count_rate, wl)
