@@ -55,7 +55,7 @@ class G141(object):
         # Grism Values
         # ------------
         self.min_lambda = 1.075 * u.micron
-        self.max_lambda = 1.700 * u.micron
+        self.max_lambda = 1.77 * u.micron
 
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
