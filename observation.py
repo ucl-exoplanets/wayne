@@ -927,25 +927,22 @@ class ExposureGenerator(object):
         #  np.mean(effected_elements)*100)
         # self._overlap_detection(trace, x_pos, wl, psf_max)
 
-        # Smooth spectrum (simulating spectral PSF) 4.5 is approximate stdev
-        # remove the units first as the kernal dosent like it
-        # # TODO smoothing value depends on input resolution
-        # flux = tools.gaussian_smoothing(flux.value, 45)
-        # flux *= u.photon / u.s / u.angstrom
-        # flux = count_rate.to(u.photon / u.s / u.angstrom)
-
         # Modify the flux by the grism throughput Units e / (s A)
-        np.savetxt('spec-before-tp.txt', [wl, flux])
         count_rate = self.grism.apply_throughput(wl, flux)
         count_rate = count_rate.to(u.photon / u.s / u.angstrom)
-        np.savetxt('spec-after-tp.txt', [wl, count_rate])
 
         # Scale the flux to photon counts (per pixel / per second)
         count_rate = self._flux_to_counts(count_rate, wl)
         count_rate = count_rate.to(u.photon / u.s)
 
-        # TODO (ryan) scale flux by stellar distance / require it already
-        # scaled
+        # Smooth spectrum (simulating spectral PSF) 4.5 is approximate stdev
+        # remove the units first as the kernal dosent like it
+        count_rate = count_rate.to(u.photon / u.s)  # sanity check
+        wl = wl.to(u.micron)
+        # TODO (ryan) we loose a little wavelength? will this matter when ive already cropped?
+        wl, count_rate = tools.gaussian_smoothing(wl.value, count_rate.value)
+        count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
+        wl = (wl*u.micron).to(u.micron)
 
         counts = (count_rate * exptime).to(u.photon)
 
@@ -958,6 +955,10 @@ class ExposureGenerator(object):
 
         # This is a 2d array of the psf limits per wl element so we can
         #  integrate the whole sample at once
+        print 'psf_len_limits', psf_len_limits
+        print y_pos
+        print wl
+
         psf_limit_array = _build_2d_limits_array(psf_len_limits, self.grism,
                                                  wl, y_pos)
 
