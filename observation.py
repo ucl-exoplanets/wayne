@@ -321,7 +321,7 @@ class Observation(object):
         # # pool = Pool(cpu_count())
         # # pool.map(gen_exp, run_params)
 
-        self._generate_direct_image()  # to calibrate x_ref and y_ref
+        # self._generate_direct_image()  # to calibrate x_ref and y_ref
 
         num_frames = len(self.exp_start_times)
         progress = Progress(num_frames)
@@ -927,16 +927,23 @@ class ExposureGenerator(object):
         #  np.mean(effected_elements)*100)
         # self._overlap_detection(trace, x_pos, wl, psf_max)
 
-        # Scale the flux to photon counts (per pixel / per second)
-        count_rate = self._flux_to_counts(flux, wl)
+        # Modify the flux by the grism throughput Units e / (s A)
+        count_rate = self.grism.apply_throughput(wl, flux)
+        count_rate = count_rate.to(u.photon / u.s / u.angstrom)
 
-        # TODO (ryan) scale flux by stellar distance / require it already
-        # scaled
+        # Scale the flux to photon counts (per pixel / per second)
+        count_rate = self._flux_to_counts(count_rate, wl)
+        count_rate = count_rate.to(u.photon / u.s)
+
+        # Smooth spectrum (simulating spectral PSF) 4.5 is approximate stdev
+        # remove the units first as the kernal dosent like it
+        count_rate = count_rate.to(u.photon / u.s)  # sanity check
+        wl = wl.to(u.micron)
+        # TODO (ryan) we loose a little wavelength? will this matter when ive already cropped?
+        count_rate = tools.gaussian_smoothing(wl.value, count_rate.value)
+        count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
 
         counts = (count_rate * exptime).to(u.photon)
-
-        # Modify the counts by the grism throughput
-        counts = self.grism.apply_throughput(wl, counts)
 
         counts = self.detector.apply_quantum_efficiency(wl, counts)
 
@@ -947,6 +954,7 @@ class ExposureGenerator(object):
 
         # This is a 2d array of the psf limits per wl element so we can
         #  integrate the whole sample at once
+
         psf_limit_array = _build_2d_limits_array(psf_len_limits, self.grism,
                                                  wl, y_pos)
 
@@ -1099,10 +1107,10 @@ class ExposureGenerator(object):
 
         # throughput is considered elsewhere
 
-        counts = flux * A * delta_lambda * lam_hc
-        counts = counts.decompose()
-        counts = counts.to(
-            u.photon / u.s)  # final test to ensure we have eliminated all other units
+        counts = flux * delta_lambda
+        # counts = counts.decompose()
+        # final test to ensure we have eliminated all other units
+        counts = counts.to(u.photon / u.s)
 
         return counts
 

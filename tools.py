@@ -4,6 +4,7 @@
 import numpy as np
 import pysynphot
 import astropy.io.fits as fits
+from scipy.interpolate import interp1d
 
 
 def crop_spectrum(min_wl, max_wl, wl, flux):
@@ -148,3 +149,61 @@ def order_flux_grid(wavelength, spectrum):
     flux = sorted_flux[:, 1]
 
     return wl, flux
+
+
+def gaussian_smoothing(wavelength, flux):
+    """
+    Gaussian smoothing for a spectrum written by Angelos. Meant to simulate
+     the psf in the spectral direction.
+    
+    Distributes the flux of each spectral element to the rest of the wavelength
+    grid. Uses a gaussian distribution centered at the spectral element with a
+    FWHM given by an interpolation function created from the given information
+    about the instrument. Because the instrumental psf is given in pixels we
+    assume a ratio of 4.5 nm / pixel.  The contribution on each spectral
+    element is calculated with numerical integration using the rectangle rule
+    between the half-distance wavelengths from the previous and the next
+    spectral element.
+
+    Parameters
+    ----------
+    wavelength : array_like
+        array containing the wavelength of each spectral point
+    
+    flux : array_like
+        array containing the flux of each spectral point
+
+    Returns
+    -------
+    wavelength, smoothed_flux : array_like, array_like 
+        arrays containing the wavelength and the smoothed flux for each spectral point
+
+    """
+    
+    # TODO (ryan) replace with astropy gaussian kernal
+    # TODO (ryan) or ideally, simulate a 2d gaussian in generation instead
+    
+    wavelength = np.array(wavelength)
+    flux = np.array(flux)
+
+    def gauss(x, mean, sigma):
+        return (1.0/(sigma*np.sqrt(2.0*np.pi))) * np.exp(-(x - mean) ** 2 / (2 * sigma ** 2))
+
+    # TODO (ryan) pull this info from grism
+    psfx = np.array([0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7])
+    psfy = np.array([0.971, 0.986, 1.001, 1.019, 1.040, 1.067, 1.100, 1.136, 1.176, 1.219])
+    psf = interp1d(psfx, psfy/(2.0*np.sqrt(2.0*np.log(2.0))), kind='cubic')
+    
+    smoothed_flux = np.zeros_like(flux)[1:-1]
+    
+    for i in range(len(wavelength)):
+        wl = wavelength[i]
+        fl = flux[i]
+        lim1 = 0.5 * (wavelength[1:-1] + wavelength[:-2])
+        lim2 = 0.5 * (wavelength[1:-1] + wavelength[2:])
+        smoothed_flux = smoothed_flux + fl*((lim2-lim1)*0.5*(gauss(lim1,wl,psf(wl)*0.0045)+gauss(lim2,wl,psf(wl)*0.0045)))
+    
+    smoothed_flux = np.insert(smoothed_flux,0,0)
+    smoothed_flux = np.append(smoothed_flux,0)
+    
+    return np.array(smoothed_flux)
