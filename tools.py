@@ -206,4 +206,4 @@ def gaussian_smoothing(wavelength, flux):
     smoothed_flux = np.insert(smoothed_flux,0,0)
     smoothed_flux = np.append(smoothed_flux,0)
     
-    return wavelength, np.array(smoothed_flux)
+    return np.array(smoothed_flux)

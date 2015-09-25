@@ -940,9 +940,8 @@ class ExposureGenerator(object):
         count_rate = count_rate.to(u.photon / u.s)  # sanity check
         wl = wl.to(u.micron)
         # TODO (ryan) we loose a little wavelength? will this matter when ive already cropped?
-        wl, count_rate = tools.gaussian_smoothing(wl.value, count_rate.value)
+        count_rate = tools.gaussian_smoothing(wl.value, count_rate.value)
         count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
-        wl = (wl*u.micron).to(u.micron)
 
         counts = (count_rate * exptime).to(u.photon)
 
@@ -955,9 +954,6 @@ class ExposureGenerator(object):
 
         # This is a 2d array of the psf limits per wl element so we can
         #  integrate the whole sample at once
-        print 'psf_len_limits', psf_len_limits
-        print y_pos
-        print wl
 
         psf_limit_array = _build_2d_limits_array(psf_len_limits, self.grism,
                                                  wl, y_pos)
