@@ -685,16 +685,6 @@ class ExposureGenerator(object):
                     # possibility of noise -> mean due to CLT with more reads
                     pixel_array += noise_array
 
-                # TODO allow manual setting of cosmic gen
-                if cosmic_rate is not None:
-                    cosmic_gen = \
-                        cosmic_rays.MinMaxPossionCosmicGenerator(
-                            cosmic_rate)
-
-                    cosmic_array = cosmic_gen.cosmic_frame(read_exp_time,
-                                                           array_size)
-                    pixel_array += cosmic_array
-
                 # TODO (ryan) bad pixels
 
                 if add_flat:
@@ -713,6 +703,18 @@ class ExposureGenerator(object):
 
                     pixel_array += master_sky
 
+                # TODO (ryan) flat gain
+
+                # TODO allow manual setting of cosmic gen
+                if cosmic_rate is not None:
+                    cosmic_gen = \
+                        cosmic_rays.MinMaxPossionCosmicGenerator(
+                            cosmic_rate)
+
+                    cosmic_array = cosmic_gen.cosmic_frame(read_exp_time,
+                                                           array_size)
+                    pixel_array += cosmic_array
+
                 if add_dark:
                     pixel_array_full = self.detector.add_dark_current(
                         pixel_array_full, self.NSAMP, self.SUBARRAY,
@@ -722,9 +724,7 @@ class ExposureGenerator(object):
 
                 # TODO (ryan) non-linearity
 
-                # TODO (ryan) bias
-
-                if scale_factor is not None:
+                if scale_factor is not None:  # TODO (ryan) scale signal
                     pixel_array_full *= scale_factor
 
                 read_info = {
