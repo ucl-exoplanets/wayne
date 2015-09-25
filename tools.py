@@ -148,3 +148,24 @@ def order_flux_grid(wavelength, spectrum):
     flux = sorted_flux[:, 1]
 
     return wl, flux
+
+
+def gaussian_smoothing(data, sigma):
+    """ Guassian smoothing for a spectrum written by Angelos. Meant to simulate
+    the psf in the spectral direction
+    """
+    # TODO (ryan) replace with astropy gaussian kernal
+    # TODO (ryan) or ideally, simulate a 2d gaussian in generation instead
+
+    smoothed_data = []
+    for i in range(len(data)):
+        smoothed_data.append(
+            np.sum(data*_gaussian_model(np.arange(len(data)),i,sigma)))
+
+    return np.array(smoothed_data)
+
+
+def _gaussian_model(x, mean, sigma):
+    """ Simple Gaussian function
+    """
+    return (1.0/(sigma*np.sqrt(2.0*np.pi))) * np.exp(-(x - mean) ** 2 / (2 * sigma ** 2))

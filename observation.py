@@ -321,7 +321,7 @@ class Observation(object):
         # # pool = Pool(cpu_count())
         # # pool.map(gen_exp, run_params)
 
-        self._generate_direct_image()  # to calibrate x_ref and y_ref
+        # self._generate_direct_image()  # to calibrate x_ref and y_ref
 
         num_frames = len(self.exp_start_times)
         progress = Progress(num_frames)
@@ -927,8 +927,16 @@ class ExposureGenerator(object):
         #  np.mean(effected_elements)*100)
         # self._overlap_detection(trace, x_pos, wl, psf_max)
 
+        # Smooth spectrum (simulating spectral PSF) 4.5 is approximate stdev
+        # remove the units first as the kernal dosent like it
+
         # Modify the flux by the grism throughput Units e / (s A)
         count_rate = self.grism.apply_throughput(wl, flux)
+        count_rate = count_rate.to(u.photon / u.s / u.angstrom)
+
+        # TODO (ryan) smoothing value depends on input resolution
+        count_rate = tools.gaussian_smoothing(count_rate.value, 45)
+        count_rate *= u.photon / u.s / u.angstrom
         count_rate = count_rate.to(u.photon / u.s / u.angstrom)
 
         # Scale the flux to photon counts (per pixel / per second)
