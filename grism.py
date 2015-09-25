@@ -416,10 +416,13 @@ class G141(object):
 
         return flatfield
 
-    def get_gain(self):
+    def get_gain(self, size):
 
         with fits.open(self.gain_file) as gain:
             gain_data = gain[1].data[5:-5, 5:-5]
+
+        if size is not None:
+            gain_data = crop_central_box(gain_data, size)
 
         return gain_data
 

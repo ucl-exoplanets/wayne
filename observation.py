@@ -660,9 +660,12 @@ class ExposureGenerator(object):
                                                    wl, s_flux)
 
             # generate sample frame
-            pixel_array = self._gen_staring_frame(
-                x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max,
-                scale_factor)
+            blank_frame = np.zeros_like(pixel_array)
+            sample_frame = self._gen_staring_frame(
+                x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
+                scale_factor, add_flat)
+
+            pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
 
@@ -689,11 +692,6 @@ class ExposureGenerator(object):
 
                 # TODO (ryan) bad pixels
 
-                if add_flat:
-                    flat_field = self.grism.get_flat_field(x_ref, y_ref,
-                                                           self.SUBARRAY)
-                    pixel_array *= flat_field
-
                 pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 
                 if sky_background:
@@ -706,7 +704,7 @@ class ExposureGenerator(object):
                     pixel_array += master_sky
 
                 if add_gain:
-                    gain_file = self.grism.get_gain
+                    gain_file = self.grism.get_gain(self.SUBARRAY)
                     pixel_array /= gain_file
 
                 # TODO allow manual setting of cosmic gen
@@ -903,7 +901,7 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           psf_max, scale_factor=None):
+                           psf_max, scale_factor=None, add_flat=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -1021,6 +1019,12 @@ class ExposureGenerator(object):
                 #  detector classes or a .reset() on the class
                 pixel_array[y_sub_ - psf_max:y_sub_ + psf_max + 1,
                 x_sub_] += flux_psf
+
+
+        if add_flat:
+            flat_field = self.grism.get_flat_field(x_ref, y_ref,
+                                               self.SUBARRAY)
+            pixel_array *= flat_field
 
         return pixel_array
 
