@@ -199,4 +199,7 @@ def gaussian_smoothing(wavelength,flux):
         lim2 = 0.5 * (wavelength[1:-1] + wavelength[2:])
         smoothed_flux = smoothed_flux + fl*((lim2-lim1)*0.5*(gauss(lim1,wl,psf(wl)*0.0045)+gauss(lim2,wl,psf(wl)*0.0045)))
     
-    return wavelength[1:-1], np.array(smoothed_flux)
+    smoothed_flux = np.insert(smoothed_flux,0,0)
+    smoothed_flux = np.append(smoothed_flux,0)
+    
+    return wavelength, np.array(smoothed_flux)
