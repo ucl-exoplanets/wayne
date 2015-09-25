@@ -659,8 +659,9 @@ class ExposureGenerator(object):
                                                    wl, s_flux)
 
             # generate sample frame
-            pixel_array = self._gen_staring_frame(x_ref, s_y_ref, s_wl, s_flux,
-                                                  pixel_array, s_dur, psf_max)
+            pixel_array = self._gen_staring_frame(
+                x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur, psf_max,
+                scale_factor)
 
             if i in read_index:  # trigger a read including final read
 
@@ -723,9 +724,6 @@ class ExposureGenerator(object):
                 # TODO (ryan) read noise
 
                 # TODO (ryan) non-linearity
-
-                if scale_factor is not None:  # TODO (ryan) scale signal
-                    pixel_array_full *= scale_factor
 
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
@@ -902,7 +900,7 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           psf_max):
+                           psf_max, scale_factor=None):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -946,6 +944,10 @@ class ExposureGenerator(object):
         counts = (count_rate * exptime).to(u.photon)
 
         counts = self.detector.apply_quantum_efficiency(wl, counts)
+
+        # Finally, scale the lightcurve by the ramp
+        if scale_factor is not None:
+            counts *= scale_factor
 
         # the len limits are the same per trace, it is the values in pixel
         #  units each pixel occupies, as this is tilted
