@@ -705,7 +705,7 @@ class ExposureGenerator(object):
 
                 if add_gain:
                     gain_file = self.grism.get_gain(self.SUBARRAY)
-                    pixel_array /= gain_file
+                    pixel_array *= gain_file
 
                 # TODO allow manual setting of cosmic gen
                 if cosmic_rate is not None:
