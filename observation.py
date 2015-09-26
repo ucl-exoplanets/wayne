@@ -176,7 +176,8 @@ class Observation(object):
         # visit planner - used in visit trend generation
         self.visit_plan['exp_start_times'] = self.exp_start_times
 
-    def setup_reductions(self, add_dark=True, add_flat=True, add_gain=True):
+    def setup_reductions(self, add_dark=True, add_flat=True, add_gain=True,
+                         add_non_linear=True):
         """
         :param add_dark:
         :param add_flat:
@@ -185,6 +186,7 @@ class Observation(object):
         self.add_dark = add_dark
         self.add_flat = add_flat
         self.add_gain = add_gain
+        self.add_non_linear = add_non_linear
 
     def setup_trends(self, ssv_std=False, x_shifts=0):
         """
@@ -198,8 +200,7 @@ class Observation(object):
         self.ssv_std = ssv_std
         self.x_shifts = x_shifts
 
-    def setup_noise_sources(self, sky_background=1*u.count/u.s,
-                            cosmic_rate=11.):
+    def setup_noise_sources(self, sky_background=1*u.count/u.s, cosmic_rate=11.):
 
         self.sky_background = sky_background
         self.cosmic_rate = cosmic_rate
@@ -288,8 +289,7 @@ class Observation(object):
 
         time_array = self.exp_start_times
 
-        lc_model = self.generate_lightcurves(time_array,
-                                             self.planet.calcTransitDepth())
+        lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
 
         if self._visit_trend is not None:
             trend_model = self._visit_trend.scale_factors
@@ -380,7 +380,8 @@ class Observation(object):
             noise_mean=self.noise_mean, noise_std=self.noise_std,
             add_flat=self.add_flat, add_dark=self.add_dark,
             scale_factor=scale_factor, sky_background=self.sky_background,
-            cosmic_rate=self.cosmic_rate, add_gain=self.add_gain)
+            cosmic_rate=self.cosmic_rate, add_gain=self.add_gain,
+            add_non_linear=self.add_non_linear)
 
         exp_frame.generate_fits(self.outdir, filename)
 
@@ -527,7 +528,7 @@ class ExposureGenerator(object):
                        read_index=None, ssv_std=False, noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
-                       scale_factor=None, add_gain=True):
+                       scale_factor=None, add_gain=True, add_non_linear=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -724,7 +725,6 @@ class ExposureGenerator(object):
 
                 # TODO (ryan) read noise
 
-                # TODO (ryan) non-linearity
 
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
@@ -739,6 +739,12 @@ class ExposureGenerator(object):
 
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
+
+        if add_non_linear:
+            # we do this at the end, because the correction is based on total
+            # flux and we dont want to apply the correction multiple times
+            logger.info('Applying non-linearity correction to frames')
+            self.exposure.apply_non_linear()
 
         end_time = time.clock()
 

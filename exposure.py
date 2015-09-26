@@ -41,11 +41,20 @@ class Exposure(object):
 
         self.reads = []  # read 0 ->
 
-    def add_read(self, data, read_info=None):
-        """ Adds the read to the exposure, will probably need some header
-         information to in future.
+    def apply_non_linear(self):
+        """ Uses the detector apply_non_linearity() method to make each sample
+        up the ramp non-linear. This correction is performed here as the
+        data is already part of the exposure class.
+        """
 
-        Reads should be added in time order from the zero read to the final read
+        for i, (pixel_array, header) in enumerate(self.reads):
+            pixel_array_non_linear = self.detector.apply_non_linearity(pixel_array)
+
+            self.reads[i] = (pixel_array_non_linear, header)
+
+    def add_read(self, data, read_info=None):
+        """ Adds the read to the exposure. Reads should be added in time order
+        from the zero read to the final read
 
         :param data: an array to add
         :type data: numpy.ndarray

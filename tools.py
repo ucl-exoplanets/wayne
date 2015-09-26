@@ -207,3 +207,33 @@ def gaussian_smoothing(wavelength, flux):
     smoothed_flux = np.append(smoothed_flux,0)
     
     return np.array(smoothed_flux)
+
+
+def make_nonlinear(frame, non_linear_coeffs_fits):  # Angelos' code
+    """ Takes a HST WFC3 style fits file containing non-linearity coeffs and
+    scales the frame appropriately. Importantly this makes a linear frame
+    non-linear
+
+    :param frame: the frame to make non-linear
+    :param non_linear_coeffs_fits: file containing non-linear coeffs
+    :return:
+    """
+
+    with fits.open(non_linear_coeffs_fits) as f:
+        # cropping scales the non-linear frame to the input frame
+        crop1 = len(f[1].data) / 2 - len(frame) / 2
+        crop2 = len(f[1].data) / 2 + len(frame) / 2
+        c1 = f[1].data[crop1:crop2, crop1:crop2]
+        c2 = f[2].data[crop1:crop2, crop1:crop2]
+        c3 = f[3].data[crop1:crop2, crop1:crop2]
+        c4 = f[4].data[crop1:crop2, crop1:crop2]
+
+    non_linear_frame = np.zeros_like(frame)
+
+    for i in xrange(len(frame)):  # finding roots isn't vectorised
+        for j in xrange(len(frame[0])):
+            roots = np.real(np.roots([c4[i][j], c3[i][j], c2[i][j],
+                                      c1[i][j] + 1, -frame[i][j]]))
+            non_linear_frame[i][j] = roots[np.argmin((roots - frame[i][j]) ** 2)]
+
+    return non_linear_frame

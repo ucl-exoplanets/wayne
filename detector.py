@@ -10,6 +10,7 @@ import astropy.io.fits as fits
 import pandas as pd
 
 import params
+import tools
 
 
 class WFC3_IR(object):
@@ -43,7 +44,8 @@ class WFC3_IR(object):
             self.qe_val = tbl.field('THROUGHPUT')
 
         # Non-linearity
-        # self.non_lin_coeff = self._get_non_linearity_coeffs()
+        self.non_linear_file = os.path.join(params._calb_dir, 'u1k1727mi_lin.fits')
+
 
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
@@ -275,50 +277,17 @@ class WFC3_IR(object):
 
         return counts * throughput_values
 
-    def _get_non_linearity_coeffs(self):
-        """
-        :return: coeffs
-        """
-
-        # Each quadrant has the same coeffs currently, numbered
-        # 0 | 1
-        # 2 | 3
-
-        coeffs = np.zeros((4,4))
-
-        with fits.open(os.path.join(params._data_dir, 'u1k1727mi_lin.fits')) as f:
-            c0 = f[1].data
-            c1 = f[2].data
-            c2 = f[3].data
-            c3 = f[4].data
-
-            for i, (y_v, x_v) in enumerate(((400, 400), (400, 600), (600, 400),
-                                            (600, 600))):
-                coeffs[i] = [c0[y_v:x_v], c1[y_v:x_v], c2[y_v:x_v], c3[y_v:x_v]]
-
-        return coeffs
-
     def apply_non_linearity(self, pixel_array):
         """ This uses the non linearity correction (in reverse) to give the
-         detector a non linear response.
+        detector a non linear response.
+
         :param pixel_array:
         :return:
         """
 
-        # treat each quadrant in turn.
-        arr_limit = len(pixel_array)/2  # want an int, should only be even
+        pixel_array_non_linear = tools.make_nonlinear(pixel_array, self.non_linear_file)
 
-        quads = (pixel_array[:arr_limit, :arr_limit],
-                 pixel_array[:arr_limit, arr_limit:],
-                 pixel_array[arr_limit:, :arr_limit],
-                 pixel_array[arr_limit:, arr_limit:])
-
-        for i in enumerate(quads):
-            c0, c1, c2, c3 = self.non_lin_coeff[i]
-
-            # Now we need to find the root, per pixel!!!!
-        # INCOMPLETE
-        # TODO (ryan) join quadrants back up
+        return pixel_array_non_linear
 
 
 class WFC3SimException(BaseException):

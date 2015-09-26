@@ -34,6 +34,8 @@ observation:
 
   add_dark: True
   add_flat: True
+  add_gain: True
+  add_non_linear: True
 
   sky_background: 2
   cosmic_rate: 11

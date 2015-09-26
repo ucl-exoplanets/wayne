@@ -98,6 +98,8 @@ if __name__ == '__main__':
 
     add_dark = cfg['observation']['add_dark']
     add_flat = cfg['observation']['add_flat']
+    add_gain = cfg['observation']['add_gain']
+    add_non_linear = cfg['observation']['add_non_linear']
 
     sky_background = cfg['observation']['sky_background'] * u.count/u.s
     cosmic_rate = cfg['observation']['cosmic_rate']
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     obs.setup_grism(g141)
     obs.setup_target(planet, depth_p, wl_p, stellar_flux_scaled)
     obs.setup_visit(start_JD, num_orbits)
-    obs.setup_reductions(add_dark, add_flat)
+    obs.setup_reductions(add_dark, add_flat, add_gain, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, psf_max)
     obs.setup_trends(ssv_std, x_shifts)
