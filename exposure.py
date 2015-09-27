@@ -12,8 +12,10 @@ import astropy.units as u
 import numpy
 import pandas
 import scipy
+import exodata.astroquantities as pq
 
 import params
+import tools
 
 
 class Exposure(object):
@@ -157,6 +159,7 @@ class Exposure(object):
         science_header = fits.PrimaryHDU()
         h = science_header.header
         now = datetime.datetime.now()
+
         h['DATE'] = (
         now.strftime("%Y-%m-%d"), 'date this file was written (yyyy-mm-dd)')
         h['FILENAME'] = (exp_info['filename'], 'name of file')
@@ -271,12 +274,28 @@ class Exposure(object):
         h['NSAMP'] = (exp_info['NSAMP'], 'number of MULTIACCUM samples')
         # TODO (ryan) add when  known
         h['SAMPZERO'] = (0., 'sample time of the zeroth read (sec)')
-        APNAME = 'GRISM{}'.format(
-            exp_info['SUBARRAY'])  # TODO (ryan) fix for non grism
+        APNAME = 'GRISM{}'.format(exp_info['SUBARRAY'])  # TODO (ryan) fix for non grism
         h['APERTURE'] = (APNAME, 'aperture name')
         h['PROPAPER'] = ('', 'proposed aperture name')  # is this always null?
-        h['DIRIMAGE'] = ('NONE', # TODO (ryan) change when true
-                         'direct image for grism or prism exposure')
+        # TODO (ryan) change when true
+        h['DIRIMAGE'] = ('NONE', 'direct image for grism or prism exposure')
+
+        planet = self.planet
+        # Planet and Star Parameters
+        h['mid-tran'] = (float(planet.transittime), 'Time of mid transit (JD)')
+        # h['t14'] = (float(planet.calcTransitDuration().rescale(pq.h)), 'Transit Duration (hr)')
+        h['period'] = (float(planet.P.rescale(pq.day)), 'Orbital Period (days)')
+        h['SMA'] = (float((planet.a / planet.star.R).simplified), 'Semi-major axis (a/R_s)')
+        h['INC'] = (float(planet.i.rescale(pq.deg)), 'Orbital Inclination (deg)')
+        h['ECC'] = (planet.e, 'Orbital Eccentricity')
+        h['PERI'] = ('{}'.format(planet.periastron), 'Argument or periastron')
+
+        # Limb Darkening
+        ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(self.planet.star)
+        h['ld1'] = (ld1, 'Non-linear limb darkening coeff 1')
+        h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
+        h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')
+        h['ld4'] = (ld1, 'Non-linear limb darkening coeff 4')
 
         return science_header
 
@@ -293,7 +312,7 @@ class Exposure(object):
         h['CRPIX1'] = (read_info['CRPIX1'], 'x-coordinate of reference pixel')
 
         h['SAMPTIME'] = (read_info['cumulative_exp_time'].value, 'total integration time (sec)')
-        h['DELTATIM'] = (read_info['read_exp_time'], 'sample integration time (sec)')
+        h['DELTATIM'] = (read_info['read_exp_time'].value, 'sample integration time (sec)')
 
 
         return read_header

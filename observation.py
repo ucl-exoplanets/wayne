@@ -110,7 +110,7 @@ class Observation(object):
     def _generate_star_information(self):
         star = self.planet.star
         # TODO (ryan) option to give limb darkening
-        self.ldcoeffs = pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')
+        self.ldcoeffs = tools.get_limb_darkening_coeffs(star)
         logger.info(
             "Looked up Limb Darkening coeffs of {}".format(self.ldcoeffs))
 
@@ -514,7 +514,8 @@ class ExposureGenerator(object):
         di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / 2.0)
 
         read_info = {
-            'read_exp_time': 0,  # TODO add real value
+            'read_exp_time': 0 * u.s,  # TODO add real value
+            'cumulative_exp_time': 0 * u.s, # TODO add real value
             'CRPIX1': -5,
         }
 
@@ -728,7 +729,8 @@ class ExposureGenerator(object):
 
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
-                    'read_exp_time': read_exp_time,
+                    # not a unit earlier, but should be, req for fits saving
+                    'read_exp_time': read_exp_time*u.s,
                     'CRPIX1': 0,
                 }
 

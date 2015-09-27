@@ -5,6 +5,7 @@ import numpy as np
 import pysynphot
 import astropy.io.fits as fits
 from scipy.interpolate import interp1d
+import pylightcurve.fcmodel as pylc
 
 
 def crop_spectrum(min_wl, max_wl, wl, flux):
@@ -237,3 +238,16 @@ def make_nonlinear(frame, non_linear_coeffs_fits):  # Angelos' code
             non_linear_frame[i][j] = roots[np.argmin((roots - frame[i][j]) ** 2)]
 
     return non_linear_frame
+
+
+def get_limb_darkening_coeffs(star):
+    """ fetches the limb darkening paremeters for the star. Currently just
+    looks them up with pylc.
+
+    I exported the function here as its called both in observation and in
+    exposure (in order to add to the header)
+
+    :param star: exodata star object
+    """
+
+    return pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')
