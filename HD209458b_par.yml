@@ -27,7 +27,7 @@ observation:
 
   psf_max: 4  # how many pixels to inegrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
-  x_shifts: 0.1  # linear shift in x position (pixels)
+  x_shifts: 0.015  # linear shift in x position (pixels)
 
   noise_mean: False
   noise_std: False

@@ -322,7 +322,7 @@ class Observation(object):
         # # pool = Pool(cpu_count())
         # # pool.map(gen_exp, run_params)
 
-        # self._generate_direct_image()  # to calibrate x_ref and y_ref
+        self._generate_direct_image()  # to calibrate x_ref and y_ref
 
         num_frames = len(self.exp_start_times)
         progress = Progress(num_frames)
