@@ -55,7 +55,7 @@ class G141(object):
         # Grism Values
         # ------------
         self.min_lambda = 1.075 * u.micron
-        self.max_lambda = 1.77 * u.micron
+        self.max_lambda = 1.7 * u.micron
 
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
@@ -323,8 +323,7 @@ class G141(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
-        throughput_values = np.interp(wl, self.throughput_wl,
-                                      self.throughput_val, 0., 0.)
+        throughput_values = np.interp(wl, self.throughput_wl, self.throughput_val)
 
         return flux * throughput_values * self.throughput_units
 
