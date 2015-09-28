@@ -250,4 +250,6 @@ def get_limb_darkening_coeffs(star):
     :param star: exodata star object
     """
 
-    return pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'I')
+    print pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'J')
+
+    return pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'J')

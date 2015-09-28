@@ -54,6 +54,18 @@ class Exposure(object):
 
             self.reads[i] = (pixel_array_non_linear, header)
 
+    def scale_counts_between_limits(self):
+        """ Gets count limits from the detector and scales the flux between
+        these limits
+        """
+
+        min_count = self.detector.min_counts
+        max_count = self.detector.max_counts
+
+        for i, (pixel_array, header) in enumerate(self.reads):
+            pixel_array_scaled = numpy.clip(pixel_array, min_count, max_count)
+            self.reads[i] = (pixel_array_scaled, header)
+
     def add_read(self, data, read_info=None):
         """ Adds the read to the exposure. Reads should be added in time order
         from the zero read to the final read
@@ -295,7 +307,7 @@ class Exposure(object):
         h['ld1'] = (ld1, 'Non-linear limb darkening coeff 1')
         h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
         h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')
-        h['ld4'] = (ld1, 'Non-linear limb darkening coeff 4')
+        h['ld4'] = (ld4, 'Non-linear limb darkening coeff 4')
 
         return science_header
 

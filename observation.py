@@ -529,7 +529,8 @@ class ExposureGenerator(object):
                        read_index=None, ssv_std=False, noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
-                       scale_factor=None, add_gain=True, add_non_linear=True):
+                       scale_factor=None, add_gain=True, add_non_linear=True,
+                       clip_values_det_limits=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -742,11 +743,16 @@ class ExposureGenerator(object):
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
 
+        # Final post generation corrections
         if add_non_linear:
             # we do this at the end, because the correction is based on total
             # flux and we dont want to apply the correction multiple times
             logger.info('Applying non-linearity correction to frames')
             self.exposure.apply_non_linear()
+
+        # Scale the counts between limits, i.e. 0 to 78k for WFC3 IR
+        if clip_values_det_limits:
+            self.exposure.scale_counts_between_limits()
 
         end_time = time.clock()
 

@@ -27,6 +27,9 @@ class WFC3_IR(object):
         self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron,
                                  doc='Pixel size for the HST WFC3 IR detector')
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
+        self.min_counts = 0
+        # 5% non-linear limit where nonlinear correction fails
+        self.max_counts = 78000
 
         # General Info
         self.telescope = 'HST'
