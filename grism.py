@@ -72,16 +72,12 @@ class G141(object):
         # Sky
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
 
-        ## PSF Information
-        self._psf_file = np.loadtxt(
-            os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
-        # in future add option to set unit of data file but we work internally
-        #  in microns
-        self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
-        self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
+        ## PSF Information - now parametrised into 2d poly
+        self.psf_fwhm_poly = np.poly1d([0.20530303, -0.24010606, 1.03390909])
 
-        # we crop the input spectrum using this, the limiting factor here is psf
-        self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
+        # we crop the input spectrum using this, we set this just above and
+        # below the actual limits to not crop the psf
+        self.wl_limits = (1.075 * u.micron, 1.7 * u.micron)
 
         # Throughput
         self.throughput_file = os.path.join(
@@ -127,11 +123,7 @@ class G141(object):
 
         mean = y_pos  # this is the center of the guassian
 
-        # linear interpolation of the FWHM given in self._psf_file
-        #  TODO quadratic interp / fit a function?
-        FWHM = np.interp(wavelength.to(u.micron).value,
-                         self.psf_wavelength.to(u.micron).value,
-                         self.psf_fwhm, left=0., right=0.)
+        FWHM = self.psf_fwhm_poly(wavelength.to(u.micron).value)
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
@@ -147,13 +139,67 @@ class G141(object):
         :return: standard deviations of the gaussian for each lambda
         """
 
-        FWHM = np.interp(wavelengths.to(u.micron).value,
-                         self.psf_wavelength.to(u.micron).value,
-                         self.psf_fwhm, left=0., right=0.)
+        FWHM = self.psf_fwhm_poly(wavelengths.to(u.micron).value)
 
         std = FWHM / _gauss_StDev_to_FWHM
 
         return std
+
+    def gaussian_smoothing(self, wavelength, flux):
+        """ Gaussian smoothing for a spectrum. Meant to simulate the psf in
+        the spectral direction.
+
+        Distributes the flux of each spectral element to the rest of the wavelength
+        grid. Uses a gaussian distribution centered at the spectral element with a
+        FWHM given by an interpolation function created from the given information
+        about the instrument. Because the instrumental psf is given in pixels we
+        assume a ratio of 4.5 nm / pixel.  The contribution on each spectral
+        element is calculated with numerical integration using the rectangle rule
+        between the half-distance wavelengths from the previous and the next
+        spectral element.
+
+        Parameters
+        ----------
+        wavelength : array_like
+            array containing the wavelength of each spectral point
+
+        flux : array_like
+            array containing the flux of each spectral point
+
+        Returns
+        -------
+        wavelength, smoothed_flux : array_like, array_like
+            arrays containing the wavelength and the smoothed flux for each spectral point
+
+        """
+
+        # TODO (ryan) replace with astropy gaussian kernal
+        # TODO (ryan) or ideally, simulate a 2d gaussian in generation instead
+
+
+        flux = np.array(flux)
+        psf_std = self.wl_to_psf_std(wavelength)
+        wavelength = wavelength.to(u.micron).value
+
+        def gauss(x, mean, sigma):
+            return (1.0/(sigma*np.sqrt(2.0*np.pi))) * np.exp(-(x - mean) ** 2 / (2 * sigma ** 2))
+
+        lim1 = 0.5 * (wavelength[1:-1] + wavelength[:-2])
+        lim2 = 0.5 * (wavelength[1:-1] + wavelength[2:])
+
+        smoothed_flux = np.zeros_like(flux)[1:-1]
+        for i in range(len(wavelength)):
+            wl = wavelength[i]
+            fl = flux[i]
+
+            smoothed_flux += fl*(
+                (lim2-lim1)*0.5*(gauss(lim1, wl, psf_std[i]*0.0045)
+                                 +gauss(lim2, wl, psf_std[i]*0.0045)))
+
+        smoothed_flux = np.insert(smoothed_flux,0,0)
+        smoothed_flux = np.append(smoothed_flux,0)
+
+        return np.array(smoothed_flux)
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
         """ Returns the coefficients to compute the spectrum trace and the

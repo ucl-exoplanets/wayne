@@ -613,7 +613,7 @@ class ExposureGenerator(object):
             # TODO handling cropping elsewhere to avoid doing it all the time \
             #  crop flux + depth together
             s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
-                                               self.grism.wl_limits[-1], wl,
+                                               self.grism.wl_limits[1], wl,
                                                s_flux)
 
         # Exposure class which holds the result
@@ -952,8 +952,8 @@ class ExposureGenerator(object):
         # remove the units first as the kernal dosent like it
         count_rate = count_rate.to(u.photon / u.s)  # sanity check
         wl = wl.to(u.micron)
-        # TODO (ryan) we loose a little wavelength? will this matter when ive already cropped?
-        count_rate = tools.gaussian_smoothing(wl.value, count_rate.value)
+
+        count_rate = self.grism.gaussian_smoothing(wl, count_rate.value)
         count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
 
         counts = (count_rate * exptime).to(u.photon)
