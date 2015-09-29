@@ -151,9 +151,7 @@ class G141(object):
 
         Distributes the flux of each spectral element to the rest of the wavelength
         grid. Uses a gaussian distribution centered at the spectral element with a
-        FWHM given by an interpolation function created from the given information
-        about the instrument. Because the instrumental psf is given in pixels we
-        assume a ratio of 4.5 nm / pixel.  The contribution on each spectral
+        FWHM given from the detector psf file. The contribution on each spectral
         element is calculated with numerical integration using the rectangle rule
         between the half-distance wavelengths from the previous and the next
         spectral element.
@@ -176,10 +174,13 @@ class G141(object):
         # TODO (ryan) replace with astropy gaussian kernal
         # TODO (ryan) or ideally, simulate a 2d gaussian in generation instead
 
-
+        wavelength = wavelength.to(u.micron)
         flux = np.array(flux)
+
         psf_std = self.wl_to_psf_std(wavelength)
-        wavelength = wavelength.to(u.micron).value
+        psf_std = psf_std * 0.0045  # Dispersion is ~44.7 to ~47.8 A/pix
+
+        wavelength = wavelength.value
 
         def gauss(x, mean, sigma):
             return (1.0/(sigma*np.sqrt(2.0*np.pi))) * np.exp(-(x - mean) ** 2 / (2 * sigma ** 2))
@@ -193,8 +194,8 @@ class G141(object):
             fl = flux[i]
 
             smoothed_flux += fl*(
-                (lim2-lim1)*0.5*(gauss(lim1, wl, psf_std[i]*0.0045)
-                                 +gauss(lim2, wl, psf_std[i]*0.0045)))
+                (lim2-lim1)*0.5*(gauss(lim1, wl, psf_std[i])
+                                 +gauss(lim2, wl, psf_std[i])))
 
         smoothed_flux = np.insert(smoothed_flux,0,0)
         smoothed_flux = np.append(smoothed_flux,0)

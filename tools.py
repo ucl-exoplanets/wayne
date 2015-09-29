@@ -151,6 +151,7 @@ def order_flux_grid(wavelength, spectrum):
 
     return wl, flux
 
+
 def make_nonlinear(frame, non_linear_coeffs_fits):  # Angelos' code
     """ Takes a HST WFC3 style fits file containing non-linearity coeffs and
     scales the frame appropriately. Importantly this makes a linear frame
