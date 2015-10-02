@@ -287,7 +287,9 @@ class Exposure(object):
         h['ADD-RDNS'] = (exp_info['add_read_noise'], 'read noise added (T/F)')
 
         h['CSMCRATE'] = (exp_info['cosmic_rate'], 'Rate of cosmic hits (per s)')
-        h['SKY-LVL'] = (exp_info['sky_background'], 'multiple of master sky per s')
+
+        sky_background = exp_info['sky_background'].to(u.ct/u.s).value
+        h['SKY-LVL'] = (sky_background, 'multiple of master sky per s')
         h['VSTTREND'] = (exp_info['scale_factor'], 'visit trend scale factor')
         h['CLIPVALS'] = (exp_info['clip_values_det_limits'], 'pixels clipped to detector range (T/F)')
 

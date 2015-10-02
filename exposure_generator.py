@@ -106,7 +106,7 @@ class ExposureGenerator(object):
             'add_non_linear': False,
             'add_read_noise': False,
             'cosmic_rate': 0,
-            'sky_background': 0,
+            'sky_background': 0*u.ct/u.s,
             'scale_factor': 1,
             'clip_values_det_limits': False,
         })
