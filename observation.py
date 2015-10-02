@@ -705,14 +705,13 @@ class ExposureGenerator(object):
 
                 # TODO (ryan) bad pixels
 
-                pixel_array_full = self.detector.add_bias_pixels(pixel_array)
-
                 if sky_background:
                     bg_count_sec = sky_background.to(u.count/u.s).value
                     master_sky = self.grism.get_master_sky(array_size)
                     bg_count = bg_count_sec * read_exp_time
 
                     master_sky *= bg_count
+
 
                     pixel_array += master_sky
 
@@ -729,6 +728,8 @@ class ExposureGenerator(object):
                     cosmic_array = cosmic_gen.cosmic_frame(read_exp_time,
                                                            array_size)
                     pixel_array += cosmic_array
+
+                pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 
                 if add_dark:
                     pixel_array_full = self.detector.add_dark_current(

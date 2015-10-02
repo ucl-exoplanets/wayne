@@ -181,7 +181,7 @@ class WFC3_IR(object):
         :return:
         """
 
-        pixel_array += np.random.normal(0, stddev, pixel_array.size())
+        pixel_array += np.random.normal(0, stddev, pixel_array.shape)
 
         return pixel_array
 
