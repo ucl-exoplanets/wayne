@@ -100,6 +100,15 @@ class ExposureGenerator(object):
             'NSAMP': 2,
             'SAMP-SEQ': 'RAPID',
             'y_ref': y_ref,
+
+            'add_flat': False,
+            'add_gain': False,
+            'add_non_linear': False,
+            'add_read_noise': False,
+            'cosmic_rate': 0,
+            'sky_background': 0,
+            'scale_factor': 1,
+            'clip_values_det_limits': False,
         })
 
         # Exposure class which holds the result
