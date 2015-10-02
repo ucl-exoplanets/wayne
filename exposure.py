@@ -54,6 +54,15 @@ class Exposure(object):
 
             self.reads[i] = (pixel_array_non_linear, header)
 
+    def add_read_noise(self):
+        """ Uses the detector add_read_noise() method on each sample
+        """
+
+        for i, (pixel_array, header) in enumerate(self.reads):
+            pixel_array_rdnoise = self.detector.add_read_noise(pixel_array)
+
+            self.reads[i] = (pixel_array_rdnoise, header)
+
     def scale_counts_between_limits(self):
         """ Gets count limits from the detector and scales the flux between
         these limits

@@ -174,6 +174,17 @@ class WFC3_IR(object):
 
             return pixel_array + dark_array
 
+    def add_read_noise(self, pixel_array, stddev=21.4):
+        """ Adds read noise to an array. Noise is normal with a std of 21.4 e
+        from the Inst handbook pg 62
+
+        :return:
+        """
+
+        pixel_array += np.random.normal(0, stddev, pixel_array.size())
+
+        return pixel_array
+
     def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
 

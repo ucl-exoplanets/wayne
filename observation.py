@@ -530,7 +530,7 @@ class ExposureGenerator(object):
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
-                       clip_values_det_limits=True):
+                       clip_values_det_limits=True, add_read_noise=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -588,7 +588,7 @@ class ExposureGenerator(object):
         scan_speed = scan_speed.to(u.pixel / u.ms)
         sample_rate = sample_rate.to(u.ms)
 
-        # user friendly, else defined by observation class which uses theese
+        # user friendly, else defined by observation class which uses these
         #  values for lightcurve generation
         if sample_mid_points is None and sample_durations is None and read_index is None:
             _, sample_mid_points, sample_durations, read_index = \
@@ -605,6 +605,15 @@ class ExposureGenerator(object):
             'noise_mean': noise_mean,
             'noise_std': noise_std,
             'add_dark': add_dark,
+
+            'add_flat': add_flat,
+            'add_gain': add_gain,
+            'add_non_linear': add_non_linear,
+            'add_read_noise': add_read_noise,
+            'cosmic_rate': cosmic_rate,
+            'sky_background': sky_background,
+            'scale_factor': scale_factor,
+            'clip_values_det_limits': clip_values_det_limits,
         })
 
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
@@ -751,8 +760,12 @@ class ExposureGenerator(object):
             self.exposure.apply_non_linear()
 
         # Scale the counts between limits, i.e. 0 to 78k for WFC3 IR
+        # Note that some pixel will give negative values irl
         if clip_values_det_limits:
             self.exposure.scale_counts_between_limits()
+
+        if add_read_noise:
+            self.exposure.add_read_noise()
 
         end_time = time.clock()
 
@@ -1014,8 +1027,8 @@ class ExposureGenerator(object):
             #  based on the y midpoint and split accordingly. This doesnt
             # account for cases where the top half may be in one column and the
             #  bottom half in another (High R)
-            if not x_min_[i] == x_max_[
-                i]:  # then the element is split across two columns
+            if not x_min_[i] == x_max_[i]:
+                # then the element is split across two columns
                 # calculate proportion going column x_min_ and x_max_
                 x_width = x_max[i] - x_min[i]
                 propxmin = (x_max_[i] - x_min[
