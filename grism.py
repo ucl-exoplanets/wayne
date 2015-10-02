@@ -64,7 +64,6 @@ class G141(object):
         #  dependant on x and y and not constant
 
         # Flat
-        # TODO (ryan) where does this file come fron, original name?
         self.flat_file = os.path.join(params._calb_dir,
                                        'WFC3.IR.G141.flat.2.fits')
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')

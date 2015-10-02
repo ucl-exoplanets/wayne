@@ -205,7 +205,6 @@ class Exposure(object):
         h[''] = '/ TARGET INFORMATION'
         h[''] = ''
         h['TARGNAME'] = (self.planet.name, 'proposer\'s target name')
-        # TODO format is wrong, 00 00 00 vs 2.405492604190E+02
         h['RA_TARG'] = (self.planet.ra.degree,
                         'right ascension of the target (deg) (J2000)')
         h['DEC_TARG'] = (self.planet.dec.degree,

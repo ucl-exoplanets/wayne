@@ -38,7 +38,7 @@ class Observation(object):
         """
 
         # TODO (ryan) option to set default values across the board
-        # TOOD (ryan) validation to instruct which ones need calling
+        # TODO (ryan) validation to instruct which ones need calling
 
         self.scanning = True
         self.outdir = outdir
@@ -619,8 +619,7 @@ class ExposureGenerator(object):
         if planet_signal.ndim == 1:  # depth does not vary with time during exposure
             s_flux = self.combine_planet_stellar_spectrum(stellar_flux,
                                                           planet_signal)
-            # TODO handling cropping elsewhere to avoid doing it all the time \
-            #  crop flux + depth together
+            # TODO handling cropping elsewhere to avoid doing it all the time
             s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
                                                self.grism.wl_limits[1], wl,
                                                s_flux)
@@ -665,7 +664,6 @@ class ExposureGenerator(object):
             else:
                 s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal[i])
 
-
                 # TODO (ryan) handling cropping elsewhere to avoid doing it
                 #  all the time, crop flux + depth together
                 s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
@@ -683,8 +681,6 @@ class ExposureGenerator(object):
             if i in read_index:  # trigger a read including final read
 
                 # TODO (ryan) export all this reduction stuff to own function
-
-                # TODO (ryan) check order of effects is correct
 
                 # TODO (ryan) check scaling i.e. DN vs e
                 cumulative_exp_time = read_exp_times[read_num]
@@ -735,8 +731,6 @@ class ExposureGenerator(object):
                     pixel_array_full = self.detector.add_dark_current(
                         pixel_array_full, self.NSAMP, self.SUBARRAY,
                         self.SAMPSEQ)
-
-                # TODO (ryan) read noise
 
 
                 read_info = {
@@ -1333,7 +1327,6 @@ def visit_planner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3,
         visit_time = start_time + guide_star_aq
         visit_end_time = start_time + time_per_orbit
 
-        # TODO wl calibration exp
         exp_n = 0  # For buffer dumps - with mixed exp types we should really
         #  track headers and size
         while visit_time < visit_end_time:
