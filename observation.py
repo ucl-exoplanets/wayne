@@ -663,8 +663,9 @@ class ExposureGenerator(object):
             if planet_signal.ndim == 1:
                 pass  # handled above but leaving to point out this needs cleaning up
             else:
-                s_flux = self.combine_planet_stellar_spectrum(
-                    stellar_flux, planet_signal[i])
+                s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal[i])
+
+
                 # TODO (ryan) handling cropping elsewhere to avoid doing it
                 #  all the time, crop flux + depth together
                 s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
@@ -977,6 +978,8 @@ class ExposureGenerator(object):
         if scale_factor is not None:
             counts *= scale_factor
 
+        counts = self.add_stellar_noise(counts.value) * u.ph
+
         # the len limits are the same per trace, it is the values in pixel
         #  units each pixel occupies, as this is tilted
         # each pixel has a length slightly greater than 1
@@ -1187,7 +1190,8 @@ class ExposureGenerator(object):
 
         return psf_len_limits
 
-    def combine_planet_stellar_spectrum(self, stellar_flux, planet_spectrum):
+    def combine_planet_stellar_spectrum(self, stellar_flux, planet_spectrum,
+                                        poisson_noise=True):
         """ combines the stellar and planetary spectrum
 
         combined_flux = F_\star * (1-transit_depth)
@@ -1209,6 +1213,14 @@ class ExposureGenerator(object):
         combined_flux = stellar_flux * (1. - planet_spectrum)
 
         return combined_flux
+
+    def add_stellar_noise(self, counts):
+        """ Resamples each flux element as a poisson distribution (stellar noise)
+        """
+
+        noisey_counts = np.random.poisson(counts)
+
+        return noisey_counts
 
     def _gen_noise(self, mean, std):
         """ Generates noise from a normal distribution at the mean and std
