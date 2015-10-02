@@ -559,8 +559,8 @@ class ExposureGenerator(object):
         #   need to turn wl width to x width
         x_min = trace.wl_to_x(wl - delta_wl / 2.)
         x_max = trace.wl_to_x(wl + delta_wl / 2.)
-        x_min_ = np.floor(x_min)
-        x_max_ = np.floor(x_max)
+        x_min_ = np.floor(x_min).astype('int16')
+        x_max_ = np.floor(x_max).astype('int16')
 
         # effected_elements = np.floor(x_min) != np.floor(x_max)
         # print 'old num effected  = {} ({}%)'.format(np.sum(effected_elements),
@@ -620,9 +620,8 @@ class ExposureGenerator(object):
             y = y_pos[i]
             # When we only want whole pixels, note we go 5 pixels each way from
             #  the round down.
-            x_ = int(np.floor(
-                x))  # Int technically floors, but towards zero, although we
-                #  shouldnt ever be negative
+            # Int technically floors, but towards zero, although we shouldnt ever be negative
+            x_ = int(np.floor(x))
             y_ = int(np.floor(y))
 
             # retrieve counts from vectorised integration
@@ -631,7 +630,7 @@ class ExposureGenerator(object):
             # we need to convert full frame numbers into subbarry numbers for
             #  indexing the array, the wl solution uses
             # full frame numbers
-            sub_scale = 507 - (self.SUBARRAY / 2.)
+            sub_scale = 507 - (self.SUBARRAY / 2)  # int div, sub should be even
             y_sub_ = y_ - sub_scale
             x_min_sub_ = x_min_ - sub_scale
             x_max_sub_ = x_max_ - sub_scale
@@ -643,25 +642,25 @@ class ExposureGenerator(object):
             #  based on the y midpoint and split accordingly. This doesnt
             # account for cases where the top half may be in one column and the
             #  bottom half in another (High R)
+            row_index_min = y_sub_ - psf_max
+            row_index_max = y_sub_ + psf_max + 1
+            
             if not x_min_[i] == x_max_[i]:
                 # then the element is split across two columns
                 # calculate proportion going column x_min_ and x_max_
                 x_width = x_max[i] - x_min[i]
-                propxmin = (x_max_[i] - x_min[
-                    i]) / x_width  # (floor(xmax) - xmin)/width = %
+                # (floor(xmax) - xmin)/width = %
+                propxmin = (x_max_[i] - x_min[i]) / x_width
                 propxmax = 1. - propxmin
 
-                pixel_array[y_sub_ - psf_max:y_sub_ + psf_max + 1,
-                int(x_min_sub_[i])] += flux_psf * propxmin
-                pixel_array[y_sub_ - psf_max:y_sub_ + psf_max + 1,
-                int(x_max_sub_[i])] += flux_psf * propxmax
+                pixel_array[row_index_min:row_index_max, x_min_sub_[i]] += flux_psf * propxmin
+                pixel_array[row_index_min:row_index_max, x_max_sub_[i]] += flux_psf * propxmax
             else:  # all flux goes into one column
                 # Note: Ideally we dont want to overwrite te detector, but have
                 # a function for the detector to give us a grid. there are
                 # other detector effects though so maybe wed prefer multiple
                 #  detector classes or a .reset() on the class
-                pixel_array[y_sub_ - psf_max:y_sub_ + psf_max + 1,
-                x_sub_] += flux_psf
+                pixel_array[row_index_min:row_index_max, x_sub_] += flux_psf
 
 
         if add_flat:
