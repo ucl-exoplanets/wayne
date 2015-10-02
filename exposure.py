@@ -234,45 +234,6 @@ class Exposure(object):
         h['POSTARG2'] = (exp_info['SCAN_DIR'], 'POSTARG in axis 2 direction')
 
         h[''] = ''
-        h[''] = '/ WFC3Sim'
-        h[''] = ''
-        h['SIM'] = (True, 'WFC3Sim Simulation (T/F)')
-        from __init__ import __version__
-        h['SIM-VER'] = (__version__, 'WFC3Sim Version Used')
-        h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value,
-                         'WFC3Sim exposure generation time (s)')
-        h[''] = ''
-        h['PSF-MAX'] = (
-        exp_info['psf_max'], 'maximum width of psf tails (pix)')
-        h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value,
-                         'How often exposure is sampled (ms)')
-        h['SSV-SSD'] = (exp_info['scan_speed_var'],
-                        'Scan speed variations (stddev as a % of flux)')
-        h['NSE-MEAN'] = (
-        exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
-        h['NSE-STD'] = (
-        exp_info['noise_std'], 'std of normal noise (per s per pix)')
-        h['ADD-DRK'] = (exp_info['add_dark'], 'dark current added (T/F)')
-        h['RANDSEED'] = (params.seed, 'seed used for the visit')
-
-        h[''] = ''
-        h[''] = '/ WFC3Sim Package Versions Used'
-        h[''] = ''
-        s = sys.version_info
-        py_ver = '{}.{}.{} {}'.format(s.major, s.minor, s.micro,
-                                      s.releaselevel)
-        h['V-PY'] = (py_ver, 'Python version used')
-        h['V-NP'] = (numpy.__version__, 'Numpy version used')
-        h['V-SP'] = (scipy.__version__, 'Scipy version used')
-        h['V-AP'] = (astropy.__version__, 'Astropy version used')
-        h['V-PD'] = (pandas.__version__, 'Pandas version used')
-
-
-        # keywords for analysis (i.e. xref positions until)
-        h['STARX'] = (
-        exp_info['x_ref'], 'x position of star on frame (full frame))')
-
-        h[''] = ''
         h[''] = '/ INSTRUMENT CONFIGURATION INFORMATION'
         h[''] = ''
         h['OBSTYPE'] = (
@@ -300,8 +261,55 @@ class Exposure(object):
         # TODO (ryan) change when true
         h['DIRIMAGE'] = ('NONE', 'direct image for grism or prism exposure')
 
+        h[''] = ''
+        h[''] = '/ WFC3Sim'
+        h[''] = ''
+        h['SIM'] = (True, 'WFC3Sim Simulation (T/F)')
+        from __init__ import __version__
+        h['SIM-VER'] = (__version__, 'WFC3Sim Version Used')
+        h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value,
+                         'WFC3Sim exposure generation time (s)')
+        h[''] = ''
+        h['PSF-MAX'] = (
+        exp_info['psf_max'], 'maximum width of psf tails (pix)')
+        h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value,
+                         'How often exposure is sampled (ms)')
+        h['SSV-SSD'] = (exp_info['scan_speed_var'],
+                        'Scan speed variations (stddev as a % of flux)')
+        h['NSE-MEAN'] = (
+        exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
+        h['NSE-STD'] = (
+        exp_info['noise_std'], 'std of normal noise (per s per pix)')
+        h['ADD-DRK'] = (exp_info['add_dark'], 'dark current added (T/F)')
+        h['ADD-FLAT'] = (exp_info['add_flat'], 'flat field added (T/F)')
+        h['ADD-GAIN'] = (exp_info['add_gain'], 'gain added (T/F)')
+        h['ADD-NLIN'] = (exp_info['add_non_linear'], 'non-linearity effects added (T/F)')
+        h['ADD-RDNS'] = (exp_info['add_read_noise'], 'read noise added (T/F)')
+
+        h['CSMCRATE'] = (exp_info['cosmic_rate'], 'Rate of cosmic hits (per s)')
+        h['SKY-LVL'] = (exp_info['sky_background'], 'multiple of master sky per s')
+        h['VSTTREND'] = (exp_info['scale_factor'], 'visit trend scale factor')
+        h['CLIPVALS'] = (exp_info['clip_values_det_limits'], 'pixels clipped to detector range (T/F)')
+
+        h['RANDSEED'] = (params.seed, 'seed used for the visit')
+
+
+        h[''] = ''
+        h[''] = '/ WFC3Sim Package Versions Used'
+        h[''] = ''
+        s = sys.version_info
+        py_ver = '{}.{}.{} {}'.format(s.major, s.minor, s.micro,
+                                      s.releaselevel)
+        h['V-PY'] = (py_ver, 'Python version used')
+        h['V-NP'] = (numpy.__version__, 'Numpy version used')
+        h['V-SP'] = (scipy.__version__, 'Scipy version used')
+        h['V-AP'] = (astropy.__version__, 'Astropy version used')
+        h['V-PD'] = (pandas.__version__, 'Pandas version used')
+
+        h[''] = ''
+        h[''] = '/ WFC3Sim Observation Parameters'
+        h[''] = ''
         planet = self.planet
-        # Planet and Star Parameters
         h['mid-tran'] = (float(planet.transittime), 'Time of mid transit (JD)')
         # h['t14'] = (float(planet.calcTransitDuration().rescale(pq.h)), 'Transit Duration (hr)')
         h['period'] = (float(planet.P.rescale(pq.day)), 'Orbital Period (days)')
@@ -316,6 +324,11 @@ class Exposure(object):
         h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
         h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')
         h['ld4'] = (ld4, 'Non-linear limb darkening coeff 4')
+
+        # not in correct section
+        # keywords for analysis (i.e. xref positions until)
+        h['STARX'] = (
+        exp_info['x_ref'], 'x position of star on frame (full frame))')
 
         return science_header
 
