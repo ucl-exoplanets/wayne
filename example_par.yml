@@ -36,9 +36,12 @@ observation:
   add_flat: True
   add_gain: True
   add_non_linear: True
+  add_read_noise: True
 
-  sky_background: 1
+  sky_background: 2
   cosmic_rate: 11
+
+  clip_values_det_limits: True
 
 trends:
   #                                must be 1.e for some odd reason
