@@ -644,7 +644,7 @@ class ExposureGenerator(object):
             #  bottom half in another (High R)
             row_index_min = y_sub_ - psf_max
             row_index_max = y_sub_ + psf_max + 1
-            
+
             if not x_min_[i] == x_max_[i]:
                 # then the element is split across two columns
                 # calculate proportion going column x_min_ and x_max_
@@ -653,14 +653,20 @@ class ExposureGenerator(object):
                 propxmin = (x_max_[i] - x_min[i]) / x_width
                 propxmax = 1. - propxmin
 
-                pixel_array[row_index_min:row_index_max, x_min_sub_[i]] += flux_psf * propxmin
-                pixel_array[row_index_min:row_index_max, x_max_sub_[i]] += flux_psf * propxmax
+                try:
+                    pixel_array[row_index_min:row_index_max, x_min_sub_[i]] += flux_psf * propxmin
+                    pixel_array[row_index_min:row_index_max, x_max_sub_[i]] += flux_psf * propxmax
+                except IndexError:  # spectrum is beyond the frame edge
+                    pass
             else:  # all flux goes into one column
                 # Note: Ideally we dont want to overwrite te detector, but have
                 # a function for the detector to give us a grid. there are
                 # other detector effects though so maybe wed prefer multiple
                 #  detector classes or a .reset() on the class
-                pixel_array[row_index_min:row_index_max, x_sub_] += flux_psf
+                try:
+                    pixel_array[row_index_min:row_index_max, x_sub_] += flux_psf
+                except IndexError:  # spectrum is beyond the frame edge
+                    pass
 
 
         if add_flat:
