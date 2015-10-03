@@ -122,7 +122,7 @@ if __name__ == '__main__':
 
     visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']
 
-    if visit_trend_coeffs is not None:
+    if visit_trend_coeffs:
         obs.setup_visit_trend(visit_trend_coeffs)
 
     obs.show_lightcurve()

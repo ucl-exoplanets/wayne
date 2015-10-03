@@ -38,6 +38,8 @@ class Observation(object):
         self.scanning = True
         self.outdir = outdir
 
+        self._visit_trend = False
+
     def setup_observation(self, x_ref, y_ref, scan_speed):
         """
 
@@ -284,7 +286,7 @@ class Observation(object):
 
         lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
 
-        if self._visit_trend is not None:
+        if self._visit_trend:
             trend_model = self._visit_trend.scale_factors
             # have to convert weird model format to flat array
             lc_model = trend_model * lc_model.T[0]
@@ -361,7 +363,7 @@ class Observation(object):
         x_ref = self.x_ref + (
         self.x_shifts * (number - 1))  # -1 so first exposure is 0n x_ref
 
-        if self._visit_trend is not None:
+        if self._visit_trend:
             scale_factor = self._visit_trend.get_scale_factor(index_number)
         else:
             scale_factor = None
