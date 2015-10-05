@@ -46,4 +46,4 @@ observation:
 
 trends:
   # must be 1.e not 1e for some odd reason
-  visit_trend_coeffs: [1, -0.0005, 1.e-3, 500]  # visit ramp / hook model coeffs
+  visit_trend_coeffs: [0.0005, 0.0011, 400]  # visit ramp / hook model coeffs

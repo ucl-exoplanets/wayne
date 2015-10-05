@@ -39,11 +39,10 @@ class BaseVisitTrend(object):
 
 class HookAndLongTermRamp(BaseVisitTrend):
 
-    def ramp_model(self, t, t_v, t_0, a1, a2, b1, b2):
+    def ramp_model(self, t, t_v, t_0, a1, b1, b2):
         """ Combined hook and long term ramp model
         :param t: time_array
-        :param a1: linear ramp intercept
-        :param a2: linear ramp gradient
+        :param a1: linear ramp gradient
         :param b1: exponential hook coeff1
         :param b2: exponential hook coeff2
         :param t_v: start time of visit
@@ -55,7 +54,7 @@ class HookAndLongTermRamp(BaseVisitTrend):
         t = np.array(t)  # wipes units if any
         t_v = np.array(t_v)
 
-        ramp = (a1+a2*(t-t_v))*(1-b1*np.exp(-b2*(t-t_0)))
+        ramp = (1-a1*(t-t_v))*(1-b1*np.exp(-b2*(t-t_0)))
         return ramp
 
     def _gen_scaling_factors(self, visit_plan, coeffs):
