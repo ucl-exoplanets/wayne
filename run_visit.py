@@ -101,6 +101,7 @@ if __name__ == '__main__':
     add_gain = cfg['observation']['add_gain']
     add_non_linear = cfg['observation']['add_non_linear']
     add_read_noise = cfg['observation']['add_read_noise']
+    stellar_noise = cfg['observation']['stellar_noise']
 
     sky_background = cfg['observation']['sky_background'] * u.count/u.s
     cosmic_rate = cfg['observation']['cosmic_rate']
@@ -117,7 +118,8 @@ if __name__ == '__main__':
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, psf_max, clip_values_det_limits)
     obs.setup_trends(ssv_std, x_shifts)
-    obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise)
+    obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise,
+                            stellar_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 
     visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']

@@ -42,6 +42,7 @@ observation:
   cosmic_rate: 11
 
   clip_values_det_limits: True
+  stellar_noise: False
 
 trends:
   # must be 1.e not 1e for some odd reason

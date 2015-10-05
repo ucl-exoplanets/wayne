@@ -148,7 +148,8 @@ class ExposureGenerator(object):
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
-                       clip_values_det_limits=True, add_read_noise=True):
+                       clip_values_det_limits=True, add_read_noise=True,
+                       stellar_noise=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -292,7 +293,7 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
-                scale_factor, add_flat)
+                scale_factor, add_flat, stellar_noise)
 
             pixel_array += sample_frame
 
@@ -542,7 +543,8 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           psf_max, scale_factor=None, add_flat=True):
+                           psf_max, scale_factor=None, add_flat=True,
+                           stellar_noise=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -591,7 +593,8 @@ class ExposureGenerator(object):
         if scale_factor is not None:
             counts *= scale_factor
 
-        counts = self.add_stellar_noise(counts.value) * u.ph
+        if stellar_noise:
+            counts = self.add_stellar_noise(counts.value) * u.ph
 
         # the len limits are the same per trace, it is the values in pixel
         #  units each pixel occupies, as this is tilted
