@@ -367,7 +367,8 @@ class ExposureGenerator(object):
                 except NameError:  # first read
                     cumulative_pixel_array = pixel_array_full
 
-                self.exposure.add_read(cumulative_pixel_array, read_info)
+                # need to copy or all reads will be the same
+                self.exposure.add_read(cumulative_pixel_array.copy(), read_info)
 
                 previous_read_time = read_exp_times[read_num]
                 read_num += 1
