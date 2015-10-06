@@ -149,7 +149,7 @@ class ExposureGenerator(object):
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
                        clip_values_det_limits=True, add_read_noise=True,
-                       stellar_noise=True):
+                       stellar_noise=True, spectrum_psf_smoothing=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -293,7 +293,7 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
-                scale_factor, add_flat)
+                scale_factor, add_flat, spectrum_psf_smoothing)
 
             pixel_array += sample_frame
 
@@ -519,6 +519,8 @@ class ExposureGenerator(object):
         :return: array with the exposure
         """
 
+        raise NotImplementedError('Sorry, needs drastically updating')
+
         self.exp_info.update({
             'SCAN': False,
             'psf_max': psf_max,
@@ -556,7 +558,8 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           psf_max, scale_factor=None, add_flat=True):
+                           psf_max, scale_factor=None, add_flat=True,
+                           spectrum_psf_smoothing=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -594,8 +597,9 @@ class ExposureGenerator(object):
         count_rate = count_rate.to(u.photon / u.s)  # sanity check
         wl = wl.to(u.micron)
 
-        count_rate = self.grism.gaussian_smoothing(wl, count_rate.value)
-        count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
+        if spectrum_psf_smoothing:
+            count_rate = self.grism.gaussian_smoothing(wl, count_rate.value)
+            count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
 
         counts = (count_rate * exptime).to(u.photon)
 

@@ -57,7 +57,8 @@ class Observation(object):
         self.y_ref = y_ref
         self.scan_speed = scan_speed
 
-    def setup_simulator(self, sample_rate, psf_max=4, clip_values_det_limits=True):
+    def setup_simulator(self, sample_rate, psf_max=4, clip_values_det_limits=True,
+                        spectrum_psf_smoothing=True):
         """
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
@@ -69,6 +70,7 @@ class Observation(object):
         self.sample_rate = sample_rate
         self.psf_max = psf_max
         self.clip_values_det_limits = clip_values_det_limits
+        self.spectrum_psf_smoothing = spectrum_psf_smoothing
 
     def setup_target(self, planet, planet_spectrum, planet_wl, stellar_flux,
                      stellar_wl=None):
@@ -379,7 +381,9 @@ class Observation(object):
             cosmic_rate=self.cosmic_rate, add_gain=self.add_gain,
             add_non_linear=self.add_non_linear,
             clip_values_det_limits=self.clip_values_det_limits,
-            add_read_noise=self.add_read_noise, stellar_noise=self.stellar_noise)
+            add_read_noise=self.add_read_noise, stellar_noise=self.stellar_noise,
+            spectrum_psf_smoothing=self.spectrum_psf_smoothing,
+        )
 
         exp_frame.generate_fits(self.outdir, filename)
 

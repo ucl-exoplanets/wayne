@@ -43,6 +43,7 @@ observation:
 
   clip_values_det_limits: True
   stellar_noise: True
+  spectrum_psf_smoothing: True
 
 trends:
   # must be 1.e not 1e for some odd reason
