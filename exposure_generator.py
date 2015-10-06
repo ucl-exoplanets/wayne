@@ -293,11 +293,14 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
-                scale_factor, add_flat, stellar_noise)
+                scale_factor, add_flat)
 
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
+
+                if stellar_noise:
+                    pixel_array = self.add_stellar_noise(pixel_array)
 
                 # TODO (ryan) export all this reduction stuff to own function
 
@@ -359,10 +362,19 @@ class ExposureGenerator(object):
                     'CRPIX1': 0,
                 }
 
-                self.exposure.add_read(pixel_array_full, read_info)
+                try:
+                    cumulative_pixel_array += pixel_array_full
+                except NameError:  # first read
+                    cumulative_pixel_array = pixel_array_full
+
+                self.exposure.add_read(cumulative_pixel_array, read_info)
 
                 previous_read_time = read_exp_times[read_num]
                 read_num += 1
+
+                # Now we want to start again with a fresh array
+                pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
+                                            light_sensitive=True)
 
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
@@ -543,8 +555,7 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           psf_max, scale_factor=None, add_flat=True,
-                           stellar_noise=True):
+                           psf_max, scale_factor=None, add_flat=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -592,9 +603,6 @@ class ExposureGenerator(object):
         # Finally, scale the lightcurve by the ramp
         if scale_factor is not None:
             counts *= scale_factor
-
-        if stellar_noise:
-            counts = self.add_stellar_noise(counts.value) * u.ph
 
         # the len limits are the same per trace, it is the values in pixel
         #  units each pixel occupies, as this is tilted
