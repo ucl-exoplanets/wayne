@@ -76,7 +76,7 @@ class G141(object):
 
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf
-        self.wl_limits = (0.9 * u.micron, 1.8 * u.micron)
+        self.wl_limits = (0.988 * u.micron, 1.777 * u.micron)
 
         # Throughput
         self.throughput_file = os.path.join(
