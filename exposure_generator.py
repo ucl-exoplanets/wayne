@@ -293,13 +293,13 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
-                scale_factor, add_flat, spectrum_psf_smoothing)
+                scale_factor, add_flat, spectrum_psf_smoothing, stellar_noise)
 
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
 
-                if stellar_noise:
+                if stellar_noise == 'poi_per_samp':
                     pixel_array = self.add_stellar_noise(pixel_array)
 
                 # TODO (ryan) export all this reduction stuff to own function
@@ -559,7 +559,7 @@ class ExposureGenerator(object):
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
                            psf_max, scale_factor=None, add_flat=True,
-                           spectrum_psf_smoothing=True):
+                           spectrum_psf_smoothing=True, stellar_noise=False):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -601,7 +601,17 @@ class ExposureGenerator(object):
             count_rate = self.grism.gaussian_smoothing(wl, count_rate.value)
             count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
 
+        if stellar_noise == 'poi_per_sub':
+            count_rate *= 7*u.s  # scale to ~ sub sample time
+            count_rate = self.add_stellar_noise(count_rate.value) * u.photon
+            count_rate /= 7*u.s
+            # np.savetxt('/Users/ryan/Downloads/spec_poi_per_sub.txt', count_rate.value)
+
         counts = (count_rate * exptime).to(u.photon)
+
+        if stellar_noise == 'norm':
+            counts += np.random.normal(0, np.sqrt(counts.value)) * u.photon
+            # np.savetxt('/Users/ryan/Downloads/spec_gauss_per_sub.txt', counts.value)
 
         counts = self.detector.apply_quantum_efficiency(wl, counts)
 
