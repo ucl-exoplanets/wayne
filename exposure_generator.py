@@ -605,13 +605,15 @@ class ExposureGenerator(object):
             count_rate *= 7*u.s  # scale to ~ sub sample time
             count_rate = self.add_stellar_noise(count_rate.value) * u.photon
             count_rate /= 7*u.s
-            # np.savetxt('/Users/ryan/Downloads/spec_poi_per_sub.txt', count_rate.value)
+            # np.savetxt('/Users/ryan/Downloads/spec_poi_per_sub.txt', np.array([wl.value, count_rate.value]).T)
 
         counts = (count_rate * exptime).to(u.photon)
 
         if stellar_noise == 'norm':
-            counts += np.random.normal(0, np.sqrt(counts.value)) * u.photon
-            # np.savetxt('/Users/ryan/Downloads/spec_gauss_per_sub.txt', counts.value)
+            noise = np.random.normal(0, 1)  # then scale to stddev
+            noise *= np.sqrt(counts.value)
+            counts += noise * u.photon
+            # np.savetxt('/Users/ryan/Downloads/spec_norm_per_sub.txt', np.array([wl.value, counts.value]).T)
 
         counts = self.detector.apply_quantum_efficiency(wl, counts)
 
