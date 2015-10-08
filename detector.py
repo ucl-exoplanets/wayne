@@ -174,14 +174,15 @@ class WFC3_IR(object):
 
             return pixel_array + dark_array
 
-    def add_read_noise(self, pixel_array, stddev=21.4):
-        """ Adds read noise to an array. Noise is normal with a std of 21.4 e
-        from the Inst handbook pg 62
-
-        :return:
+    def add_final_noise_sources(self, pixel_array):
+        """ Adds read noise, stellar noise and distribution noise to the frame
+        values from pg 58 of the data handbook
         """
 
-        pixel_array += np.random.normal(0, stddev, pixel_array.shape)
+        read_noise = 21
+
+        error = np.sqrt(read_noise**2 + pixel_array)
+        pixel_array = np.random.normal(pixel_array, error)
 
         return pixel_array
 

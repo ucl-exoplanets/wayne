@@ -84,7 +84,7 @@ if __name__ == '__main__':
     SUBARRAY = cfg['observation']['SUBARRAY']
 
     # convert pq to u
-    start_JD = float((planet.transittime - 0.16*pq.day).rescale(pq.day)) * u.day
+    start_JD = cfg['observation']['start_JD'] * u.day
     num_orbits = cfg['observation']['num_orbits']
     sample_rate = cfg['observation']['sample_rate'] * u.ms
     scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     add_flat = cfg['observation']['add_flat']
     add_gain = cfg['observation']['add_gain']
     add_non_linear = cfg['observation']['add_non_linear']
-    add_read_noise = cfg['observation']['add_read_noise']
+    add_final_noise_sources = cfg['observation']['add_final_noise_sources']
     stellar_noise = cfg['observation']['stellar_noise']
 
     sky_background = cfg['observation']['sky_background'] * u.count/u.s
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     obs.setup_simulator(sample_rate, psf_max, clip_values_det_limits,
                         spectrum_psf_smoothing)
     obs.setup_trends(ssv_std, x_shifts)
-    obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise,
+    obs.setup_noise_sources(sky_background, cosmic_rate, add_final_noise_sources,
                             stellar_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 

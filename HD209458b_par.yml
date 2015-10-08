@@ -18,8 +18,7 @@ observation:
   NSAMP: 5
   SAMPSEQ: 'SPARS10'
   SUBARRAY: 256
-  # TODO START JD IS NOT CURRENTLY SET HERE, SET IN RUNSIM
-  start_JD: None
+  start_JD: 2451369.812714386
   num_orbits: 5
   sample_rate: 30  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
@@ -36,9 +35,9 @@ observation:
   add_flat: True
   add_gain: True
   add_non_linear: True
-  add_read_noise: True
+  add_final_noise_sources: True
 
-  sky_background: 2
+  sky_background: 1.8
   cosmic_rate: 11
 
   clip_values_det_limits: True

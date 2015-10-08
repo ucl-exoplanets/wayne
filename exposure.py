@@ -54,12 +54,12 @@ class Exposure(object):
 
             self.reads[i] = (pixel_array_non_linear, header)
 
-    def add_read_noise(self):
-        """ Uses the detector add_read_noise() method on each sample
+    def add_final_noise_sources(self):
+        """ Uses the detector add_final_noise_sources() method on each sample
         """
 
         for i, (pixel_array, header) in enumerate(self.reads):
-            pixel_array_rdnoise = self.detector.add_read_noise(pixel_array)
+            pixel_array_rdnoise = self.detector.add_final_noise_sources(pixel_array)
 
             self.reads[i] = (pixel_array_rdnoise, header)
 
@@ -284,7 +284,6 @@ class Exposure(object):
         h['ADD-FLAT'] = (exp_info['add_flat'], 'flat field added (T/F)')
         h['ADD-GAIN'] = (exp_info['add_gain'], 'gain added (T/F)')
         h['ADD-NLIN'] = (exp_info['add_non_linear'], 'non-linearity effects added (T/F)')
-        h['ADD-RDNS'] = (exp_info['add_read_noise'], 'read noise added (T/F)')
 
         h['CSMCRATE'] = (exp_info['cosmic_rate'], 'Rate of cosmic hits (per s)')
 

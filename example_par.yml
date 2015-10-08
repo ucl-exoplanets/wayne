@@ -8,7 +8,7 @@ target:
   name: 'Gliese 1214 b'  # exact match of a OEC planet
   planet_spectrum_file: 'hj_1000.dat'  # wl (microns) vs transit depth
   stellar_spectrum_file: False
-  flux_scale: 5e18  # stellar flux is a blackbody, scale this to get the required counts per pixel
+  flux_scale: 3.23e18  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
 observation:
   detector: 'WFC3IR'  # currently fixed
@@ -36,13 +36,13 @@ observation:
   add_flat: True
   add_gain: True
   add_non_linear: True
-  add_read_noise: True
+  add_final_noise_sources: True  # include read and stellar noise
 
   sky_background: 2
   cosmic_rate: 11
 
   clip_values_det_limits: True
-  stellar_noise: True
+  stellar_noise: False
   spectrum_psf_smoothing: True
 
 trends:
