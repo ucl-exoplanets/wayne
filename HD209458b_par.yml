@@ -8,7 +8,10 @@ target:
   name: 'HD 209458 b'  # exact match of a OEC planet
   planet_spectrum_file: 'hd209_h2o1e-5_cloud0.07_R1.36.dat'  # wl (microns) vs transit depth
   stellar_spectrum_file: 'lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
-  flux_scale: 5e19  # stellar flux is a blackbody, scale this to get the required counts per pixel
+  flux_scale: 3.23e19  # stellar flux is a blackbody, scale this to get the required counts per pixel
+
+  # Required only to overwrite ExoData defaults from the OEC, set to false otherwise
+  transit_time: 2451369.91
 
 observation:
   detector: 'WFC3IR'  # currently fixed
@@ -19,6 +22,7 @@ observation:
   SAMPSEQ: 'SPARS10'
   SUBARRAY: 256
   start_JD: 2451369.812714386
+  exp_start_times: '209_exp_start_times.txt'
   num_orbits: 5
   sample_rate: 30  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
@@ -45,5 +49,4 @@ observation:
   spectrum_psf_smoothing: True
 
 trends:
-  # must be 1.e not 1e for some odd reason
   visit_trend_coeffs: [0.0005, 0.0011, 400]  # visit ramp / hook model coeffs

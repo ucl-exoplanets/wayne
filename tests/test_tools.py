@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import numpy.testing
+import astropy.units as u
 
 from .. import tools
 
@@ -78,3 +79,12 @@ class Test_bin_centers_to_width(unittest.TestCase):
         answer = np.array([1, 1.5, 1.7, 1.4])
 
         numpy.testing.assert_array_almost_equal(answer, bin_width, 6)
+
+
+class Test_detect_orbits(unittest.TestCase):
+    def test_detect_orbits(self):
+        exp_start_times = [1.001, 1.002, 1.032] * u.day
+
+        orbit_intervals = tools.detect_orbits(exp_start_times)
+
+        self.assertEqual(orbit_intervals, [0, 2])

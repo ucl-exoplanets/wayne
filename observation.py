@@ -138,19 +138,25 @@ class Observation(object):
         """
         self.grism = grism
 
-    def setup_visit(self, start_JD, num_orbits):
+    def setup_visit(self, start_JD, num_orbits, exp_start_times=False):
         """ Sets up visit information,
 
         :param start_JD: The JD the entire visit should start (without overheads)
         :type: float
         :param num_orbits: number of orbits to generate for
         :type: int
+        :param exp_start_times: a list of start times for the exposures in JD
+        :type: array
         """
         self.start_JD = start_JD  # in days
         self.num_orbits = num_orbits
 
-        # TODO detector must be setup first but no indicator of this in code
-        self._generate_visit_plan()
+        if exp_start_times:  # i.e. visit plan is specified
+            self.exp_start_times = exp_start_times
+            self._start_times_to_visit_info()
+        else:
+            # TODO detector must be setup first but no indicator of this in code
+            self._generate_visit_plan()
 
     def _generate_visit_plan(self):
         """ Generates the visit plan, requires both setup_detector and
@@ -170,6 +176,17 @@ class Observation(object):
         # So this is a weird thing to do, maybe the JD should be added in the
         # visit planner - used in visit trend generation
         self.visit_plan['exp_start_times'] = self.exp_start_times
+
+    def _start_times_to_visit_info(self):
+        """ Used to provide the additional information the simulation needs
+        from the visit planner when providing exposure times
+        """
+
+        self.visit_plan = {
+            'exp_start_times': self.exp_start_times,
+            # for visit trends
+            'orbit_start_index': tools.detect_orbits(self.exp_start_times),
+        }
 
     def setup_reductions(self, add_dark=True, add_flat=True, add_gain=True,
                          add_non_linear=True):

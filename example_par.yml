@@ -8,7 +8,10 @@ target:
   name: 'Gliese 1214 b'  # exact match of a OEC planet
   planet_spectrum_file: 'hj_1000.dat'  # wl (microns) vs transit depth
   stellar_spectrum_file: False
-  flux_scale: 3.23e18  # stellar flux is a blackbody, scale this to get the required counts per pixel
+  flux_scale: 5e18  # stellar flux is a blackbody, scale this to get the required counts per pixel
+
+  # Required only to overwrite ExoData defaults from the OEC, set to false otherwise
+  transit_time: 2454980.749
 
 observation:
   detector: 'WFC3IR'  # currently fixed
@@ -19,8 +22,11 @@ observation:
   SAMPSEQ: 'SPARS10'
   SUBARRAY: 256
   # TODO START JD IS NOT CURRENTLY SET HERE, SET IN RUNSIM
-  start_JD: float((planet.transittime - 115*pq.min).rescale(pq.day)) * u.day  # convert pq to u
-  num_orbits: 1
+  start_JD: 2454980.68
+  # Defines whether you want the visit_planner to set the start times (false)
+  # or define them yourself (give a file with a list of times in JD)
+  exp_start_times: False
+  num_orbits: 2
   sample_rate: 500  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
   scan_speed: 1 # 280 pixels/111.8 seconds  # pixels per second
@@ -46,5 +52,4 @@ observation:
   spectrum_psf_smoothing: True
 
 trends:
-  #                                must be 1.e for some odd reason
-  visit_trend_coeffs: [1, -0.0005, 1.e-3, 500]  # visit ramp / hook model coeffs
+  visit_trend_coeffs: [0.0005, 0.0011, 400]  # visit ramp / hook model coeffs

@@ -195,6 +195,35 @@ def get_limb_darkening_coeffs(star):
     return pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'J')
 
 
+def detect_orbits(exp_start_times, separation=0.028):
+    """ Uses exposure time to detect orbits
+
+    :param separation: minimum exptime seperation to count as a new orbit,
+     the default of 0.028 is ~ 40 mins is just under half a HST orbit
+
+    Caveats: only uses start time so may mess up if you do really long exposures
+
+    :return: tuple of cutoff points of orbits. i.e if orbit one is 0-17,
+     orbit 2 is 18-25 and orbit 3 is 26-30 you
+    will get (0, 18, 26, None)
+    :rtype: tuple
+    """
+
+    exp_start_times = np.array(exp_start_times)
+
+    lastExpEnd = exp_start_times[0]
+    orbitIndex = [0, ]  # Start at 0
+
+    for i, exp_time in enumerate(exp_start_times):
+        diff = exp_time - lastExpEnd
+        if diff >= separation:
+            orbitIndex.append(i)
+
+        lastExpEnd = exp_time
+
+    return orbitIndex
+
+
 class WFC3IR_DQFlags(object):
     """ This class analyses a single data quality flag from the WFC3 IR camera.
     This includes general problem checking ie DQFlags.problems() aswell as

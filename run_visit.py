@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from astropy.analytic_functions import blackbody_lambda
 from astropy import units as u
 import exodata
+import exodata.astroquantities as aq
 import quantities as pq  # exodata still uses this
 import yaml
 import docopt
@@ -52,6 +53,11 @@ if __name__ == '__main__':
     params.seed = seed  # tell params what the seed is now we've change it
 
     planet = exodb.planetDict[cfg['target']['name']]
+
+    # modify planet params if given Note that exodata uses a different unit
+    # package at present
+    if cfg['target']['transit_time']:
+        planet.transittime = cfg['target']['transit_time'] * aq.JD
 
     source_spectra = np.loadtxt(cfg['target']['planet_spectrum_file'])
     source_spectra = source_spectra.T  # turn to (wl list, flux list)
@@ -108,12 +114,17 @@ if __name__ == '__main__':
     clip_values_det_limits = cfg['observation']['clip_values_det_limits']
     spectrum_psf_smoothing = cfg['observation']['spectrum_psf_smoothing']
 
+    exp_start_times = cfg['observation']['exp_start_times']
+
+    if exp_start_times:
+        exp_start_times = np.loadtxt(exp_start_times) * u.day
+
     obs = observation.Observation(outdir)
 
     obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
     obs.setup_grism(g141)
     obs.setup_target(planet, depth_p, wl_p, stellar_flux_scaled)
-    obs.setup_visit(start_JD, num_orbits)
+    obs.setup_visit(start_JD, num_orbits, exp_start_times)
     obs.setup_reductions(add_dark, add_flat, add_gain, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, psf_max, clip_values_det_limits,
