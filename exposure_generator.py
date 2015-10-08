@@ -149,7 +149,7 @@ class ExposureGenerator(object):
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
                        clip_values_det_limits=True, add_final_noise_sources=True,
-                       stellar_noise=True, spectrum_psf_smoothing=True):
+                       spectrum_psf_smoothing=True):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -292,14 +292,11 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
-                scale_factor, add_flat, spectrum_psf_smoothing, stellar_noise)
+                scale_factor, add_flat, spectrum_psf_smoothing)
 
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
-
-                if stellar_noise == 'poi_per_samp':
-                    pixel_array = self.add_stellar_noise(pixel_array)
 
                 # TODO (ryan) export all this reduction stuff to own function
 
@@ -558,7 +555,7 @@ class ExposureGenerator(object):
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
                            psf_max, scale_factor=None, add_flat=True,
-                           spectrum_psf_smoothing=True, stellar_noise=False):
+                           spectrum_psf_smoothing=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -600,19 +597,7 @@ class ExposureGenerator(object):
             count_rate = self.grism.gaussian_smoothing(wl, count_rate.value)
             count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
 
-        if stellar_noise == 'poi_per_sub':
-            count_rate *= 7*u.s  # scale to ~ sub sample time
-            count_rate = self.add_stellar_noise(count_rate.value) * u.photon
-            count_rate /= 7*u.s
-            # np.savetxt('/Users/ryan/Downloads/spec_poi_per_sub.txt', np.array([wl.value, count_rate.value]).T)
-
         counts = (count_rate * exptime).to(u.photon)
-
-        if stellar_noise == 'norm':
-            noise = np.random.normal(0, 1)  # then scale to stddev
-            noise *= np.sqrt(counts.value)
-            counts += noise * u.photon
-            # np.savetxt('/Users/ryan/Downloads/spec_norm_per_sub.txt', np.array([wl.value, counts.value]).T)
 
         counts = self.detector.apply_quantum_efficiency(wl, counts)
 
@@ -858,14 +843,6 @@ class ExposureGenerator(object):
         combined_flux = stellar_flux * (1. - planet_spectrum)
 
         return combined_flux
-
-    def add_stellar_noise(self, counts):
-        """ Resamples each flux element as a poisson distribution (stellar noise)
-        """
-
-        noisey_counts = np.random.poisson(counts)
-
-        return noisey_counts
 
     def _gen_noise(self, mean, std):
         """ Generates noise from a normal distribution at the mean and std

@@ -196,12 +196,11 @@ class Observation(object):
         self.x_shifts = x_shifts
 
     def setup_noise_sources(self, sky_background=1*u.count/u.s, cosmic_rate=11.,
-                            add_final_noise_sources=True, stellar_noise=True):
+                            add_final_noise_sources=True):
 
         self.sky_background = sky_background
         self.cosmic_rate = cosmic_rate
         self.add_final_noise_sources = add_final_noise_sources
-        self.stellar_noise = stellar_noise
 
     def setup_gaussian_noise(self, noise_mean=False, noise_std=False):
         """
@@ -382,7 +381,6 @@ class Observation(object):
             add_non_linear=self.add_non_linear,
             clip_values_det_limits=self.clip_values_det_limits,
             add_final_noise_sources=self.add_final_noise_sources,
-            stellar_noise=self.stellar_noise,
             spectrum_psf_smoothing=self.spectrum_psf_smoothing,
         )
 
