@@ -256,8 +256,6 @@ class ExposureGenerator(object):
         # Scan Speed Variations (flux modulations)
         if ssv_std:
             ssv_scaling = self._flux_ssv_scaling(s_y_refs, ssv_std)
-            self.exposure.ssv_scaling = ssv_scaling  # temp to see whats going on
-            self.exposure.s_y_refs = s_y_refs
 
         # Prep for random noise and other trends / noise sources
         read_num = 0
@@ -431,7 +429,13 @@ class ExposureGenerator(object):
         sin_func = lambda x, std, phase, mean, period: std * np.sin(
             (period * x) + phase) + mean
 
-        ssv_scaling = sin_func(zeroed_y_mid, ssv_std / 100., np.pi, 1.,
+        try:
+            start_phase = self.ssv_start_phase
+        except AttributeError:  # start of exposure set random phase
+            start_phase = np.random.random() * 2*np.pi
+            self.ssv_start_phase = start_phase
+
+        ssv_scaling = sin_func(zeroed_y_mid, ssv_std / 100., start_phase, 1.,
                                self.ssv_period)
 
         return ssv_scaling

@@ -11,7 +11,7 @@ target:
   flux_scale: 3.23e19  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
   # Required only to overwrite ExoData defaults from the OEC, set to false otherwise
-  transit_time: 2451369.91
+  transit_time: 2451370.048
 
 observation:
   detector: 'WFC3IR'  # currently fixed
@@ -28,7 +28,7 @@ observation:
   spatial_scan: True
   scan_speed: 7.39 # 165/22.32  # pixels per second
 
-  psf_max: 4  # how many pixels to inegrate psf tails
+  psf_max: 4  # how many pixels to integrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
   x_shifts: 0.015  # linear shift in x position (pixels)
 
@@ -49,4 +49,4 @@ observation:
   spectrum_psf_smoothing: True
 
 trends:
-  visit_trend_coeffs: [0.0005, 0.0011, 400]  # visit ramp / hook model coeffs
+  visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs
