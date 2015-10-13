@@ -78,8 +78,6 @@ class ExposureGenerator(object):
             'add_dark': False,
         }
 
-        self.ssv_period = 0.7
-
     def direct_image(self, x_ref, y_ref):
         """ This creates a direct image used to calibrate x_ref and y_ref from
          the observations
@@ -144,7 +142,8 @@ class ExposureGenerator(object):
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
                        scan_speed, sample_rate, psf_max=4,
                        sample_mid_points=None, sample_durations=None,
-                       read_index=None, ssv_std=False, noise_mean=False,
+                       read_index=None, ssv_std=False, ssv_period=False,
+                       noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
@@ -221,6 +220,7 @@ class ExposureGenerator(object):
             'x_ref': x_ref,
             'y_ref': y_ref,
             'scan_speed_var': ssv_std,
+            'scan_speed_period': ssv_period,
             'noise_mean': noise_mean,
             'noise_std': noise_std,
             'add_dark': add_dark,
@@ -254,8 +254,8 @@ class ExposureGenerator(object):
         s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed)
 
         # Scan Speed Variations (flux modulations)
-        if ssv_std:
-            ssv_scaling = self._flux_ssv_scaling(s_y_refs, ssv_std)
+        if ssv_std and ssv_period:
+            ssv_scaling = self._flux_ssv_scaling(s_y_refs, ssv_std, ssv_period)
 
         # Prep for random noise and other trends / noise sources
         read_num = 0
@@ -409,7 +409,8 @@ class ExposureGenerator(object):
 
         return s_y_refs
 
-    def _flux_ssv_scaling(self, y_mid_points, ssv_std=1.5):
+    def _flux_ssv_scaling(self, y_mid_points, ssv_std=1.5, ssv_period=0.7,
+                          start_phase='rand'):
         """ Provides the scaling factors to adjust the flux by the scan speed
          variations, should be more physical i.e adjusting exposure time
 
@@ -421,6 +422,9 @@ class ExposureGenerator(object):
                 - Based on scan speed not y_refs
                 - variations in phase
 
+        :param start_phase: pahse to start the ssv or 'rand'
+        :type start_phase: float or str
+
         :return:
         """
 
@@ -429,14 +433,21 @@ class ExposureGenerator(object):
         sin_func = lambda x, std, phase, mean, period: std * np.sin(
             (period * x) + phase) + mean
 
-        try:
-            start_phase = self.ssv_start_phase
-        except AttributeError:  # start of exposure set random phase
+        if start_phase == 'rand':
             start_phase = np.random.random() * 2*np.pi
-            self.ssv_start_phase = start_phase
+
+            # total exptime will change if a multiple of period doesnt fit,
+            # so we need to scale the total flux by the a reference
+            ssv_0 = self._flux_ssv_scaling(y_mid_points, ssv_std, ssv_period,
+                                                  start_phase=0)
+            ssv_0_mean = np.mean(ssv_0)
 
         ssv_scaling = sin_func(zeroed_y_mid, ssv_std / 100., start_phase, 1.,
-                               self.ssv_period)
+                               ssv_period)
+
+        if start_phase == 'rand':
+            # do the scaling, assumes samples have same exp time - which they mostly do
+            ssv_scaling *= ssv_0_mean / np.mean(ssv_scaling)
 
         return ssv_scaling
 

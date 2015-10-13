@@ -99,6 +99,7 @@ if __name__ == '__main__':
     psf_max = cfg['observation']['psf_max']
 
     ssv_std = cfg['observation']['ssv_std']
+    ssv_period = cfg['observation']['ssv_period']
     x_shifts = cfg['observation']['x_shifts']
 
     noise_mean = cfg['observation']['noise_mean']
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, psf_max, clip_values_det_limits,
                         spectrum_psf_smoothing)
-    obs.setup_trends(ssv_std, x_shifts)
+    obs.setup_trends(ssv_std, ssv_period, x_shifts)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_final_noise_sources)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 

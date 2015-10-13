@@ -24,12 +24,13 @@ observation:
   start_JD: 2451369.812714386
   exp_start_times: 'example_data/hd209458b_12181_jd.txt'
   num_orbits: 5
-  sample_rate: 200  # How often to generate a single frame (when scanning) in ms
+  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
   scan_speed: 7.39 # 165/22.32  # pixels per second
 
   psf_max: 4  # how many pixels to integrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
+  ssv_period: 1.1
   x_shifts: 0.015  # linear shift in x position (pixels)
 
   noise_mean: False

@@ -43,6 +43,7 @@ observation:
 
   psf_max: 4  # how many pixels to integrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
+  ssv_period: 0.7  # scan speed variations, period of variation in pixels
   x_shifts: 0.1  # linear shift in x position (pixels)
 
   noise_mean: False

@@ -200,7 +200,7 @@ class Observation(object):
         self.add_gain = add_gain
         self.add_non_linear = add_non_linear
 
-    def setup_trends(self, ssv_std=False, x_shifts=0):
+    def setup_trends(self, ssv_std=False, ssv_period=False, x_shifts=0):
         """
         :param ssv_std: The % of the std(flux_per_pixel) the scan speed
          variations cause. Basic implementation.
@@ -210,6 +210,7 @@ class Observation(object):
         :type x_shifts: float
         """
         self.ssv_std = ssv_std
+        self.ssv_period = ssv_period
         self.x_shifts = x_shifts
 
     def setup_noise_sources(self, sky_background=1*u.count/u.s, cosmic_rate=11.,
@@ -396,6 +397,7 @@ class Observation(object):
             x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
             self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
             sample_durations, read_index, ssv_std=self.ssv_std,
+            ssv_period=self.ssv_period,
             noise_mean=self.noise_mean, noise_std=self.noise_std,
             add_flat=self.add_flat, add_dark=self.add_dark,
             scale_factor=scale_factor, sky_background=sky_background,
