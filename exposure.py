@@ -270,6 +270,8 @@ class Exposure(object):
         h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value,
                          'WFC3Sim exposure generation time (s)')
         h[''] = ''
+        h['X-REF'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
+        h['Y-REF'] = (exp_info['y_ref'], 'y position of star on frame (full frame))')
         h['PSF-MAX'] = (
         exp_info['psf_max'], 'maximum width of psf tails (pix)')
         h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value,
@@ -328,8 +330,7 @@ class Exposure(object):
 
         # not in correct section
         # keywords for analysis (i.e. xref positions until)
-        h['STARX'] = (
-        exp_info['x_ref'], 'x position of star on frame (full frame))')
+        h['STARX'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
 
         return science_header
 

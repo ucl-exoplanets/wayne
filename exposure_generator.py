@@ -378,7 +378,7 @@ class ExposureGenerator(object):
         if add_non_linear:
             # we do this at the end, because the correction is based on total
             # flux and we dont want to apply the correction multiple times
-            logger.info('Applying non-linearity correction to frames')
+            # logger.info('Applying non-linearity correction to frames')
             self.exposure.apply_non_linear()
 
         # Scale the counts between limits, i.e. 0 to 78k for WFC3 IR

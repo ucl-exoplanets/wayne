@@ -22,6 +22,7 @@ import yaml
 import docopt
 import seaborn
 
+from wfc3simlog import logger
 import observation
 import detector
 import grism
@@ -31,12 +32,13 @@ import params
 seaborn.set_style("whitegrid")
 
 if __name__ == '__main__':
-
     arguments = docopt.docopt(__doc__)
     parameter_file = arguments['<parameter_file>']
 
     with open(parameter_file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
+
+    logger.info('WFC3Sim Started, parsing config file')
 
     outdir = cfg['general']['outdir']
 
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     add_non_linear = cfg['observation']['add_non_linear']
     add_final_noise_sources = cfg['observation']['add_final_noise_sources']
 
-    sky_background = cfg['observation']['sky_background'] * u.count/u.s
+    sky_background = cfg['observation']['sky_background']
     cosmic_rate = cfg['observation']['cosmic_rate']
 
     clip_values_det_limits = cfg['observation']['clip_values_det_limits']
@@ -116,8 +118,20 @@ if __name__ == '__main__':
 
     exp_start_times = cfg['observation']['exp_start_times']
 
-    if exp_start_times:
+    if exp_start_times:  # otherwise we use the visit planner
+        logger.info('Visit planner disabled: using start times from {}'.format(exp_start_times))
         exp_start_times = np.loadtxt(exp_start_times) * u.day
+
+    # check to see if we have numbers of file paths, and load accordingly
+    if isinstance(x_ref, str):
+        x_ref = np.loadtxt(x_ref)
+
+    if isinstance(y_ref, str):
+        y_ref = np.loadtxt(y_ref)
+
+    if isinstance(sky_background, str):
+        sky_background = np.loadtxt(sky_background)
+    sky_background *= u.count/u.s
 
     obs = observation.Observation(outdir)
 

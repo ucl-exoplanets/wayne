@@ -378,9 +378,14 @@ class Observation(object):
         planet_depths = 1 - star_norm_flux
 
         # x shifts - linear shift with exposure, second exposure shifted by
-        #  x_shifts, direct image and first match
-        x_ref = self.x_ref + (
-        self.x_shifts * (number - 1))  # -1 so first exposure is 0n x_ref
+        #  x_shifts, direct image and first match.
+
+        x_ref = self._try_index(self.x_ref, index_number)
+        y_ref = self._try_index(self.y_ref, index_number)
+        sky_background = self._try_index(self.sky_background, index_number)
+
+        # X-Shifts
+        x_ref += self.x_shifts * index_number
 
         if self._visit_trend:
             scale_factor = self._visit_trend.get_scale_factor(index_number)
@@ -388,12 +393,12 @@ class Observation(object):
             scale_factor = None
 
         exp_frame = exp_gen.scanning_frame(
-            x_ref, self.y_ref, self.wl, self.stellar_flux, planet_depths,
+            x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
             self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
             sample_durations, read_index, ssv_std=self.ssv_std,
             noise_mean=self.noise_mean, noise_std=self.noise_std,
             add_flat=self.add_flat, add_dark=self.add_dark,
-            scale_factor=scale_factor, sky_background=self.sky_background,
+            scale_factor=scale_factor, sky_background=sky_background,
             cosmic_rate=self.cosmic_rate, add_gain=self.add_gain,
             add_non_linear=self.add_non_linear,
             clip_values_det_limits=self.clip_values_det_limits,
@@ -404,6 +409,16 @@ class Observation(object):
         exp_frame.generate_fits(self.outdir, filename)
 
         return exp_frame
+
+    def _try_index(self, value, index):
+        """ Tries to get value[index, if it cant returns value]
+        :type value: int or list
+        """
+
+        try:
+            return value[index]
+        except TypeError:
+            return value
 
     def _generate_direct_image(self):
         """ generate direct image (for wl calibration) - just assume happens
@@ -416,5 +431,15 @@ class Observation(object):
                                        self.SAMPSEQ, self.SUBARRAY,
                                        self.planet, filename, di_start_JD)
 
-        exp = di_exp_gen.direct_image(self.x_ref, self.y_ref)
+        try:  # assume that its a list not a single value
+            x_ref = self.x_ref[0]
+        except TypeError:
+            x_ref = self.x_ref
+
+        try:  # assume that its a list not a single value
+            y_ref = self.y_ref[0]
+        except TypeError:
+            y_ref = self.y_ref
+
+        exp = di_exp_gen.direct_image(x_ref, y_ref)
         exp.generate_fits(self.outdir, '0000_flt.fits')

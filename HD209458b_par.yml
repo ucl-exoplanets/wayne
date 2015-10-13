@@ -6,8 +6,8 @@ general:
 
 target:
   name: 'HD 209458 b'  # exact match of a OEC planet
-  planet_spectrum_file: 'hd209_h2o1e-5_cloud0.07_R1.36.dat'  # wl (microns) vs transit depth
-  stellar_spectrum_file: 'lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
+  planet_spectrum_file: 'example_data/hd209_h2o1e-5_cloud0.07_R1.36.dat'  # wl (microns) vs transit depth
+  stellar_spectrum_file: 'example_data/lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
   flux_scale: 3.23e19  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
   # Required only to overwrite ExoData defaults from the OEC, set to false otherwise
@@ -16,15 +16,15 @@ target:
 observation:
   detector: 'WFC3IR'  # currently fixed
   grism: 'G141'  # currently fixed
-  x_ref: 404
-  y_ref: 458
+  x_ref: 'example_data/hd209458b_12181_xref.txt'
+  y_ref: 'example_data/hd209458b_12181_yref.txt'
   NSAMP: 5
   SAMPSEQ: 'SPARS10'
   SUBARRAY: 256
   start_JD: 2451369.812714386
-  exp_start_times: '209_exp_start_times.txt'
+  exp_start_times: 'example_data/hd209458b_12181_jd.txt'
   num_orbits: 5
-  sample_rate: 30  # How often to generate a single frame (when scanning) in ms
+  sample_rate: 200  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
   scan_speed: 7.39 # 165/22.32  # pixels per second
 
@@ -41,7 +41,7 @@ observation:
   add_non_linear: True
   add_final_noise_sources: True
 
-  sky_background: 1.8
+  sky_background: 'example_data/hd209458b_12181_sky.txt'
   cosmic_rate: 11
 
   clip_values_det_limits: True
