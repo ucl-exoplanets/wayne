@@ -57,20 +57,13 @@ class Observation(object):
         self.y_ref = y_ref
         self.scan_speed = scan_speed
 
-    def setup_simulator(self, sample_rate, psf_max=4, clip_values_det_limits=True,
-                        spectrum_psf_smoothing=True):
+    def setup_simulator(self, sample_rate, clip_values_det_limits=True):
         """
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
-
-        :param psf_max: how many pixels the psf tails span,
-         0.9999999999999889% of flux between is between -4 and 4 of
-        the widest psf
         """
         self.sample_rate = sample_rate
-        self.psf_max = psf_max
         self.clip_values_det_limits = clip_values_det_limits
-        self.spectrum_psf_smoothing = spectrum_psf_smoothing
 
     def setup_target(self, planet, planet_spectrum, planet_wl, stellar_flux,
                      stellar_wl=None):
@@ -401,7 +394,7 @@ class Observation(object):
 
         exp_frame = exp_gen.scanning_frame(
             x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
-            self.scan_speed, self.sample_rate, self.psf_max, sample_mid_points,
+            self.scan_speed, self.sample_rate, sample_mid_points,
             sample_durations, read_index, ssv_std=self.ssv_std,
             ssv_period=self.ssv_period,
             noise_mean=self.noise_mean, noise_std=self.noise_std,
@@ -411,7 +404,6 @@ class Observation(object):
             add_non_linear=self.add_non_linear,
             clip_values_det_limits=self.clip_values_det_limits,
             add_final_noise_sources=self.add_final_noise_sources,
-            spectrum_psf_smoothing=self.spectrum_psf_smoothing,
             progress_bar=self.progess
         )
 

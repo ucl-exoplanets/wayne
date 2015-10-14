@@ -41,7 +41,6 @@ observation:
   spatial_scan: True
   scan_speed: 1 # 280 pixels/111.8 seconds  # pixels per second
 
-  psf_max: 4  # how many pixels to integrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
   ssv_period: 0.7  # scan speed variations, period of variation in pixels
   x_shifts: 0.1  # linear shift in x position (pixels)
@@ -62,7 +61,6 @@ observation:
 
   clip_values_det_limits: True
   stellar_noise: False
-  spectrum_psf_smoothing: True
 
 trends:
   visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs

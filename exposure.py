@@ -272,8 +272,6 @@ class Exposure(object):
         h[''] = ''
         h['X-REF'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
         h['Y-REF'] = (exp_info['y_ref'], 'y position of star on frame (full frame))')
-        h['PSF-MAX'] = (
-        exp_info['psf_max'], 'maximum width of psf tails (pix)')
         h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value,
                          'How often exposure is sampled (ms)')
         h['SSV-SSD'] = (exp_info['scan_speed_var'],

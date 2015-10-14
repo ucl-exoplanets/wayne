@@ -69,7 +69,6 @@ class ExposureGenerator(object):
             'NSAMP': self.NSAMP,
             'SAMPSEQ': self.SAMPSEQ,
             'SUBARRAY': self.SUBARRAY,
-            'psf_max': None,
             'samp_rate': 0 * u.s,
             'sim_time': 0 * u.s,
             'scan_speed_var': False,
@@ -140,7 +139,7 @@ class ExposureGenerator(object):
         return self.exposure
 
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
-                       scan_speed, sample_rate, psf_max=4,
+                       scan_speed, sample_rate,
                        sample_mid_points=None, sample_durations=None,
                        read_index=None, ssv_std=False, ssv_period=False,
                        noise_mean=False,
@@ -148,7 +147,7 @@ class ExposureGenerator(object):
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
                        clip_values_det_limits=True, add_final_noise_sources=True,
-                       spectrum_psf_smoothing=True, progress_bar=None):
+                       progress_bar=None):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -175,10 +174,6 @@ class ExposureGenerator(object):
         :type scan_speed: astropy.units.quantity.Quantity
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
-        :param psf_max: how many pixels the psf tails span, 0.9999999999999889%
-         of flux between is between -4 and 4 of
-        the widest psf
-        :type psf_max: int
 
         :param sample_mid_point: mid point of each sample, None to auto generate
         :param sample_durations: duration of each sample, None to auto generate
@@ -215,7 +210,6 @@ class ExposureGenerator(object):
         self.exp_info.update({
             'SCAN': True,
             'SCAN_DIR': 1,
-            'psf_max': psf_max,
             'samp_rate': sample_rate,
             'x_ref': x_ref,
             'y_ref': y_ref,
@@ -296,8 +290,8 @@ class ExposureGenerator(object):
             # generate sample frame
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
-                x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur, psf_max,
-                scale_factor, add_flat, spectrum_psf_smoothing)
+                x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur,
+                scale_factor, add_flat)
 
             pixel_array += sample_frame
 
@@ -581,8 +575,7 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           psf_max, scale_factor=None, add_flat=True,
-                           spectrum_psf_smoothing=True):
+                           scale_factor=None, add_flat=True,):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -618,11 +611,12 @@ class ExposureGenerator(object):
 
         counts = counts.to(u.photon).value  # final unit check
 
+        counts = np.random.poisson(counts)  # poisson noise
+
         # each resolution element (wl, counts_tp)
         for i in xrange(len(wl)):
             wl_x = x_pos[i]
             wl_y = y_pos[i]
-
             wl_counts = counts[i]
             wl_psf_std = psf_std[i]
 
@@ -732,11 +726,10 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
     if not counts:  # zero counts
         return pixel_array
 
-    num_counts = int(round(counts))  # rounding could cause issues?
-    xx = np.int_(np.random.normal(x_pos, psf_std, num_counts))
-    yy = np.int_(np.random.normal(y_pos, psf_std, num_counts))
+    xx = np.int_(np.random.normal(x_pos, psf_std, counts))
+    yy = np.int_(np.random.normal(y_pos, psf_std, counts))
 
-    for i in xrange(num_counts):
+    for i in xrange(counts):
         try:
             pixel_array[yy[i]][xx[i]] += 1
         except IndexError:  # off the detector

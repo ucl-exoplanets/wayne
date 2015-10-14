@@ -96,7 +96,6 @@ if __name__ == '__main__':
     num_orbits = cfg['observation']['num_orbits']
     sample_rate = cfg['observation']['sample_rate'] * u.ms
     scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
-    psf_max = cfg['observation']['psf_max']
 
     ssv_std = cfg['observation']['ssv_std']
     ssv_period = cfg['observation']['ssv_period']
@@ -115,7 +114,6 @@ if __name__ == '__main__':
     cosmic_rate = cfg['observation']['cosmic_rate']
 
     clip_values_det_limits = cfg['observation']['clip_values_det_limits']
-    spectrum_psf_smoothing = cfg['observation']['spectrum_psf_smoothing']
 
     exp_start_times = cfg['observation']['exp_start_times']
 
@@ -142,8 +140,7 @@ if __name__ == '__main__':
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
     obs.setup_reductions(add_dark, add_flat, add_gain, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)
-    obs.setup_simulator(sample_rate, psf_max, clip_values_det_limits,
-                        spectrum_psf_smoothing)
+    obs.setup_simulator(sample_rate, clip_values_det_limits,)
     obs.setup_trends(ssv_std, ssv_period, x_shifts)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_final_noise_sources)
     obs.setup_gaussian_noise(noise_mean, noise_std)

@@ -24,11 +24,10 @@ observation:
   start_JD: 2451369.812714386
   exp_start_times: 'example_data/hd209458b_12181_jd.txt'
   num_orbits: 5
-  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
+  sample_rate: 100  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
   scan_speed: 7.39 # 165/22.32  # pixels per second
 
-  psf_max: 4  # how many pixels to integrate psf tails
   ssv_std: 1.5  # scan speed variations, standard deviation of the flux as a %
   ssv_period: 1.1
   x_shifts: 0.015  # linear shift in x position (pixels)
@@ -40,14 +39,13 @@ observation:
   add_flat: True
   add_gain: True
   add_non_linear: True
-  add_final_noise_sources: True
+  add_final_noise_sources: False
 
   sky_background: 'example_data/hd209458b_12181_sky.txt'
   cosmic_rate: 11
 
   clip_values_det_limits: True
   stellar_noise: True
-  spectrum_psf_smoothing: True
 
 trends:
   visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs
