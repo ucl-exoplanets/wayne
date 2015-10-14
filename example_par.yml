@@ -12,6 +12,7 @@ general:
 target:
   name: 'Gliese 1214 b'  # exact match of a OEC planet
   planet_spectrum_file: 'example_data/hj_1000.dat'  # wl (microns) vs transit depth
+  rebin_resolution: false  # Rebin the planet spectrum to lower resolution or false
   stellar_spectrum_file: False
   flux_scale: 5e18  # stellar flux is a blackbody, scale this to get the required counts per pixel
 

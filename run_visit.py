@@ -54,6 +54,10 @@ if __name__ == '__main__':
     np.random.seed(seed)
     params.seed = seed  # tell params what the seed is now we've change it
 
+    # if, else in future
+    g141 = grism.G141()
+    det = detector.WFC3_IR()
+
     planet = exodb.planetDict[cfg['target']['name']]
 
     # modify planet params if given Note that exodata uses a different unit
@@ -65,12 +69,18 @@ if __name__ == '__main__':
     source_spectra = source_spectra.T  # turn to (wl list, flux list)
     source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
 
-    # if, else in future
-    g141 = grism.G141()
-    det = detector.WFC3_IR()
-
     wl_p = source_spectra[0] * u.micron
     depth_p = source_spectra[1]
+
+    rebin_resolution = cfg['target']['rebin_resolution']
+    if rebin_resolution:
+        new_wl = tools.wl_at_resolution(rebin_resolution,
+                                        g141.wl_limits[0].value,
+                                        g141.wl_limits[1].value)
+
+        depth_p = tools.rebin_spec(wl_p.value, depth_p, new_wl)
+        wl_p = new_wl * u.micron
+
 
     stellar_spec_file = cfg['target']['stellar_spectrum_file']
     if stellar_spec_file:

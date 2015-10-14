@@ -224,6 +224,20 @@ def detect_orbits(exp_start_times, separation=0.028):
     return orbitIndex
 
 
+def wl_at_resolution(R, wl_min, wl_max):
+    """ Produces a wavelength grid at a resolutionof R between the limits. The
+    spacing is based on the mid point of the wl and is even throughout
+
+    :param R: resolution
+    :return:
+    """
+
+    mid_wl = (wl_max - wl_min)/2 + wl_min
+    delta_wl = mid_wl/R
+
+    return np.arange(wl_min, wl_max+delta_wl, delta_wl)
+
+
 class WFC3IR_DQFlags(object):
     """ This class analyses a single data quality flag from the WFC3 IR camera.
     This includes general problem checking ie DQFlags.problems() aswell as
