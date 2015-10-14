@@ -148,7 +148,7 @@ class ExposureGenerator(object):
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
                        clip_values_det_limits=True, add_final_noise_sources=True,
-                       spectrum_psf_smoothing=True):
+                       spectrum_psf_smoothing=True, progress_bar=None):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -267,6 +267,13 @@ class ExposureGenerator(object):
         pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
                                                     # misses 5 pixel border
                                                     light_sensitive=True)
+
+        num_samples = len(sample_mid_points)
+        if progress_bar is not None:
+            progress_line = progress_bar.progress_line + \
+                            ' (samp {}/{})'.format(0, num_samples)
+            progress_bar.print_status_line(progress_line)
+
         for i, s_mid in enumerate(sample_mid_points):
 
             s_y_ref = s_y_refs[i]
@@ -370,6 +377,11 @@ class ExposureGenerator(object):
                 # Now we want to start again with a fresh array
                 pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
                                             light_sensitive=True)
+
+            if progress_bar is not None:
+                progress_line = progress_bar.progress_line + \
+                                ' (samp {}/{})'.format(i+1, num_samples)
+                progress_bar.print_status_line(progress_line)
 
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
@@ -576,24 +588,14 @@ class ExposureGenerator(object):
         :return:
         """
 
+        wl = wl.to(u.micron)
+
         # Wavelength calibration, mapping to detector x/y pos
         trace = self.grism.get_trace(x_ref, y_ref)
         x_pos = trace.wl_to_x(wl)
         y_pos = trace.wl_to_y(wl)
 
-        # Overlap detection see if element is split between columns
-        #   Note: delta_lambda inefficient, also calculated in self._flux_to_counts
-        delta_wl = tools.bin_centers_to_widths(wl)
-        #   need to turn wl width to x width
-        x_min = trace.wl_to_x(wl - delta_wl / 2.)
-        x_max = trace.wl_to_x(wl + delta_wl / 2.)
-        x_min_ = np.floor(x_min).astype('int16')
-        x_max_ = np.floor(x_max).astype('int16')
-
-        # effected_elements = np.floor(x_min) != np.floor(x_max)
-        # print 'old num effected  = {} ({}%)'.format(np.sum(effected_elements),
-        #  np.mean(effected_elements)*100)
-        # self._overlap_detection(trace, x_pos, wl, psf_max)
+        psf_std = self.grism.wl_to_psf_std(wl)
 
         # Modify the flux by the grism throughput Units e / (s A)
         count_rate = self.grism.apply_throughput(wl, flux)
@@ -606,95 +608,32 @@ class ExposureGenerator(object):
         # Smooth spectrum (simulating spectral PSF) 4.5 is approximate stdev
         # remove the units first as the kernal dosent like it
         count_rate = count_rate.to(u.photon / u.s)  # sanity check
-        wl = wl.to(u.micron)
-
-        if spectrum_psf_smoothing:
-            count_rate = self.grism.gaussian_smoothing(wl, count_rate.value)
-            count_rate = (count_rate * u.photon / u.s).to(u.photon / u.s)
 
         counts = (count_rate * exptime).to(u.photon)
-
         counts = self.detector.apply_quantum_efficiency(wl, counts)
 
         # Finally, scale the lightcurve by the ramp
         if scale_factor is not None:
             counts *= scale_factor
 
-        # the len limits are the same per trace, it is the values in pixel
-        #  units each pixel occupies, as this is tilted
-        # each pixel has a length slightly greater than 1
-        psf_len_limits = self._get_psf_len_limits(trace, psf_max)
-
-        # This is a 2d array of the psf limits per wl element so we can
-        #  integrate the whole sample at once
-
-        psf_limit_array = _build_2d_limits_array(psf_len_limits, self.grism,
-                                                 wl, y_pos)
-
-        # now we just need to integrate between the limits on each row of this
-        #  vector. scipy.stats.norm.cdf will return
-        # values for 2d vectors.
-        # TODO (ryan) currently the psf wings are uneven, while we may split
-        #  5.9
-        #  between 0 and 10 we could change the
-        # integration to go from 1.8 to 10 or 1.9 to 10.9
-        binned_fluxes = _integrate_2d_limits_array(psf_limit_array,
-                                                   counts.to(u.ph).value)
+        counts = counts.to(u.photon).value  # final unit check
 
         # each resolution element (wl, counts_tp)
         for i in xrange(len(wl)):
-            x = x_pos[i]
-            y = y_pos[i]
-            # When we only want whole pixels, note we go 5 pixels each way from
-            #  the round down.
-            # Int technically floors, but towards zero, although we shouldnt ever be negative
-            x_ = int(np.floor(x))
-            y_ = int(np.floor(y))
+            wl_x = x_pos[i]
+            wl_y = y_pos[i]
 
-            # retrieve counts from vectorised integration
-            flux_psf = binned_fluxes[i]
+            wl_counts = counts[i]
+            wl_psf_std = psf_std[i]
 
             # we need to convert full frame numbers into subbarry numbers for
-            #  indexing the array, the wl solution uses
-            # full frame numbers
+            # indexing the array, the wl solution uses full frame numbers
             sub_scale = 507 - (self.SUBARRAY / 2)  # int div, sub should be even
-            y_sub_ = y_ - sub_scale
-            x_min_sub_ = x_min_ - sub_scale
-            x_max_sub_ = x_max_ - sub_scale
-            x_sub_ = x_ - sub_scale
+            wl_x_sub = wl_x - sub_scale
+            wl_y_sub = wl_y - sub_scale
 
-            # Now we are checking if the widths overlap pixels, this is
-            #  important at low R. Currently we assume the line is still
-            # straight, calculate the proportion in the left and right pixels
-            #  based on the y midpoint and split accordingly. This doesnt
-            # account for cases where the top half may be in one column and the
-            #  bottom half in another (High R)
-            row_index_min = y_sub_ - psf_max
-            row_index_max = y_sub_ + psf_max + 1
-
-            if not x_min_[i] == x_max_[i]:
-                # then the element is split across two columns
-                # calculate proportion going column x_min_ and x_max_
-                x_width = x_max[i] - x_min[i]
-                # (floor(xmax) - xmin)/width = %
-                propxmin = (x_max_[i] - x_min[i]) / x_width
-                propxmax = 1. - propxmin
-
-                try:
-                    pixel_array[row_index_min:row_index_max, x_min_sub_[i]] += flux_psf * propxmin
-                    pixel_array[row_index_min:row_index_max, x_max_sub_[i]] += flux_psf * propxmax
-                except IndexError:  # spectrum is beyond the frame edge
-                    pass
-            else:  # all flux goes into one column
-                # Note: Ideally we dont want to overwrite te detector, but have
-                # a function for the detector to give us a grid. there are
-                # other detector effects though so maybe wed prefer multiple
-                #  detector classes or a .reset() on the class
-                try:
-                    pixel_array[row_index_min:row_index_max, x_sub_] += flux_psf
-                except IndexError:  # spectrum is beyond the frame edge
-                    pass
-
+            pixel_array = _psf_distribution(wl_counts, wl_x_sub, wl_y_sub,
+                                            wl_psf_std, pixel_array)
 
         if add_flat:
             flat_field = self.grism.get_flat_field(x_ref, y_ref,
@@ -702,59 +641,6 @@ class ExposureGenerator(object):
             pixel_array *= flat_field
 
         return pixel_array
-
-    def _overlap_detection(self, trace, wl, psf_max):
-        """ Overlap detection see if element is split between columns. it does
-         this by comparing the end points of the psf including the width of
-         the bin.
-
-        Note: this function is not used anywhere yet as the code for handling
-         these cases is not yet written. The detected cases is much higher,
-         especially with lower R inputs. It converges to the central width
-          case at high R
-
-        :param trace: trace line
-        :type trace: grism.SpectrumTrace
-        :param wl: array of wavelengths (corresponding to stellar flux and
-         planet spectrum) in u.microns
-        :type wl: astropy.units.quantity.Quantity
-        :param psf_max: how many pixels the psf tails span, 0.9999999999999889%
-         of flux between is between -4 and 4 of
-        the widest psf
-        :type psf_max: int
-
-        :return: nothing yet, dont know what i need until i have a solution!
-        """
-
-        #   Note: delta_lambda inefficient, also calculated in self._flux_to_counts
-        delta_wl = tools.bin_centers_to_widths(wl)
-        xangle = trace.xangle()  # angle between x axis and trace line / y axis and psf line
-
-        # we want to calculate the +- in the x position at the top and bottom of the psf, note
-        x_diff = psf_max * np.tan(xangle)
-
-        # the lower and upper x limits are then the lower wl limit - x_diff, upper + x_diff
-
-        # need to turn wl width to x width
-        delta_wl_half = delta_wl / 2.
-        x_min = trace.wl_to_x(wl - delta_wl_half) - x_diff
-        x_max = trace.wl_to_x(wl + delta_wl_half) + x_diff
-        # x_min_ = np.floor(x_min)
-        # x_max_ = np.floor(x_max)
-
-        effected_elements = np.floor(x_min) != np.floor(x_max)
-        print 'new num effected  = {} ({}%)'.format(
-            np.sum(effected_elements), np.mean(effected_elements) * 100)
-
-        x_min = trace.wl_to_x(wl) - x_diff
-        x_max = trace.wl_to_x(wl) + x_diff
-        effected_elements = np.floor(x_min) != np.floor(x_max)
-        print 'nw2 num effected  = {} ({}%)'.format(
-            np.sum(effected_elements), np.mean(effected_elements) * 100)
-
-        # TODO (ryan) if this overlaps, give the y position of the overlap?
-
-        # return y_values
 
     def _flux_to_counts(self, flux, wl):
         """ Converts flux to photons by scaling to the to the detector pixel
@@ -785,58 +671,18 @@ class ExposureGenerator(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
-        A = self.detector.telescope_area
-        lam_hc = wl / (const.h * const.c) * u.photon
+        # A = self.detector.telescope_area
+        # lam_hc = wl / (const.h * const.c) * u.photon
         delta_lambda = tools.bin_centers_to_widths(wl)
 
         # throughput is considered elsewhere
-
         counts = flux * delta_lambda
-        # counts = counts.decompose()
         # final test to ensure we have eliminated all other units
         counts = counts.to(u.photon / u.s)
 
         return counts
 
-    def _get_psf_len_limits(self, trace, psf_max):
-        """ Obtains the limits of the psf per pixel. As the trace is slightly
-         inclined the length per pixel is > 1
-        so we aren't integrating for y + 0 to y+1 but (for example) y+0 to
-         y+1.007 to y+2.014. This function returns
-        theese limits from -psfmax to psfmax
-
-        :param trace: trace line
-        :type trace: grism.SpectrumTrace
-        :param psf_max: how many pixels the psf tails span, 0.9999999999999889%
-         of flux between is between -4 and 4 of
-        the widest psf
-        :type psf_max: int
-
-        :return: integration limits per pixel of the psf.
-        :rtype: numpy.ndarray
-        """
-        # The spectral trace forms our wavelength calibration
-        # line isnt vertical so the length is slightly more than 1
-        psf_pixel_len = trace.psf_length_per_pixel()
-
-        # extra bit either side of the line of length 1
-        psf_pixel_frac = (psf_pixel_len - 1) / 2.
-
-
-
-        # 0 being our spectrum and then the interval either side (we will
-        #  convert this using pixel_len)
-        # comment example assume a psf_max of 2
-        # i.e array([-2, -1,  0,  1,  2,  3])
-        psf_limits = np.arange(-psf_max, psf_max + 2)
-        # i.e for pixel_len = 1.2 we would have array([-2.5, -1.3, -0.1,  1.1,
-        #   2.3,  3.5]) for max=3
-        psf_len_limits = (psf_limits * psf_pixel_len) - psf_pixel_frac
-
-        return psf_len_limits
-
-    def combine_planet_stellar_spectrum(self, stellar_flux, planet_spectrum,
-                                        poisson_noise=True):
+    def combine_planet_stellar_spectrum(self, stellar_flux, planet_spectrum):
         """ combines the stellar and planetary spectrum
 
         combined_flux = F_\star * (1-transit_depth)
@@ -876,46 +722,24 @@ class ExposureGenerator(object):
 
         return noise
 
-def _build_2d_limits_array(psf_len_limits, grism, wl, y_pos):
-    # Integrate gaussian per wl - vectorised
-    # ---
 
-    psf_std = grism.wl_to_psf_std(wl)
-    psf_means = y_pos
-
-    # len limits are at 0, we need to shift them up to floor(y_ref). We do
-    #  this because we are integrating
-    # over WHOLE pixels, The psf is centered on y_ref which handles intrapixel
-    #  y_ref shifts. to integrate we need the (limits - mean)/std so we have
-    #  (psf_len_limits + y_ - y)/std
-    y_pos_norm = (np.floor(y_pos) - psf_means)
-
-    # create a 2d array of the len limits per wl in rows i.e
-    # [[-4, -3 ... 3, 4],...[100, 101, ... 105, 106]]
-    psf_limits_array = np.ones((len(y_pos_norm), len(psf_len_limits)))
-    psf_limits_array = psf_limits_array * psf_len_limits
-
-    # normalise by adding y_pos_norm and dividing off the stddev
-    # here we transpose y from 1xn to nx1 (need to reshape first to add dimension)
-    y_pos_vector = y_pos_norm.reshape(1, len(y_pos_norm)).T
-    psf_std_vector = psf_std.reshape(1, len(psf_std)).T
-
-    psf_limits_array = (psf_limits_array + y_pos_vector) / psf_std_vector
-
-    return psf_limits_array
-
-
-def _integrate_2d_limits_array(limit_array, counts):
-    """ Integrates the 2d array between limits. Must be normalised to a
-     standard gaussian. return array will have 1 less column.
-
-    :return:
+def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
+    """ Distributes electrons across the 2D guassian PSF by acting like a
+     glorified electron thrower. Coordinates are generated by 2 guassian
+     distributions
     """
 
-    cdf = scipy.stats.norm.cdf(limit_array)
-    area = (np.roll(cdf, -1, axis=1) - cdf)[:,
-           :-1]  # x+1 - x, [-1] is x_0 - x_n and unwanted
+    if not counts:  # zero counts
+        return pixel_array
 
-    binned_flux = area * counts.reshape(1, len(counts)).T
+    num_counts = int(round(counts))  # rounding could cause issues?
+    xx = np.int_(np.random.normal(x_pos, psf_std, num_counts))
+    yy = np.int_(np.random.normal(y_pos, psf_std, num_counts))
 
-    return binned_flux
+    for i in xrange(num_counts):
+        try:
+            pixel_array[yy[i]][xx[i]] += 1
+        except IndexError:  # off the detector
+            pass
+
+    return pixel_array

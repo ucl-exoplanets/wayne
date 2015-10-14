@@ -362,6 +362,7 @@ class Progress:
 	cursor is moved to the next line, but otherwise it is kept on the
 	current one. Optionally a task name can be passed in to be displayed
 	as well."""
+
 	if self.done():
 	    eol = "\n"
 	else:

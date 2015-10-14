@@ -341,16 +341,22 @@ class Observation(object):
 
         num_frames = len(self.exp_start_times)
         progress = Progress(num_frames)
-        progress.print_status_line(
-            'Generating frames 0/{} done'.format(num_frames))
+        self.progess = progress
+
+        progress_line = 'Generating frames 0/{} done'.format(num_frames)
+        progress.print_status_line(progress_line)
+        progress.progress_line = progress_line
 
         for i, start_time in enumerate(self.exp_start_times):
             filenum = i + 1
             self._generate_exposure(start_time, filenum)
 
             progress.increment()
-            progress.print_status_line(
-                'Generating frames {}/{} done'.format(filenum, num_frames))
+            progress_line = 'Generating frames {}/{} done'.format(filenum, num_frames)
+            progress.print_status_line(progress_line)
+
+            # so it can be retreived by exposure_generator
+            progress.progress_line = progress_line
 
     def _generate_exposure(self, expstart, number):
         """ Generates the exposure at expstart, number is the filenumber of the exposure
@@ -406,6 +412,7 @@ class Observation(object):
             clip_values_det_limits=self.clip_values_det_limits,
             add_final_noise_sources=self.add_final_noise_sources,
             spectrum_psf_smoothing=self.spectrum_psf_smoothing,
+            progress_bar=self.progess
         )
 
         exp_frame.generate_fits(self.outdir, filename)
