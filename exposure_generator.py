@@ -147,7 +147,7 @@ class ExposureGenerator(object):
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
                        clip_values_det_limits=True, add_final_noise_sources=True,
-                       progress_bar=None):
+                       progress_bar=None, psf_approx_factor=False):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -291,7 +291,7 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_staring_frame(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur,
-                scale_factor, add_flat)
+                scale_factor, add_flat, psf_approx_factor)
 
             pixel_array += sample_frame
 
@@ -575,7 +575,7 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_staring_frame(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           scale_factor=None, add_flat=True,):
+                           scale_factor=None, add_flat=True, psf_approx_factor=False):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -627,7 +627,7 @@ class ExposureGenerator(object):
             wl_y_sub = wl_y - sub_scale
 
             pixel_array = _psf_distribution(wl_counts, wl_x_sub, wl_y_sub,
-                                            wl_psf_std, pixel_array)
+                                            wl_psf_std, pixel_array, psf_approx_factor)
 
         if add_flat:
             flat_field = self.grism.get_flat_field(x_ref, y_ref,
@@ -726,15 +726,18 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array, approx_factor=
     if not counts:  # zero counts
         return pixel_array
 
+    single_count = 1
+
     if approx_factor:
         counts = np.int_(np.rint(counts/approx_factor))
+        single_count = approx_factor
 
     xx = np.int_(np.random.normal(x_pos, psf_std, counts))
     yy = np.int_(np.random.normal(y_pos, psf_std, counts))
 
     for i in xrange(counts):
         try:
-            pixel_array[yy[i]][xx[i]] += 1
+            pixel_array[yy[i]][xx[i]] += single_count
         except IndexError:  # off the detector
             pass
 

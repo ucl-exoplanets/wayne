@@ -124,6 +124,7 @@ if __name__ == '__main__':
     cosmic_rate = cfg['observation']['cosmic_rate']
 
     clip_values_det_limits = cfg['observation']['clip_values_det_limits']
+    psf_approx_factor = cfg['observation']['psf_approx_factor']
 
     exp_start_times = cfg['observation']['exp_start_times']
 
@@ -150,7 +151,7 @@ if __name__ == '__main__':
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
     obs.setup_reductions(add_dark, add_flat, add_gain, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)
-    obs.setup_simulator(sample_rate, clip_values_det_limits,)
+    obs.setup_simulator(sample_rate, clip_values_det_limits, psf_approx_factor)
     obs.setup_trends(ssv_std, ssv_period, x_shifts)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_final_noise_sources)
     obs.setup_gaussian_noise(noise_mean, noise_std)

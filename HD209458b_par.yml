@@ -7,7 +7,7 @@ general:
 target:
   name: 'HD 209458 b'  # exact match of a OEC planet
   planet_spectrum_file: 'example_data/hd209_h2o1e-5_cloud0.07_R1.36.dat'  # wl (microns) vs transit depth
-  rebin_resolution: false
+  rebin_resolution: 300
   stellar_spectrum_file: 'example_data/lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
   flux_scale: 3.23e19  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
@@ -46,7 +46,7 @@ observation:
   cosmic_rate: 11
 
   clip_values_det_limits: True
-  stellar_noise: True
+  psf_approx_factor: 5
 
 trends:
   visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs
