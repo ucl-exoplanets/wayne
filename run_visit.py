@@ -28,6 +28,7 @@ import detector
 import grism
 import tools
 import params
+from trend_generators import scan_speed_varations
 
 seaborn.set_style("whitegrid")
 
@@ -107,8 +108,12 @@ if __name__ == '__main__':
     sample_rate = cfg['observation']['sample_rate'] * u.ms
     scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
 
-    ssv_std = cfg['observation']['ssv_std']
-    ssv_period = cfg['observation']['ssv_period']
+    ssv_coeffs = cfg['observation']['ssv_coeffs']
+    if ssv_coeffs:
+        ssv_gen = scan_speed_varations.SSVModulatedSine(*ssv_coeffs)
+    else:
+        ssv_gen = None
+
     x_shifts = cfg['observation']['x_shifts']
 
     noise_mean = cfg['observation']['noise_mean']
@@ -152,7 +157,7 @@ if __name__ == '__main__':
     obs.setup_reductions(add_dark, add_flat, add_gain, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, clip_values_det_limits, psf_approx_factor)
-    obs.setup_trends(ssv_std, ssv_period, x_shifts)
+    obs.setup_trends(ssv_gen, x_shifts)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 

@@ -274,8 +274,6 @@ class Exposure(object):
         h['Y-REF'] = (exp_info['y_ref'], 'y position of star on frame (full frame))')
         h['SAMPRATE'] = (exp_info['samp_rate'].to(u.ms).value,
                          'How often exposure is sampled (ms)')
-        h['SSV-SSD'] = (exp_info['scan_speed_var'],
-                        'Scan speed variations (stddev as a % of flux)')
         h['NSE-MEAN'] = (
         exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
         h['NSE-STD'] = (

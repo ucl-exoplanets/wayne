@@ -8,7 +8,7 @@ from astropy import constants as const
 from wfc3simlog import logger
 import tools
 import exposure
-from trend_generators import cosmic_rays
+from trend_generators import cosmic_rays, scan_speed_varations
 
 
 class ExposureGenerator(object):
@@ -141,7 +141,7 @@ class ExposureGenerator(object):
     def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
                        scan_speed, sample_rate,
                        sample_mid_points=None, sample_durations=None,
-                       read_index=None, ssv_std=False, ssv_period=False,
+                       read_index=None, ssv_generator=None,
                        noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
@@ -181,9 +181,8 @@ class ExposureGenerator(object):
          for that read, None for auto
         :type read_index: list
 
-        :param scan_speed_var: The % of the std(flux_per_pixel) the scan speed
-         variations cause. Basic implementation.
-        :type scan_speed_var: float
+        :param ssv_generator: a scan speed generator class
+        :type ssv_generator: scan_speed_varations.SSVModulatedSine
 
         :param noise_mean: mean noise (per second, per pixel)
         :type noise_mean: float
@@ -202,10 +201,23 @@ class ExposureGenerator(object):
         sample_rate = sample_rate.to(u.ms)
 
         # user friendly, else defined by observation class which uses these
-        #  values for lightcurve generation
+        #  values for lightcurve generation, SSV function currently rewrites
+        # the duration later - could cause potential issues
         if sample_mid_points is None and sample_durations is None and read_index is None:
             _, sample_mid_points, sample_durations, read_index = \
                 self._gen_scanning_sample_times(sample_rate)
+
+        if ssv_generator is not None:
+            # Could cause issues with subsamples i.e. each sub sample will now
+            # be either a little over or under exposed.
+            total_exp_time = self.read_times[-1]
+            sample_durations = ssv_generator.get_subsample_exposure_times(
+                sample_rate, total_exp_time)
+            sample_durations = sample_durations.to(u.ms)
+
+            # dont have last "filler" sample with ssv
+            sample_mid_points = sample_mid_points[:-1]
+            read_index[-1] = len(sample_mid_points) -1
 
         self.exp_info.update({
             'SCAN': True,
@@ -213,8 +225,6 @@ class ExposureGenerator(object):
             'samp_rate': sample_rate,
             'x_ref': x_ref,
             'y_ref': y_ref,
-            'scan_speed_var': ssv_std,
-            'scan_speed_period': ssv_period,
             'noise_mean': noise_mean,
             'noise_std': noise_std,
             'add_dark': add_dark,
@@ -247,10 +257,6 @@ class ExposureGenerator(object):
         # y_ref per sample
         s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed)
 
-        # Scan Speed Variations (flux modulations)
-        if ssv_std and ssv_period:
-            ssv_scaling = self._flux_ssv_scaling(s_y_refs, ssv_std, ssv_period)
-
         # Prep for random noise and other trends / noise sources
         read_num = 0
         read_exp_times = self.read_times.to(u.s)
@@ -272,9 +278,6 @@ class ExposureGenerator(object):
 
             s_y_ref = s_y_refs[i]
             s_dur = sample_durations[i]
-
-            if ssv_std:
-                s_dur *= ssv_scaling[i]
 
             if planet_signal.ndim == 1:
                 pass  # handled above but leaving to point out this needs cleaning up
