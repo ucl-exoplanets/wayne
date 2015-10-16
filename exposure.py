@@ -54,12 +54,12 @@ class Exposure(object):
 
             self.reads[i] = (pixel_array_non_linear, header)
 
-    def add_final_noise_sources(self):
-        """ Uses the detector add_final_noise_sources() method on each sample
+    def add_read_noise(self):
+        """ Uses the detector add_read_noise() method on each sample
         """
 
         for i, (pixel_array, header) in enumerate(self.reads):
-            pixel_array_rdnoise = self.detector.add_final_noise_sources(pixel_array)
+            pixel_array_rdnoise = self.detector.add_read_noise(pixel_array)
 
             self.reads[i] = (pixel_array_rdnoise, header)
 

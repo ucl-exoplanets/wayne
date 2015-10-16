@@ -146,7 +146,7 @@ class ExposureGenerator(object):
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain=True, add_non_linear=True,
-                       clip_values_det_limits=True, add_final_noise_sources=True,
+                       clip_values_det_limits=True, add_read_noise=True,
                        progress_bar=None, psf_approx_factor=False):
         """ Generates a spatially scanned frame.
 
@@ -392,8 +392,8 @@ class ExposureGenerator(object):
         if clip_values_det_limits:
             self.exposure.scale_counts_between_limits()
 
-        if add_final_noise_sources:
-            self.exposure.add_final_noise_sources()
+        if add_read_noise:
+            self.exposure.add_read_noise()
 
         end_time = time.clock()
 

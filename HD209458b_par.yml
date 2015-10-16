@@ -40,7 +40,7 @@ observation:
   add_flat: True
   add_gain: True
   add_non_linear: True
-  add_final_noise_sources: False
+  add_read_noise: True
 
   sky_background: 'example_data/hd209458b_12181_sky.txt'
   cosmic_rate: 11

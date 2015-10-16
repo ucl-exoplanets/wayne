@@ -30,6 +30,7 @@ class WFC3_IR(object):
         self.min_counts = 0
         # 5% non-linear limit where nonlinear correction fails
         self.max_counts = 78000
+        self.read_noise = 21
 
         # General Info
         self.telescope = 'HST'
@@ -48,7 +49,6 @@ class WFC3_IR(object):
 
         # Non-linearity
         self.non_linear_file = os.path.join(params._calb_dir, 'u1k1727mi_lin.fits')
-
 
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
@@ -174,17 +174,12 @@ class WFC3_IR(object):
 
             return pixel_array + dark_array
 
-    def add_final_noise_sources(self, pixel_array):
+    def add_read_noise(self, pixel_array):
         """ Adds read noise, stellar noise and distribution noise to the frame
         values from pg 58 of the data handbook
         """
 
-        read_noise = 21
-
-        error = np.sqrt(read_noise**2 + pixel_array)
-        pixel_array = np.random.normal(pixel_array, error)
-
-        return pixel_array
+        return np.random.normal(pixel_array, self.read_noise)
 
     def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
