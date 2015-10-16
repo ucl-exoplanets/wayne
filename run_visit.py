@@ -108,9 +108,15 @@ if __name__ == '__main__':
     sample_rate = cfg['observation']['sample_rate'] * u.ms
     scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
 
+    ssv_type = cfg['observation']['ssv_type']
+    if ssv_type == 'sine':
+        ssv_class = scan_speed_varations.SSVSine
+    elif ssv_type == 'mod-sine':
+        ssv_class = scan_speed_varations.SSVModulatedSine
+
     ssv_coeffs = cfg['observation']['ssv_coeffs']
     if ssv_coeffs:
-        ssv_gen = scan_speed_varations.SSVModulatedSine(*ssv_coeffs)
+        ssv_gen = ssv_class(*ssv_coeffs)
     else:
         ssv_gen = None
 

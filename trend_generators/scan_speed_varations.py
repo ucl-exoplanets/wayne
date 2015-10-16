@@ -1,13 +1,71 @@
 """ Functions that generate scan speed variations. These functions take input
 of the sample expsoure time...
+
+Note all functions here take the same input (to get_subsample_exposure_times) and
+return the same output
+
 """
 
 import numpy as np
 import astropy.units as u
 
 
-class SSVModulatedSine(object):
+class SSVSine(object):
 
+    def __init__(self, stddev=1.5, period=0.7, start_phase='rand'):
+        """ Provides the scaling factors to adjust the flux by the scan speed
+         variations, should be more physical i.e adjusting exposure time
+
+        assuming sinusoidal variations
+
+        Notes:
+            Currently based on a single observation, needs more analysis and
+                - Modulations
+                - Based on scan speed not y_refs
+                - variations in phase
+
+        :param start_phase: phase to start the ssv or 'rand'
+        :type start_phase: float or str
+        """
+
+        self.stddev = stddev
+        self.period = period
+        self.start_phase = start_phase
+
+    def get_subsample_exposure_times(self, y_mid_points, sample_durations,
+                                     subsample_exptime, total_exptime):
+        stddev = self.stddev
+        period = self.period
+        start_phase = self.start_phase
+
+        zeroed_y_mid = y_mid_points - y_mid_points[0]
+
+        sin_func = lambda x, std, phase, mean, period: std * np.sin(
+            (period * x) + phase) + mean
+
+        if start_phase == 'rand':
+            start_phase = np.random.random() * 2*np.pi
+
+            # total exptime will change if a multiple of period doesnt fit,
+            # so we need to scale the total flux by the a reference
+            ssv_0 = self._flux_ssv_scaling(y_mid_points, stddev, period,
+                                                  start_phase=0)
+            ssv_0_mean = np.mean(ssv_0)
+
+        ssv_scaling = sin_func(zeroed_y_mid, stddev / 100., start_phase, 1.,
+                               period)
+
+        if start_phase == 'rand':
+            # do the scaling, assumes samples have same exp time - which they mostly do
+            ssv_scaling *= ssv_0_mean / np.mean(ssv_scaling)
+
+        return sample_durations * ssv_scaling
+
+
+class SSVModulatedSine(object):
+    # TODO this function isnt really implemented well, samples can be over /
+    # under exposed due to it not also altering the sample midpoints and y_refs
+    # If using use a small sample rate
     def __init__(self, amplitude=10, period=1.1, blip_proba=1):
         """creates a list of exposure times for the sub-samples with variable
          amplitude, period, phase and possible scan speed blips while keeping
@@ -23,7 +81,8 @@ class SSVModulatedSine(object):
         self.period = period
         self.blip_proba = blip_proba
 
-    def get_subsample_exposure_times(self, subsample_exptime, total_exptime):
+    def get_subsample_exposure_times(self, y_mid_points, sample_durations,
+                                     subsample_exptime, total_exptime):
         """ returns the exposure time per subsample
 
         :param sample_exptime: from the configurations, i.e 0.1s

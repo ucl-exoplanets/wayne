@@ -207,17 +207,22 @@ class ExposureGenerator(object):
             _, sample_mid_points, sample_durations, read_index = \
                 self._gen_scanning_sample_times(sample_rate)
 
+        # y_ref per sample
+        s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed)
+
         if ssv_generator is not None:
             # Could cause issues with subsamples i.e. each sub sample will now
             # be either a little over or under exposed.
             total_exp_time = self.read_times[-1]
             sample_durations = ssv_generator.get_subsample_exposure_times(
-                sample_rate, total_exp_time)
+                s_y_refs, sample_durations, sample_rate, total_exp_time)
             sample_durations = sample_durations.to(u.ms)
 
-            # dont have last "filler" sample with ssv
-            sample_mid_points = sample_mid_points[:-1]
-            read_index[-1] = len(sample_mid_points) -1
+            # temp fixing code
+            if isinstance(ssv_generator, scan_speed_varations.SSVModulatedSine):
+                # dont have last "filler" sample with this ssv
+                sample_mid_points = sample_mid_points[:-1]
+                read_index[-1] = len(sample_mid_points) -1
 
         self.exp_info.update({
             'SCAN': True,
@@ -253,9 +258,6 @@ class ExposureGenerator(object):
         # Zero Read
         self.exposure.add_read(self.detector.gen_pixel_array(self.SUBARRAY,
                                                              light_sensitive=False))
-
-        # y_ref per sample
-        s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed)
 
         # Prep for random noise and other trends / noise sources
         read_num = 0
@@ -417,48 +419,6 @@ class ExposureGenerator(object):
         s_y_refs = y_ref + (mid_points * scan_speed).to(u.pixel).value
 
         return s_y_refs
-
-    def _flux_ssv_scaling(self, y_mid_points, ssv_std=1.5, ssv_period=0.7,
-                          start_phase='rand'):
-        """ Provides the scaling factors to adjust the flux by the scan speed
-         variations, should be more physical i.e adjusting exposure time
-
-        assuming sinusoidal variations
-
-        Notes:
-            Currently based on a single observation, needs more analysis and
-                - Modulations
-                - Based on scan speed not y_refs
-                - variations in phase
-
-        :param start_phase: pahse to start the ssv or 'rand'
-        :type start_phase: float or str
-
-        :return:
-        """
-
-        zeroed_y_mid = y_mid_points - y_mid_points[0]
-
-        sin_func = lambda x, std, phase, mean, period: std * np.sin(
-            (period * x) + phase) + mean
-
-        if start_phase == 'rand':
-            start_phase = np.random.random() * 2*np.pi
-
-            # total exptime will change if a multiple of period doesnt fit,
-            # so we need to scale the total flux by the a reference
-            ssv_0 = self._flux_ssv_scaling(y_mid_points, ssv_std, ssv_period,
-                                                  start_phase=0)
-            ssv_0_mean = np.mean(ssv_0)
-
-        ssv_scaling = sin_func(zeroed_y_mid, ssv_std / 100., start_phase, 1.,
-                               ssv_period)
-
-        if start_phase == 'rand':
-            # do the scaling, assumes samples have same exp time - which they mostly do
-            ssv_scaling *= ssv_0_mean / np.mean(ssv_scaling)
-
-        return ssv_scaling
 
     def _gen_scanning_sample_times(self, sample_rate):
         """ Generates several times to do with samples. Including samples up
