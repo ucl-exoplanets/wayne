@@ -30,7 +30,7 @@ observation:
   scan_speed: 7.39 # 165/22.32  # pixels per second
 
   ssv_type: mod-sine
-  ssv_coeffs: [10, 2, 1]
+  ssv_coeffs: [10, 1.1, 1]
   x_shifts: 0.015  # linear shift in x position (pixels)
 
   noise_mean: False

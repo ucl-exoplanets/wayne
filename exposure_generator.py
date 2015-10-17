@@ -210,19 +210,21 @@ class ExposureGenerator(object):
         # y_ref per sample
         s_y_refs = self._gen_sample_yref(y_ref, sample_mid_points, scan_speed)
 
+        # TODO it is clear now that ssvs should probably take over the
+        # functionality of _gen_scanning_sample_times instead of below
         if ssv_generator is not None:
-            # Could cause issues with subsamples i.e. each sub sample will now
-            # be either a little over or under exposed.
-            total_exp_time = self.read_times[-1]
-            sample_durations = ssv_generator.get_subsample_exposure_times(
-                s_y_refs, sample_durations, sample_rate, total_exp_time)
-            sample_durations = sample_durations.to(u.ms)
-
-            # temp fixing code
             if isinstance(ssv_generator, scan_speed_varations.SSVModulatedSine):
-                # dont have last "filler" sample with this ssv
-                sample_mid_points = sample_mid_points[:-1]
-                read_index[-1] = len(sample_mid_points) -1
+
+                sample_durations, read_index = ssv_generator.get_subsample_exposure_times(
+                s_y_refs, sample_durations, self.read_times, sample_rate)
+
+                # sample_mid_points = sample_mid_points[:-1]
+                # read_index[-1] = len(sample_mid_points) -1
+            else:
+                sample_durations = ssv_generator.get_subsample_exposure_times(
+                s_y_refs, sample_durations, self.read_times, sample_rate)
+
+        sample_durations = sample_durations.to(u.ms)
 
         self.exp_info.update({
             'SCAN': True,

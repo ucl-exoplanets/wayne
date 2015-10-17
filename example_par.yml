@@ -47,8 +47,8 @@ observation:
   # start phase can be a number of 'rand' for random
   # mod-sine = modulated sine wave with scan speed blips
   # coeffs = [amplitude, period, blip_proba] blip proba is a %
-  ssv_type: sine
-  ssv_coeffs: [1.5, 0.7, 0]
+  ssv_type: false
+  ssv_coeffs: false
 
   x_shifts: 0.1  # linear shift in x position (pixels)
 
