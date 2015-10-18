@@ -57,15 +57,13 @@ class Observation(object):
         self.y_ref = y_ref
         self.scan_speed = scan_speed
 
-    def setup_simulator(self, sample_rate, clip_values_det_limits=True,
-                        psf_approx_factor=False):
+    def setup_simulator(self, sample_rate, clip_values_det_limits=True):
         """
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
         """
         self.sample_rate = sample_rate
         self.clip_values_det_limits = clip_values_det_limits
-        self.psf_approx_factor = psf_approx_factor
 
     def setup_target(self, planet, planet_spectrum, planet_wl, stellar_flux,
                      stellar_wl=None):
@@ -403,7 +401,7 @@ class Observation(object):
             add_non_linear=self.add_non_linear,
             clip_values_det_limits=self.clip_values_det_limits,
             add_read_noise=self.add_read_noise,
-            progress_bar=self.progess, psf_approx_factor=self.psf_approx_factor,
+            progress_bar=self.progess,
         )
 
         exp_frame.generate_fits(self.outdir, filename)

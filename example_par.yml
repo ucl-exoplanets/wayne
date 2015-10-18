@@ -67,9 +67,6 @@ observation:
   cosmic_rate: 11
 
   clip_values_det_limits: True
-  # Effects sampling of electrons, decrease number increases weighting,
-  # Increseases speed and noise
-  psf_approx_factor: False
 
 trends:
   visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs

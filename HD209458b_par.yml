@@ -29,8 +29,8 @@ observation:
   spatial_scan: True
   scan_speed: 7.39 # 165/22.32  # pixels per second
 
-  ssv_type: mod-sine
-  ssv_coeffs: [10, 1.1, 1]
+  ssv_type: sine
+  ssv_coeffs: [1.5, 1.1, 0]
   x_shifts: 0.015  # linear shift in x position (pixels)
 
   noise_mean: False
@@ -46,7 +46,6 @@ observation:
   cosmic_rate: 11
 
   clip_values_det_limits: True
-  psf_approx_factor: 5
 
 trends:
   visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs
