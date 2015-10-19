@@ -193,7 +193,7 @@ class Observation(object):
         self.add_gain = add_gain
         self.add_non_linear = add_non_linear
 
-    def setup_trends(self, ssv_gen, x_shifts=0):
+    def setup_trends(self, ssv_gen, x_shifts=0, y_shifts=0):
         """
         :param ssv_gen: scan speed generator
 
@@ -203,6 +203,7 @@ class Observation(object):
         """
         self.ssv_gen = ssv_gen
         self.x_shifts = x_shifts
+        self.y_shifts = y_shifts
 
     def setup_noise_sources(self, sky_background=1*u.count/u.s, cosmic_rate=11.,
                             add_read_noise=True):
@@ -382,8 +383,9 @@ class Observation(object):
         y_ref = self._try_index(self.y_ref, index_number)
         sky_background = self._try_index(self.sky_background, index_number)
 
-        # X-Shifts
+        # X and Y Shifts
         x_ref += self.x_shifts * index_number
+        y_ref += self.y_shifts * index_number
 
         if self._visit_trend:
             scale_factor = self._visit_trend.get_scale_factor(index_number)

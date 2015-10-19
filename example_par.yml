@@ -50,7 +50,8 @@ observation:
   ssv_type: false
   ssv_coeffs: false
 
-  x_shifts: 0.1  # linear shift in x position (pixels)
+  x_shifts: 0.1  # linear shift in x position (pixels) per exposure
+  y_shifts: 0.001  # linear shift in y position (pixels) per exposure
 
   noise_mean: False
   noise_std: False

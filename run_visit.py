@@ -121,6 +121,7 @@ if __name__ == '__main__':
         ssv_gen = None
 
     x_shifts = cfg['observation']['x_shifts']
+    y_shifts = cfg['observation']['y_shifts']
 
     noise_mean = cfg['observation']['noise_mean']
     noise_std = cfg['observation']['noise_std']
@@ -162,7 +163,7 @@ if __name__ == '__main__':
     obs.setup_reductions(add_dark, add_flat, add_gain, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)
     obs.setup_simulator(sample_rate, clip_values_det_limits)
-    obs.setup_trends(ssv_gen, x_shifts)
+    obs.setup_trends(ssv_gen, x_shifts, y_shifts)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 

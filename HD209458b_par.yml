@@ -31,7 +31,8 @@ observation:
 
   ssv_type: sine
   ssv_coeffs: [1.5, 1.1, 0]
-  x_shifts: 0.015  # linear shift in x position (pixels)
+  x_shifts: 0.015  # linear shift in x position (pixels) per exposure
+  y_shifts: 5  # linear shift in y position (pixels) per exposure
 
   noise_mean: False
   noise_std: False
