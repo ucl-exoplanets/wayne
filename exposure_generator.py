@@ -379,10 +379,8 @@ class ExposureGenerator(object):
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
 
-        # if add_dark:  # TODO rewrite correct NSAMP
-        #     pixel_array_full = self.detector.add_dark_current(
-        #         pixel_array_full, self.NSAMP, self.SUBARRAY,
-        #         self.SAMPSEQ)
+        if add_dark:  # must be done at the end as its precomputed per NSAMP
+            self.exposure.add_dark_current()
 
         # Final post generation corrections
         if add_non_linear:

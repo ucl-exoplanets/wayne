@@ -39,7 +39,9 @@ class Exposure(object):
         self.planet = planet
         self.exp_info = exp_info
 
-        self.subarray = exp_info['SUBARRAY']
+        self.SUBARRAY = exp_info['SUBARRAY']
+        self.NSAMP = exp_info['NSAMP']
+        self.SAMPSEQ = exp_info['SAMPSEQ']
 
         self.reads = []  # read 0 ->
 
@@ -62,6 +64,18 @@ class Exposure(object):
             pixel_array_rdnoise = self.detector.add_read_noise(pixel_array)
 
             self.reads[i] = (pixel_array_rdnoise, header)
+
+    def add_dark_current(self):
+        """ Adds dark current using the detectors add_dark_current method
+        """
+
+        for i, (pixel_array, header) in enumerate(self.reads):
+            read_NSAMP = i + 1
+            pixel_array_drk = self.detector.add_dark_current(
+                pixel_array, read_NSAMP, self.SUBARRAY,
+                self.SAMPSEQ)
+
+            self.reads[i] = (pixel_array_drk, header)
 
     def scale_counts_between_limits(self):
         """ Gets count limits from the detector and scales the flux between
