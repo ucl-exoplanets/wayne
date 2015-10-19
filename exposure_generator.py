@@ -331,7 +331,6 @@ class ExposureGenerator(object):
 
                     master_sky *= bg_count
 
-
                     pixel_array += master_sky
 
                 if add_gain:
@@ -349,12 +348,6 @@ class ExposureGenerator(object):
                     pixel_array += cosmic_array
 
                 pixel_array_full = self.detector.add_bias_pixels(pixel_array)
-
-                if add_dark:
-                    pixel_array_full = self.detector.add_dark_current(
-                        pixel_array_full, self.NSAMP, self.SUBARRAY,
-                        self.SAMPSEQ)
-
 
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
@@ -385,6 +378,11 @@ class ExposureGenerator(object):
 
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
+
+        # if add_dark:  # TODO rewrite correct NSAMP
+        #     pixel_array_full = self.detector.add_dark_current(
+        #         pixel_array_full, self.NSAMP, self.SUBARRAY,
+        #         self.SAMPSEQ)
 
         # Final post generation corrections
         if add_non_linear:

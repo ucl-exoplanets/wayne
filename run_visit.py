@@ -94,7 +94,7 @@ if __name__ == '__main__':
     else:  # use blackbody
         stellar_flux = blackbody_lambda(wl_p, planet.star.T)
 
-    stellar_flux_scaled = stellar_flux * u.sr / cfg['target']['flux_scale']
+    stellar_flux_scaled = stellar_flux * cfg['target']['flux_scale'] * u.sr 
 
     x_ref = cfg['observation']['x_ref']
     y_ref = cfg['observation']['y_ref']
