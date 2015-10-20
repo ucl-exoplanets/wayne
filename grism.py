@@ -128,17 +128,29 @@ class G141(object):
 
         return gaussian_model
 
-    def wl_to_psf_std(self, wavelengths):
+    def wl_to_psf_std(self, wavelengths, x_ref, y_ref):
         """ This is an optimised function to return the standard deviations of
         the gaussians at each wavelength for each flux. looks up FWHM then
         converts to stddev.
-
         :param wavelengths:
-
         :return: standard deviations of the gaussian for each lambda
         """
+        
+        if self.name == 'G141':
+            dispersion = (4.51423E+01 + 3.17239E-04 * x_ref + 2.17055E-03 * y_ref
+                          - 7.42504E-07 * (x_ref ** 2) + 3.48639E-07 * x_ref * y_ref
+                          + 3.09213E-07 * (y_ref ** 2)) / 10000.0
 
-        FWHM = self.psf_fwhm_poly(wavelengths.to(u.micron).value)
+            resolution = 130
+
+        if self.name == 'G102':
+            dispersion = (2.35716E+01 + 3.60396E-04 * x_ref + 1.58739E-03 * y_ref
+                          - 4.25234E-07 * (x_ref ** 2) - 6.53726E-08 * x_ref * y_ref
+                          - 6.75872E-08 * (y_ref ** 2)) / 10000.0
+
+            resolution = 210
+
+        FWHM = wavelengths.to(u.micron).value / resolution / dispersion
 
         std = FWHM / _gauss_StDev_to_FWHM
 
