@@ -56,9 +56,11 @@ class G141(object):
         # ------------
         self.min_lambda = 1.075 * u.micron
         self.max_lambda = 1.7 * u.micron
+        self.resolution = 130
 
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
+        self.dispersion_solution = g141_dispersion_solution
 
         # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually
         #  dependant on x and y and not constant
@@ -135,22 +137,14 @@ class G141(object):
         :param wavelengths:
         :return: standard deviations of the gaussian for each lambda
         """
-        
-        if self.name == 'G141':
-            dispersion = (4.51423E+01 + 3.17239E-04 * x_ref + 2.17055E-03 * y_ref
-                          - 7.42504E-07 * (x_ref ** 2) + 3.48639E-07 * x_ref * y_ref
-                          + 3.09213E-07 * (y_ref ** 2)) / 10000.0
 
-            resolution = 130
+        c1, c2, c3, c4, c5, c6 = self.dispersion_solution
 
-        if self.name == 'G102':
-            dispersion = (2.35716E+01 + 3.60396E-04 * x_ref + 1.58739E-03 * y_ref
-                          - 4.25234E-07 * (x_ref ** 2) - 6.53726E-08 * x_ref * y_ref
-                          - 6.75872E-08 * (y_ref ** 2)) / 10000.0
+        dispersion = (c1 + c2 * x_ref + c3 * y_ref
+                      - c4 * (x_ref ** 2) + c5 * x_ref * y_ref
+                      + c6 * (y_ref ** 2)) / 10000.0
 
-            resolution = 210
-
-        FWHM = wavelengths.to(u.micron).value / resolution / dispersion
+        FWHM = wavelengths.to(u.micron).value / self.resolution / dispersion
 
         std = FWHM / _gauss_StDev_to_FWHM
 
@@ -516,9 +510,11 @@ class G102(G141):
         # ------------
         self.min_lambda = 0.8 * u.micron
         self.max_lambda = 1.15 * u.micron
+        self.resolution = 130
 
         self.trace_coeff = g102_trace_coeff
         self.wl_solution = g102_wl_solution
+        self.dispersion_solution = g102_dispersion_solution
 
         # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually
         #  dependant on x and y and not constant
@@ -824,27 +820,33 @@ class _SpectrumTrace(object):
         return fig
 
 
-g141_trace_coeff = [1.96882, 9.09159E-5, -1.93260E-3, 1.04275E-2, -7.96978E-6,
-                    -2.49607E-6, 1.45963E-9, 1.39757E-8, 4.8494E-10]
-g141_trace_error = [8.09111E-2, 3.57223E-6, 3.12042E-6, 5.94731E-4, 4.34517E-7,
+g141_trace_coeff = (1.96882, 9.09159E-5, -1.93260E-3, 1.04275E-2, -7.96978E-6,
+                    -2.49607E-6, 1.45963E-9, 1.39757E-8, 4.8494E-10)
+g141_trace_error = (8.09111E-2, 3.57223E-6, 3.12042E-6, 5.94731E-4, 4.34517E-7,
                     3.57986E-7, 3.87141E-10, 3.29421E-10,
-                    3.08712E-10]
+                    3.08712E-10)
 
-g102_trace_coeff = [-3.55018E-1, 3.28722E-5, -1.44571E-3, 1.42852E-2,
+g102_trace_coeff = (-3.55018E-1, 3.28722E-5, -1.44571E-3, 1.42852E-2,
                     -7.20713E-6, -2.42542E-6, 1.18294E-9, 1.19634E-8,
-                    6.17274E-10]
-g102_trace_error = [7.40459E-2, 4.4456E-6, 3.653212E-6, 3.86038E-4, 4.21303E-7,
-                    3.42753E-7, 4.26462E-10, 3.51491E-10, 3.02759E-10]
+                    6.17274E-10)
+g102_trace_error = (7.40459E-2, 4.4456E-6, 3.653212E-6, 3.86038E-4, 4.21303E-7,
+                    3.42753E-7, 4.26462E-10, 3.51491E-10, 3.02759E-10)
 
-g141_wl_solution = [8.95431E3, 9.35925E-2, 0, 4.51423E1, 3.17239E-4,
-                    2.17055E-3, -7.42504E-7, 3.48639E-7, 3.09213E-7]
-g141_wl_solution_error = [8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4,
-                          2.3185E-4, 4.45730E-7, 3.20519E-7, 2.16386E-7]
+g141_wl_solution = (8.95431E3, 9.35925E-2, 0, 4.51423E1, 3.17239E-4,
+                    2.17055E-3, -7.42504E-7, 3.48639E-7, 3.09213E-7)
+g141_wl_solution_error = (8.14876, 1.09748E-2, 0, 6.26774E-2, 3.98039E-4,
+                          2.3185E-4, 4.45730E-7, 3.20519E-7, 2.16386E-7)
 
-g102_wl_solution = [6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4,
-                    1.58739E-3, -4.25234E-7, -6.53726E-8, 0.]
-g102_wl_solution_error = [3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4,
-                          1.05015E-4, 1.80775E-7, 9.35939E-8, 0.]
+g102_wl_solution = (6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4,
+                    1.58739E-3, -4.25234E-7, -6.53726E-8, 0.)
+g102_wl_solution_error = (3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4,
+                          1.05015E-4, 1.80775E-7, 9.35939E-8, 0.)
+
+g141_dispersion_solution = (4.51423E+01, 3.17239E-04, 2.17055E-03 , -7.42504E-07,
+                            3.48639E-07, 3.09213E-07)
+
+g102_dispersion_solution = (2.35716E+01, 3.60396E-04, 1.58739E-03, -4.25234E-07,
+                            -6.53726E-08, -6.75872E-08)
 
 
 def wavelength_calibration_coeffs(x_ref, y_ref, trace_coeff, wl_sol_coeff):
