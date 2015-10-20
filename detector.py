@@ -29,7 +29,7 @@ class WFC3_IR(object):
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
         self.min_counts = 0
         # 5% non-linear limit where nonlinear correction fails
-        self.max_counts = 78000
+        self.max_counts = 40000  # DN
         self.read_noise = 21
 
         self.constant_gain = 2.26
@@ -301,9 +301,9 @@ class WFC3_IR(object):
 
         return counts * throughput_values
 
-    def apply_non_linearity(self, pixel_array):
+    def apply_non_linearity(self, pixel_array):  # Angelos code
         """ This uses the non linearity correction (in reverse) to give the
-        detector a non linear response.
+        detector a non linear response. Units are in DN.
 
         :param pixel_array:
         :return:
@@ -319,7 +319,7 @@ class WFC3_IR(object):
             c4 = f[4].data[crop1:crop2, crop1:crop2]
 
         non_linear_frame = np.zeros_like(pixel_array)
-    
+
         for i in xrange(len(pixel_array)):  # finding roots isn't vectorised
             for j in xrange(len(pixel_array[0])):
                 roots = np.real(np.roots([c4[i][j], c3[i][j], c2[i][j],
