@@ -309,9 +309,24 @@ class WFC3_IR(object):
         :return:
         """
 
-        pixel_array_non_linear = tools.make_nonlinear(pixel_array, self.non_linear_file)
+        with fits.open(self.non_linear_file) as f:
+            # cropping scales the non-linear frame to the input frame
+            crop1 = len(f[1].data) / 2 - len(pixel_array) / 2
+            crop2 = len(f[1].data) / 2 + len(pixel_array) / 2
+            c1 = f[1].data[crop1:crop2, crop1:crop2]
+            c2 = f[2].data[crop1:crop2, crop1:crop2]
+            c3 = f[3].data[crop1:crop2, crop1:crop2]
+            c4 = f[4].data[crop1:crop2, crop1:crop2]
 
-        return pixel_array_non_linear
+        non_linear_frame = np.zeros_like(pixel_array)
+    
+        for i in xrange(len(pixel_array)):  # finding roots isn't vectorised
+            for j in xrange(len(pixel_array[0])):
+                roots = np.real(np.roots([c4[i][j], c3[i][j], c2[i][j],
+                                          c1[i][j] + 1, -pixel_array[i][j]]))
+                non_linear_frame[i][j] = roots[np.argmin((roots - pixel_array[i][j]) ** 2)]
+
+        return non_linear_frame
 
 
 class WFC3SimException(BaseException):
