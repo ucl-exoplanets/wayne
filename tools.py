@@ -237,6 +237,15 @@ def wl_at_resolution(R, wl_min, wl_max):
 
     return np.arange(wl_min, wl_max+delta_wl, delta_wl)
 
+def crop_central_box(array, size):
+    """ Crops the central size of pixels, Array must be square, and probably
+     even numbered
+    """
+
+    index = (len(array) - size) / 2
+
+    return array[index:-index, index:-index]
+
 
 class WFC3IR_DQFlags(object):
     """ This class analyses a single data quality flag from the WFC3 IR camera.

@@ -39,7 +39,7 @@ observation:
 
   add_dark: True
   add_flat: True
-  add_gain: True
+  add_gain_variations: True
   add_non_linear: True
   add_read_noise: True
 

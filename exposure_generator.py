@@ -145,7 +145,7 @@ class ExposureGenerator(object):
                        noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
-                       scale_factor=None, add_gain=True, add_non_linear=True,
+                       scale_factor=None, add_gain_variations=True, add_non_linear=True,
                        clip_values_det_limits=True, add_read_noise=True,
                        progress_bar=None):
         """ Generates a spatially scanned frame.
@@ -237,7 +237,7 @@ class ExposureGenerator(object):
             'add_dark': add_dark,
 
             'add_flat': add_flat,
-            'add_gain': add_gain,
+            'add_gain': add_gain_variations,
             'add_non_linear': add_non_linear,
             'cosmic_rate': cosmic_rate,
             'sky_background': sky_background,
@@ -263,12 +263,16 @@ class ExposureGenerator(object):
                                           self.planet, self.exp_info)
 
         # Zero Read
-        zero_read_duration = 2000*u.ms  # arbitrary
+        # zero read is ~ the time of the first read, which is essentially
+        # the read time
+        zero_read_duration = self.read_times[0].to(u.ms)
+        # zero_read_duration = 100*u.ms
         zero_read, zero_read_info = self._gen_zero_read(
             x_ref, s_y_refs[0], s_wl, s_flux, zero_read_duration, scale_factor,
-            add_flat, noise_mean, noise_std, sky_background, add_gain)
+            add_flat, noise_mean, noise_std, sky_background,
+            add_gain_variations, cosmic_rate)
 
-        self.exposure.add_read(zero_read, zero_read_info)
+        self.exposure.add_read(zero_read.copy(), zero_read_info)
         cumulative_pixel_array = zero_read
 
         # Prep for random noise and other trends / noise sources
@@ -321,7 +325,7 @@ class ExposureGenerator(object):
 
                 pixel_array_full = self._add_read_reductions(
                     pixel_array, read_exp_time, noise_mean, noise_std,
-                    sky_background, add_gain, cosmic_rays)
+                    sky_background, add_gain_variations, cosmic_rate)
 
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
@@ -376,21 +380,22 @@ class ExposureGenerator(object):
 
     def _gen_zero_read(self, x_ref, s_y_ref, s_wl, s_flux, s_dur,
                        scale_factor, add_flat, noise_mean,
-                       noise_std, sky_background, add_gain):
+                       noise_std, sky_background, add_gain_variations, cosmic_rate):
 
         pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
                                                     light_sensitive=True)
 
-        pixel_array = self._gen_subsample(
-            x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur,
-            scale_factor, add_flat)
+        # pixel_array = self._gen_subsample(
+        #     x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur,
+        #     scale_factor, add_flat)
+
 
         pixel_array_full = self._add_read_reductions(
-            pixel_array, s_dur, noise_mean, noise_std,
-            sky_background, add_gain, cosmic_rays)
+            pixel_array, s_dur.value, noise_mean, noise_std,
+            sky_background, add_gain_variations, cosmic_rate)
 
         read_info = {
-            'cumulative_exp_time': 0,
+            'cumulative_exp_time': 0*u.s,
             'read_exp_time': 0*u.s,
             'CRPIX1': 0,
         }
@@ -398,7 +403,8 @@ class ExposureGenerator(object):
         return pixel_array_full, read_info
 
     def _add_read_reductions(self, pixel_array, read_exp_time, noise_mean,
-                             noise_std, sky_background, add_gain, cosmic_rate):
+                             noise_std, sky_background, add_gain_variations,
+                             cosmic_rate):
         """ Adds in all the reductions and trends on a per read (sample up the
          ramp) basis
         """
@@ -425,10 +431,6 @@ class ExposureGenerator(object):
 
             pixel_array += master_sky
 
-        if add_gain:
-            gain_file = self.grism.get_gain(self.SUBARRAY)
-            pixel_array *= gain_file
-
         # TODO allow manual setting of cosmic gen
         if cosmic_rate is not None:
             cosmic_gen = \
@@ -439,6 +441,11 @@ class ExposureGenerator(object):
                                                    array_size)
             pixel_array += cosmic_array
 
+        if add_gain_variations:
+            gain_file = self.detector.get_gain(self.SUBARRAY)
+            pixel_array /= gain_file
+        else: # we still need to scale by gain to get DN
+            pixel_array /= self.detector.constant_gain
         pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 
         return pixel_array_full

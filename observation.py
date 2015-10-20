@@ -181,7 +181,7 @@ class Observation(object):
             'orbit_start_index': tools.detect_orbits(self.exp_start_times),
         }
 
-    def setup_reductions(self, add_dark=True, add_flat=True, add_gain=True,
+    def setup_reductions(self, add_dark=True, add_flat=True, add_gain_variations=True,
                          add_non_linear=True):
         """
         :param add_dark:
@@ -190,7 +190,7 @@ class Observation(object):
         """
         self.add_dark = add_dark
         self.add_flat = add_flat
-        self.add_gain = add_gain
+        self.add_gain_variations = add_gain_variations
         self.add_non_linear = add_non_linear
 
     def setup_trends(self, ssv_gen, x_shifts=0, y_shifts=0):
@@ -399,7 +399,7 @@ class Observation(object):
             noise_mean=self.noise_mean, noise_std=self.noise_std,
             add_flat=self.add_flat, add_dark=self.add_dark,
             scale_factor=scale_factor, sky_background=sky_background,
-            cosmic_rate=self.cosmic_rate, add_gain=self.add_gain,
+            cosmic_rate=self.cosmic_rate, add_gain_variations=self.add_gain_variations,
             add_non_linear=self.add_non_linear,
             clip_values_det_limits=self.clip_values_det_limits,
             add_read_noise=self.add_read_noise,

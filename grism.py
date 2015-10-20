@@ -14,6 +14,7 @@ from astropy.io import fits
 from models import GaussianModel1D, _gauss_StDev_to_FWHM
 from detector import WFC3_IR
 import params
+import tools
 
 
 # Strictly the grism class should be non specfic and the G141 var / function
@@ -68,7 +69,6 @@ class G141(object):
         # Flat
         self.flat_file = os.path.join(params._calb_dir,
                                        'WFC3.IR.G141.flat.2.fits')
-        self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
         # Sky
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
@@ -463,19 +463,9 @@ class G141(object):
                      f3 * (wl_array_norm**3))
 
         if size is not None:
-            flatfield = crop_central_box(flatfield, size)
+            flatfield = tools.crop_central_box(flatfield, size)
 
         return flatfield
-
-    def get_gain(self, size):
-
-        with fits.open(self.gain_file) as gain:
-            gain_data = gain[1].data[5:-5, 5:-5]
-
-        if size is not None:
-            gain_data = crop_central_box(gain_data, size)
-
-        return gain_data
 
     def get_master_sky(self, size=None):
         """ Returns the master sky from WFC3.IR.G141.sky.V1.0.fits
@@ -487,7 +477,7 @@ class G141(object):
             sky_array = f[0].data
 
         if size is not None:
-            sky_array = crop_central_box(sky_array, size)
+            sky_array = tools.crop_central_box(sky_array, size)
 
         return sky_array
 
@@ -888,13 +878,3 @@ class G102_Trace(_SpectrumTrace):
         _SpectrumTrace.__init__(self, x_ref, y_ref, g102_trace_coeff,
                                 g102_wl_solution)
         self.grism_name = 'G102'
-
-
-def crop_central_box(array, size):
-    """ Crops the central size of pixels, Array must be square, and probably
-     even numbered
-    """
-
-    index = (len(array) - size) / 2
-
-    return array[index:-index, index:-index]

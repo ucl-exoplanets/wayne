@@ -32,6 +32,9 @@ class WFC3_IR(object):
         self.max_counts = 78000
         self.read_noise = 21
 
+        self.constant_gain = 2.26
+        self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
+
         # General Info
         self.telescope = 'HST'
         self.instrument = 'WFC3'
@@ -180,6 +183,17 @@ class WFC3_IR(object):
         """
 
         return np.random.normal(pixel_array, self.read_noise)
+
+    def get_gain(self, size):
+
+        with fits.open(self.gain_file) as gain:
+            gain_data = gain[1].data[5:-5, 5:-5]
+            gain_data = self.constant_gain / gain_data
+
+        if size is not None:
+            gain_data = tools.crop_central_box(gain_data, size)
+
+        return gain_data
 
     def get_read_times(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the time of each sample up the ramp for the mode given
