@@ -66,6 +66,7 @@ class SSVModulatedSine(object):
     # TODO this function isnt really implemented well, samples can be over /
     # under exposed due to it not also altering the sample midpoints and y_refs
     # If using use a small sample rate
+    # Also is producing one less sample point than it should be
     def __init__(self, amplitude=10, period=1.1, blip_proba=1):
         """creates a list of exposure times for the sub-samples with variable
          amplitude, period, phase and possible scan speed blips while keeping

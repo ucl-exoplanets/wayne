@@ -293,9 +293,12 @@ class ExposureGenerator(object):
             progress_bar.print_status_line(progress_line)
 
         for i, s_mid in enumerate(sample_mid_points):
-
-            s_y_ref = s_y_refs[i]
-            s_dur = sample_durations[i]
+            try:
+                s_y_ref = s_y_refs[i]
+                s_dur = sample_durations[i]
+            except IndexError:  # no sample time caused by bad ssvs (modsine)
+                s_dur = 0*u.ms
+                s_y_ref = s_y_refs[-1]
 
             if planet_signal.ndim == 1:
                 pass  # handled above but leaving to point out this needs cleaning up
