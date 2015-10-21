@@ -738,11 +738,14 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
     if counts <= 1:
         return pixel_array
 
-    x_pos = np.int_(np.random.normal(x_pos, psf_std, counts))
-    y_pos = np.int_(np.random.normal(y_pos, psf_std, counts))
-
     y_size = len(pixel_array)
     x_size = len(pixel_array[0])
+
+    x_pos = np.clip(np.int_(np.random.normal(x_pos, psf_std, counts)),
+                    0, x_size - 1)
+    y_pos = np.clip(np.int_(np.random.normal(y_pos, psf_std, counts)),
+                    0, y_size - 1)
+
     yx_size = y_size * x_size
 
     yx = y_pos * y_size + x_pos
