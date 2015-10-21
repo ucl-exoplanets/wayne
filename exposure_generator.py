@@ -323,8 +323,7 @@ class ExposureGenerator(object):
                 # TODO (ryan) check scaling i.e. DN vs e
                 cumulative_exp_time = read_exp_times[read_num]
                 read_exp_time = (
-                    read_exp_times[read_num] - previous_read_time).to(
-                        u.s).value
+                    read_exp_times[read_num] - previous_read_time).to(u.s).value
 
                 pixel_array_full = self._add_read_reductions(
                     pixel_array, read_exp_time, noise_mean, noise_std,
@@ -392,9 +391,9 @@ class ExposureGenerator(object):
         #     x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur,
         #     scale_factor, add_flat)
 
-
+        read_exp_time = s_dur.to(u.s).value
         pixel_array_full = self._add_read_reductions(
-            pixel_array, s_dur.value, noise_mean, noise_std,
+            pixel_array, read_exp_time, noise_mean, noise_std,
             sky_background, add_gain_variations, cosmic_rate)
 
         read_info = {
