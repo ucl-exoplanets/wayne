@@ -35,6 +35,8 @@ class WFC3_IR(object):
         self.constant_gain = 2.26
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
+        self.initial_bias = os.path.join(params._data_dir, 'wfc3_ir_initial_bias.fits')
+
         # General Info
         self.telescope = 'HST'
         self.instrument = 'WFC3'

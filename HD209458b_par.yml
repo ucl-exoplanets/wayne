@@ -2,7 +2,7 @@ general:
   # path to systems folder of the Open Exoplanet Catalogue
   oec_location: /Users/ryan/git/open_exoplanet_catalogue/systems
   outdir: '/Users/ryan/Dropbox/phd/wfc3sim/hd209'
-  seed: 1337
+  seed: 209
 
 target:
   name: 'HD 209458 b'  # exact match of a OEC planet

@@ -1,11 +1,9 @@
 import time
 
 import numpy as np
-import scipy
 from astropy import units as u
-from astropy import constants as const
+import astropy.io.fits as fits
 
-from wfc3simlog import logger
 import tools
 import exposure
 from trend_generators import cosmic_rays, scan_speed_varations
@@ -395,6 +393,11 @@ class ExposureGenerator(object):
         pixel_array_full = self._add_read_reductions(
             pixel_array, read_exp_time, noise_mean, noise_std,
             sky_background, add_gain_variations, cosmic_rate)
+
+        # TODO formalise BIAS with other modes aswell
+        if self.SUBARRAY == 256:
+            with fits.open(self.detector.initial_bias) as f:
+                pixel_array_full += f[1].data
 
         read_info = {
             'cumulative_exp_time': 0*u.s,
