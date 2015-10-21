@@ -429,7 +429,7 @@ class ExposureGenerator(object):
 
             master_sky *= bg_count
 
-            pixel_array += master_sky
+            pixel_array += np.random.poisson(master_sky)
 
         # TODO allow manual setting of cosmic gen
         if cosmic_rate is not None:
