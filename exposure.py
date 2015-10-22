@@ -89,6 +89,18 @@ class Exposure(object):
             pixel_array_scaled = numpy.clip(pixel_array, min_count, max_count)
             self.reads[i] = (pixel_array_scaled, header)
 
+    def add_zero_read(self):
+        """ Adds the zero read to every other exposure, as this must be done
+        last for other corrections to be valid
+        :return:
+        """
+
+        zero_read = self.reads[0]
+
+        for i, (pixel_array, header) in enumerate(self.reads[1:]):
+            pixel_array_zero_read = pixel_array + zero_read
+            self.reads[i] = (pixel_array_zero_read, header)
+
     def add_read(self, data, read_info=None):
         """ Adds the read to the exposure. Reads should be added in time order
         from the zero read to the final read

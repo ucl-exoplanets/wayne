@@ -271,7 +271,12 @@ class ExposureGenerator(object):
             add_gain_variations, cosmic_rate)
 
         self.exposure.add_read(zero_read.copy(), zero_read_info)
-        cumulative_pixel_array = zero_read
+
+        # we dont want the zero read to stack yet as the other corrections
+        # assume it has been subtracted. it is added at the end
+        cumulative_pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
+                                                    # misses 5 pixel border
+                                                    light_sensitive=True)
 
         # Prep for random noise and other trends / noise sources
         read_num = 0
@@ -354,6 +359,21 @@ class ExposureGenerator(object):
         # check to make sure all reads were made
         assert (len(self.exposure.reads) == self.NSAMP)
 
+        self._post_exposure_reductions(
+            add_dark, add_non_linear, clip_values_det_limits, add_read_noise)
+
+        end_time = time.clock()
+        self.exp_info['sim_time'] = (end_time - start_time) * u.s
+
+        return self.exposure
+
+    def _post_exposure_reductions(self, add_dark, add_non_linear,
+                                  clip_values_det_limits, add_read_noise):
+        """ These need to be done after the full frame has been generated,
+        this is because these corrections dont accumulate.
+        :return:
+        """
+
         if add_dark:  # must be done at the end as its precomputed per NSAMP
             self.exposure.add_dark_current()
 
@@ -369,14 +389,11 @@ class ExposureGenerator(object):
         if clip_values_det_limits:
             self.exposure.scale_counts_between_limits()
 
+        # add the zero read to everything
+        self.exposure.add_zero_read()
+
         if add_read_noise:
             self.exposure.add_read_noise()
-
-        end_time = time.clock()
-
-        self.exp_info['sim_time'] = (end_time - start_time) * u.s
-
-        return self.exposure
 
     def _gen_zero_read(self, x_ref, s_y_ref, s_wl, s_flux, s_dur,
                        scale_factor, add_flat, noise_mean,
@@ -449,8 +466,9 @@ class ExposureGenerator(object):
         if add_gain_variations:
             gain_file = self.detector.get_gain(self.SUBARRAY)
             pixel_array /= gain_file
-        else: # we still need to scale by gain to get DN
+        else:  # we still need to scale by the gain to get DN
             pixel_array /= self.detector.constant_gain
+
         pixel_array_full = self.detector.add_bias_pixels(pixel_array)
 
         return pixel_array_full
