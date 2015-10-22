@@ -42,6 +42,7 @@ if __name__ == '__main__':
     logger.info('WFC3Sim Started, parsing config file')
 
     outdir = cfg['general']['outdir']
+    params.outdir = outdir
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)

@@ -173,10 +173,12 @@ class WFC3_IR(object):
 
         dark_file_path = os.path.join(params._calb_dir, dark_file)
 
-        file_index = -(NSAMP+1)*5
+        file_index = -(NSAMP)*5
 
         with fits.open(dark_file_path) as f:
             dark_array = f[file_index].data
+            np.savetxt(os.path.join(params.outdir, 'dark_{}_{},{}.txt'.format(
+                NSAMP, SAMPSEQ, SUBARRAY)), dark_array)
             return pixel_array + dark_array
 
     def add_read_noise(self, pixel_array):
