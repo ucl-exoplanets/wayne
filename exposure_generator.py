@@ -275,8 +275,7 @@ class ExposureGenerator(object):
         # we dont want the zero read to stack yet as the other corrections
         # assume it has been subtracted. it is added at the end
         cumulative_pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
-                                                    # misses 5 pixel border
-                                                    light_sensitive=True)
+                                                    light_sensitive=False)
 
         # Prep for random noise and other trends / noise sources
         read_num = 0

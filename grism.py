@@ -61,7 +61,7 @@ class G141(object):
 
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
-        self.dispersion_solution = g141_dispersion_solution
+        self.dispersion_solution = g141_wl_solution[3:]
 
         # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually
         #  dependant on x and y and not constant
@@ -94,7 +94,7 @@ class G141(object):
         # Non Grism Specific Constants
         self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
 
-    def flux_to_psf(self, wavelength, flux, y_pos=0.):
+    def flux_to_psf(self, wavelength, flux, y_pos, x_ref, y_ref):
         """
         Given a wavelength and flux this function returns the gaussian function
         for the observation at the wl given (linearly interpolated using
@@ -124,7 +124,7 @@ class G141(object):
 
         mean = y_pos  # this is the center of the guassian
 
-        FWHM = self.psf_fwhm_poly(wavelength.to(u.micron).value)
+        FWHM = self.wl_to_psf_std(wavelength, x_ref, y_ref) * _gauss_StDev_to_FWHM
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
@@ -831,12 +831,6 @@ g102_wl_solution = (6.38738E3, 4.55507E-2, 0, 2.35716E1, 3.60396E-4,
                     1.58739E-3, -4.25234E-7, -6.53726E-8, 0.)
 g102_wl_solution_error = (3.17621, 3.19685E-3, 0, 2.33411E-2, 1.49194E-4,
                           1.05015E-4, 1.80775E-7, 9.35939E-8, 0.)
-
-g141_dispersion_solution = (4.51423E+01, 3.17239E-04, 2.17055E-03 , -7.42504E-07,
-                            3.48639E-07, 3.09213E-07)
-
-g102_dispersion_solution = (2.35716E+01, 3.60396E-04, 1.58739E-03, -4.25234E-07,
-                            -6.53726E-08, -6.75872E-08)
 
 
 def wavelength_calibration_coeffs(x_ref, y_ref, trace_coeff, wl_sol_coeff):

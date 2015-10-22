@@ -95,9 +95,9 @@ class Exposure(object):
         :return:
         """
 
-        zero_read = self.reads[0]
+        zero_read = self.reads[0][0]  # [zero read][pixel array]
 
-        for i, (pixel_array, header) in enumerate(self.reads[1:]):
+        for i, (pixel_array, header) in enumerate(self.reads[1:], 1):
             pixel_array_zero_read = pixel_array + zero_read
             self.reads[i] = (pixel_array_zero_read, header)
 
