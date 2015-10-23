@@ -51,7 +51,7 @@ class Exposure(object):
         data is already part of the exposure class.
         """
 
-        for i, (pixel_array, header) in enumerate(self.reads):
+        for i, (pixel_array, header) in enumerate(self.reads[1:], 1):
             pixel_array_non_linear = self.detector.apply_non_linearity(pixel_array)
 
             self.reads[i] = (pixel_array_non_linear, header)
@@ -69,7 +69,7 @@ class Exposure(object):
         """ Adds dark current using the detectors add_dark_current method
         """
 
-        for i, (pixel_array, header) in enumerate(self.reads):
+        for i, (pixel_array, header) in enumerate(self.reads[1:], 1):
             read_NSAMP = i + 1
             pixel_array_drk = self.detector.add_dark_current(
                 pixel_array, read_NSAMP, self.SUBARRAY,
