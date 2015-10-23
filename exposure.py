@@ -9,7 +9,7 @@ import sys
 import astropy
 import astropy.io.fits as fits
 import astropy.units as u
-import numpy
+import numpy as np
 import pandas
 import scipy
 import exodata.astroquantities as pq
@@ -86,7 +86,7 @@ class Exposure(object):
         max_count = self.detector.max_counts
 
         for i, (pixel_array, header) in enumerate(self.reads):
-            pixel_array_scaled = numpy.clip(pixel_array, min_count, max_count)
+            pixel_array_scaled = np.clip(pixel_array, min_count, max_count)
             self.reads[i] = (pixel_array_scaled, header)
 
     def add_zero_read(self):
@@ -106,7 +106,7 @@ class Exposure(object):
         from the zero read to the final read
 
         :param data: an array to add
-        :type data: numpy.ndarray
+        :type data: np.ndarray
         :return:
         """
 
@@ -116,6 +116,17 @@ class Exposure(object):
             header = fits.Header()
 
         self.reads.append((data, header))
+
+    def reset_reference_pixels(self, value=0.):
+        """ Resets the reference pixels (5 pixel border) to zero
+        :return:
+        """
+
+        for i, (pixel_array, header) in enumerate(self.reads):
+            ref_is_true = np.ones_like(pixel_array, dtype='bool_')
+            ref_is_true[5:-5, 5:-5] = 0
+            pixel_array[ref_is_true] = value
+            self.reads[i] = (pixel_array, header)
 
     def generate_fits(self, out_dir='', filename=None):
         """ Saves the exposure as a HST style fits file.
@@ -326,7 +337,7 @@ class Exposure(object):
         py_ver = '{}.{}.{} {}'.format(s.major, s.minor, s.micro,
                                       s.releaselevel)
         h['V-PY'] = (py_ver, 'Python version used')
-        h['V-NP'] = (numpy.__version__, 'Numpy version used')
+        h['V-NP'] = (np.__version__, 'np version used')
         h['V-SP'] = (scipy.__version__, 'Scipy version used')
         h['V-AP'] = (astropy.__version__, 'Astropy version used')
         h['V-PD'] = (pandas.__version__, 'Pandas version used')

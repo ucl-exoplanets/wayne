@@ -27,7 +27,7 @@ class WFC3_IR(object):
         self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron,
                                  doc='Pixel size for the HST WFC3 IR detector')
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
-        self.min_counts = 0
+        self.min_counts = -20
         # 5% non-linear limit where nonlinear correction fails
         self.max_counts = 40000  # DN
 
@@ -178,8 +178,6 @@ class WFC3_IR(object):
 
         with fits.open(dark_file_path) as f:
             dark_array = f[file_index].data
-            np.savetxt(os.path.join(params.outdir, 'dark_{}_{},{}.txt'.format(
-                NSAMP, SAMPSEQ, SUBARRAY)), dark_array)
             return pixel_array + dark_array
 
     def add_read_noise(self, pixel_array):

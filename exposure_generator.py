@@ -388,6 +388,9 @@ class ExposureGenerator(object):
         if clip_values_det_limits:
             self.exposure.scale_counts_between_limits()
 
+        # Zero the reference pixels as we dont implement bias drifts
+        self.exposure.reset_reference_pixels(0.)
+
         # add the zero read to everything
         self.exposure.add_zero_read()
 
