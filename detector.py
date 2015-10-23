@@ -30,10 +30,11 @@ class WFC3_IR(object):
         self.min_counts = 0
         # 5% non-linear limit where nonlinear correction fails
         self.max_counts = 40000  # DN
-        self.read_noise = 21
 
         self.constant_gain = 2.26
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
+
+        self.read_noise = 21 / self.constant_gain  # e to DN
 
         self.initial_bias = os.path.join(params._data_dir, 'wfc3_ir_initial_bias.fits')
 
