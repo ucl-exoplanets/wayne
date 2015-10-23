@@ -398,17 +398,21 @@ class ExposureGenerator(object):
                        scale_factor, add_flat, noise_mean,
                        noise_std, sky_background, add_gain_variations, cosmic_rate):
 
-        pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
-                                                    light_sensitive=True)
+        # Disabled the zero read generation in favour of an inital bias (more
+        # for looks than anything) could be implemented better later
+        # TODO (ryan) real zero read generation (low priority)
 
         # pixel_array = self._gen_subsample(
         #     x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur,
         #     scale_factor, add_flat)
 
-        read_exp_time = s_dur.to(u.s).value
-        pixel_array_full = self._add_read_reductions(
-            pixel_array, read_exp_time, noise_mean, noise_std,
-            sky_background, add_gain_variations, cosmic_rate)
+        # read_exp_time = s_dur.to(u.s).value
+        # pixel_array_full = self._add_read_reductions(
+        #     pixel_array, read_exp_time, noise_mean, noise_std,
+        #     sky_background, add_gain_variations, cosmic_rate)
+
+        pixel_array_full = self.detector.gen_pixel_array(self.SUBARRAY,
+                                            light_sensitive=False)
 
         # TODO formalise BIAS with other modes aswell
         if self.SUBARRAY == 256:
