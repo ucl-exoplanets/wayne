@@ -52,9 +52,12 @@ if __name__ == '__main__':
 
     exodb = exodata.OECDatabase(cfg['general']['oec_location'])
 
-    seed = cfg['general']['seed']
+    try:
+        seed = cfg['general']['seed']
+    except KeyError:
+        seed = None
     np.random.seed(seed)
-    params.seed = seed  # tell params what the seed is now we've change it
+    params.seed = np.random.get_state()[1][0]  # tell params what the seed is for exp header
 
     # if, else in future
     g141 = grism.G141()
