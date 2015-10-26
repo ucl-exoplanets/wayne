@@ -772,7 +772,7 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
 
     yx_size = y_size * x_size
 
-    yx = y_pos * y_size + x_pos
+    yx = y_pos * x_size + x_pos
     yx = np.bincount(yx)
     yx = np.insert(yx, len(yx), np.zeros(yx_size - len(yx)))
 
