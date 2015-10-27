@@ -3,8 +3,8 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.5b.151026a'
-__short_version__ = '0.5b'
+__version__ = '0.6b.151027a'
+__short_version__ = '0.6b'
 __all__ = ('detector', 'observation' 'exposure', 'grism', 'models', 'params', 'tools')
 
 import detector, exposure, grism, models, tools, params, observation
