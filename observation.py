@@ -65,16 +65,15 @@ class Observation(object):
         self.sample_rate = sample_rate
         self.clip_values_det_limits = clip_values_det_limits
 
-    def setup_target(self, planet, planet_spectrum, planet_wl, stellar_flux,
-                     stellar_wl=None):
+    def setup_target(self, planet, wavelengths, planet_spectrum, stellar_flux):
         """
         :param planet: An ExoData type planet object your observing (holds
          observables like Rp, Rs, i, e, etc)
         :type: exodata.astroclasses.Planet
 
-        :param planet_wl: array of wavelengths (corresponding to stellar flux and
-         planet spectrum) in u.microns
-        :type planet_wl: astropy.units.quantity.Quantity
+        :param wavelengths: array of wavelengths (corresponding to both the
+        stellar flux and planet spectrum) in u.microns
+        :type wavelengths: astropy.units.quantity.Quantity
 
         :param stellar_flux: array of stellar flux in units of erg/(angstrom * s * cm^2)
         :type stellar_flux: astropy.units.quantity.Quantity
@@ -86,14 +85,19 @@ class Observation(object):
         binned separately so we rebin the stellar spectrum to the planet bins
         """
 
-        if stellar_wl is not None:
-            stellar_flux = tools.rebin_spec(stellar_wl, stellar_flux, planet_wl)
-
         self.planet = planet
-        self.wl = planet_wl
+        self.wl = wavelengths
         self.stellar_flux = stellar_flux
         self.planet_spectrum = planet_spectrum
-        self._generate_star_information()
+
+        assert len(wavelengths) == len(stellar_flux)
+
+        if planet_spectrum is not None:
+            len(wavelengths) == len(planet_spectrum)
+            self.transmission_spectroscopy = True
+            self._generate_star_information()
+        else:
+            self.transmission_spectroscopy = False
 
     def _generate_star_information(self):
         star = self.planet.star
@@ -296,18 +300,23 @@ class Observation(object):
 
         time_array = self.exp_start_times
 
-        lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
+        fig = plt.figure()
+
+        if self.transmission_spectroscopy:
+            lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
+            plt.ylabel("Transit Depth")
+        else:
+            lc_model = np.ones_like(time_array)
+            plt.ylabel("Unit Flux")
 
         if self._visit_trend:
             trend_model = self._visit_trend.scale_factors
             # have to convert weird model format to flat array
             lc_model = trend_model * lc_model.T[0]
 
-        fig = plt.figure()
         plt.scatter(time_array, lc_model)
         plt.xlabel("Time (JD)")
-        plt.ylabel("Transit Depth")
-        plt.title("Normalised White Light Curve of observation")
+        plt.title("Normalised White Time Series of observation")
 
         return time_array, lc_model
 
@@ -315,19 +324,6 @@ class Observation(object):
         """ Runs the observation by calling self._generate_exposure for each
          exposure start time
         """
-
-        # multicore doesnt work, i suspect because it needs to pickle this entire class
-        # pool = Pool(8)
-        # pool.map(gen_frame, to_run)
-
-        # filenums = range(1, len(self.exp_start_times)+1)
-        #
-        # # gen_exp = lambda args: self._generate_exposure(args[0], args[1])
-        #
-        # run_params = zip(filenums, self.exp_start_times)
-        #
-        # # pool = Pool(cpu_count())
-        # # pool.map(gen_exp, run_params)
 
         self._generate_direct_image()  # to calibrate x_ref and y_ref
 
@@ -373,12 +369,14 @@ class Observation(object):
 
         time_array = (sample_mid_points + expstart).to(u.day)
 
-        star_norm_flux = self.generate_lightcurves(time_array)
-        planet_depths = 1 - star_norm_flux
+        if self.transmission_spectroscopy:
+            star_norm_flux = self.generate_lightcurves(time_array)
+            planet_depths = 1 - star_norm_flux
+        else:
+            planet_depths = None
 
         # x shifts - linear shift with exposure, second exposure shifted by
-        #  x_shifts, direct image and first match.
-
+        #  x_shifts, direct image and first exp will match.
         x_ref = self._try_index(self.x_ref, index_number)
         y_ref = self._try_index(self.y_ref, index_number)
         sky_background = self._try_index(self.sky_background, index_number)

@@ -241,11 +241,23 @@ class Exposure(object):
         h[''] = ''
         h[''] = '/ TARGET INFORMATION'
         h[''] = ''
-        h['TARGNAME'] = (self.planet.name, 'proposer\'s target name')
-        h['RA_TARG'] = (self.planet.ra.degree,
-                        'right ascension of the target (deg) (J2000)')
-        h['DEC_TARG'] = (self.planet.dec.degree,
-                         'declination of the target (deg) (J2000)')
+        try:
+            target_name = self.planet.name
+        except AttributeError:
+            target_name = 'None'
+        h['TARGNAME'] = (target_name, 'proposer\'s target name')
+
+        try:
+            ra = self.planet.ra.degree
+        except AttributeError:
+            ra = 0.
+        h['RA_TARG'] = (ra, 'right ascension of the target (deg) (J2000)')
+
+        try:
+            dec = self.planet.dec.degree
+        except AttributeError:
+            dec = 0.
+        h['DEC_TARG'] = (dec, 'declination of the target (deg) (J2000)')
 
         h[''] = ''
         h[''] = '/ EXPOSURE INFORMATION'
@@ -342,24 +354,25 @@ class Exposure(object):
         h['V-AP'] = (astropy.__version__, 'Astropy version used')
         h['V-PD'] = (pandas.__version__, 'Pandas version used')
 
-        h[''] = ''
-        h[''] = '/ WFC3Sim Observation Parameters'
-        h[''] = ''
         planet = self.planet
-        h['mid-tran'] = (float(planet.transittime), 'Time of mid transit (JD)')
-        # h['t14'] = (float(planet.calcTransitDuration().rescale(pq.h)), 'Transit Duration (hr)')
-        h['period'] = (float(planet.P.rescale(pq.day)), 'Orbital Period (days)')
-        h['SMA'] = (float((planet.a / planet.star.R).simplified), 'Semi-major axis (a/R_s)')
-        h['INC'] = (float(planet.i.rescale(pq.deg)), 'Orbital Inclination (deg)')
-        h['ECC'] = (planet.e, 'Orbital Eccentricity')
-        h['PERI'] = ('{}'.format(planet.periastron), 'Argument or periastron')
+        if planet is not None:
+            h[''] = ''
+            h[''] = '/ WFC3Sim Observation Parameters'
+            h[''] = ''
+            h['mid-tran'] = (float(planet.transittime), 'Time of mid transit (JD)')
+            # h['t14'] = (float(planet.calcTransitDuration().rescale(pq.h)), 'Transit Duration (hr)')
+            h['period'] = (float(planet.P.rescale(pq.day)), 'Orbital Period (days)')
+            h['SMA'] = (float((planet.a / planet.star.R).simplified), 'Semi-major axis (a/R_s)')
+            h['INC'] = (float(planet.i.rescale(pq.deg)), 'Orbital Inclination (deg)')
+            h['ECC'] = (planet.e, 'Orbital Eccentricity')
+            h['PERI'] = ('{}'.format(planet.periastron), 'Argument or periastron')
 
-        # Limb Darkening
-        ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(self.planet.star)
-        h['ld1'] = (ld1, 'Non-linear limb darkening coeff 1')
-        h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
-        h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')
-        h['ld4'] = (ld4, 'Non-linear limb darkening coeff 4')
+            # Limb Darkening
+            ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(self.planet.star)
+            h['ld1'] = (ld1, 'Non-linear limb darkening coeff 1')
+            h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
+            h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')
+            h['ld4'] = (ld4, 'Non-linear limb darkening coeff 4')
 
         # not in correct section
         # keywords for analysis (i.e. xref positions until)

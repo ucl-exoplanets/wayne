@@ -1,5 +1,5 @@
-""" This script allows you to run a visit from a parameter file. Currently
- parameter files are in python format, see example_par.py.
+""" This script allows you to run a visit from a parameter file in yaml format.
+see example_par.yml.
 
 Usage:
     run_visit.py [-p <parameter_file>]
@@ -32,6 +32,9 @@ from trend_generators import scan_speed_varations
 
 seaborn.set_style("whitegrid")
 
+class WFC3SimConfigError(BaseException):
+    pass
+
 if __name__ == '__main__':
     arguments = docopt.docopt(__doc__)
     parameter_file = arguments['<parameter_file>']
@@ -47,10 +50,8 @@ if __name__ == '__main__':
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-     # copy parfile to output
+    # copy parfile to output
     shutil.copy2(parameter_file, os.path.join(outdir, os.path.basename(parameter_file)))
-
-    exodb = exodata.OECDatabase(cfg['general']['oec_location'])
 
     try:
         seed = cfg['general']['seed']
@@ -59,46 +60,77 @@ if __name__ == '__main__':
     np.random.seed(seed)
     params.seed = np.random.get_state()[1][0]  # tell params what the seed is for exp header
 
-    # if, else in future
-    g141 = grism.G141()
+    grisms = {
+        'G141': grism.G141(),
+        'G102': grism.G102()
+    }
+    chosen_grism = grisms[cfg['observation']['grism']]
     det = detector.WFC3_IR()
 
-    planet = exodb.planetDict[cfg['target']['name']]
-
-    # modify planet params if given Note that exodata uses a different unit
-    # package at present
-    if cfg['target']['transit_time']:
-        planet.transittime = cfg['target']['transit_time'] * aq.JD
-
-    source_spectra = np.loadtxt(cfg['target']['planet_spectrum_file'])
-    source_spectra = source_spectra.T  # turn to (wl list, flux list)
-    source_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *source_spectra))
-
-    wl_p = source_spectra[0] * u.micron
-    depth_p = source_spectra[1]
-
     rebin_resolution = cfg['target']['rebin_resolution']
-    if rebin_resolution:
-        new_wl = tools.wl_at_resolution(rebin_resolution,
-                                        g141.wl_limits[0].value,
-                                        g141.wl_limits[1].value)
 
-        depth_p = tools.rebin_spec(wl_p.value, depth_p, new_wl)
-        wl_p = new_wl * u.micron
+    # Check for transmission spectroscopy mode
+    try:
+        planet_spectrum = cfg['target']['planet_spectrum_file']
+        transmission_spectroscopy = True
+    except KeyError:
+        transmission_spectroscopy = False
 
+    if transmission_spectroscopy:
+        exodb = exodata.OECDatabase(cfg['general']['oec_location'])
+        planet = exodb.planetDict[cfg['target']['name']]
+        # modify planet params if given Note that exodata uses a different unit
+        # package at present
+        if cfg['target']['transit_time']:
+            planet.transittime = cfg['target']['transit_time'] * aq.JD
+
+        planet_spectra = np.loadtxt(planet_spectrum)
+        planet_spectra = planet_spectra.T  # turn to (wl list, flux list)
+        planet_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *planet_spectra))
+
+        wl_planet = planet_spectra[0] * u.micron
+        depth_planet = planet_spectra[1]
+
+        if rebin_resolution:
+            new_wl = tools.wl_at_resolution(
+                rebin_resolution, chosen_grism.wl_limits[0].value,
+                chosen_grism.wl_limits[1].value)
+
+            depth_planet = tools.rebin_spec(wl_planet.value, depth_planet, new_wl)
+            wl_planet = new_wl * u.micron
+    else:
+        depth_planet = None
+        planet = None
 
     stellar_spec_file = cfg['target']['stellar_spectrum_file']
     if stellar_spec_file:
-        stellar_wl, stellar_flux = tools.load_pheonix_stellar_grid_fits(stellar_spec_file)
+        wl_star, flux_star = tools.load_pheonix_stellar_grid_fits(stellar_spec_file)
 
-        stellar_flux = tools.rebin_spec(stellar_wl, stellar_flux, np.array(wl_p))
+        if transmission_spectroscopy:
+            flux_star = tools.rebin_spec(wl_star, flux_star, np.array(wl_planet))
+        elif rebin_resolution:  # not transmission spectro mode
+            new_wl = tools.wl_at_resolution(
+                rebin_resolution, chosen_grism.wl_limits[0].value,
+                chosen_grism.wl_limits[1].value)
+
+            flux_star = tools.rebin_spec(wl_star, flux_star, new_wl)
+            wl_star = new_wl
 
         flux_units = u.erg / (u.angstrom * u.s * u.sr * u.cm**2)
-        stellar_flux *= flux_units
+        flux_star *= flux_units
     else:  # use blackbody
-        stellar_flux = blackbody_lambda(wl_p, planet.star.T)
+        if transmission_spectroscopy:
+            flux_star = blackbody_lambda(wl_planet, planet.star.T)
+        else:
+            raise WFC3SimConfigError(
+                "Must give the stellar spectrum if not using transmission spectroscopy")
 
-    stellar_flux_scaled = stellar_flux * cfg['target']['flux_scale'] * u.sr 
+    stellar_flux_scaled = flux_star * cfg['target']['flux_scale'] * u.sr
+
+    if transmission_spectroscopy:
+        wl = wl_planet
+    else:
+        wl = wl_star * u.micron
 
     x_ref = cfg['observation']['x_ref']
     y_ref = cfg['observation']['y_ref']
@@ -112,14 +144,18 @@ if __name__ == '__main__':
     sample_rate = cfg['observation']['sample_rate'] * u.ms
     scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
 
+    ssv_classes = {
+        'sine': scan_speed_varations.SSVSine,
+        'mod-sine': scan_speed_varations.SSVModulatedSine,
+    }
     ssv_type = cfg['observation']['ssv_type']
-    if ssv_type == 'sine':
-        ssv_class = scan_speed_varations.SSVSine
-    elif ssv_type == 'mod-sine':
-        ssv_class = scan_speed_varations.SSVModulatedSine
+    if ssv_type:
+        try:
+            ssv_class = ssv_classes[ssv_type]
+        except KeyError:
+            raise WFC3SimConfigError("Invalid ssv_type given")
 
-    ssv_coeffs = cfg['observation']['ssv_coeffs']
-    if ssv_coeffs:
+        ssv_coeffs = cfg['observation']['ssv_coeffs']
         ssv_gen = ssv_class(*ssv_coeffs)
     else:
         ssv_gen = None
@@ -141,7 +177,10 @@ if __name__ == '__main__':
 
     clip_values_det_limits = cfg['observation']['clip_values_det_limits']
 
-    exp_start_times = cfg['observation']['exp_start_times']
+    try:
+        exp_start_times = cfg['observation']['exp_start_times']
+    except KeyError:
+        exp_start_times = False
 
     if exp_start_times:  # otherwise we use the visit planner
         logger.info('Visit planner disabled: using start times from {}'.format(exp_start_times))
@@ -161,8 +200,8 @@ if __name__ == '__main__':
     obs = observation.Observation(outdir)
 
     obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
-    obs.setup_grism(g141)
-    obs.setup_target(planet, depth_p, wl_p, stellar_flux_scaled)
+    obs.setup_grism(chosen_grism)
+    obs.setup_target(planet, wl, depth_planet, stellar_flux_scaled)
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
     obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)

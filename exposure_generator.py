@@ -11,7 +11,7 @@ from trend_generators import cosmic_rays, scan_speed_varations
 
 class ExposureGenerator(object):
     def __init__(self, detector, grism, NSAMP, SAMPSEQ, SUBARRAY, planet,
-                 filename='0001_raw.fits', start_JD=0 * u.day,):
+                 filename='0001_raw.fits', start_JD=0 * u.day):
         """ Constructs exposures given a spectrum
 
         :param detector: detector class, i.e. WFC3_IR()
@@ -195,6 +195,11 @@ class ExposureGenerator(object):
 
         start_time = time.clock()
 
+        if planet_signal is None:
+            self.transmission_spectroscopy = False
+        else:
+            self.transmission_spectroscopy = True
+
         scan_speed = scan_speed.to(u.pixel / u.ms)
         sample_rate = sample_rate.to(u.ms)
 
@@ -243,33 +248,12 @@ class ExposureGenerator(object):
             'clip_values_det_limits': clip_values_det_limits,
         })
 
-        if planet_signal.ndim == 1:  # depth does not vary with time during exposure
-            s_flux = self.combine_planet_stellar_spectrum(stellar_flux,
-                                                          planet_signal)
-            # TODO handling cropping elsewhere to avoid doing it all the time
-            s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
-                                               self.grism.wl_limits[1], wl,
-                                               s_flux)
-        else:  # for zero read
-            s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal[0])
-            s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
-                                                   self.grism.wl_limits[-1],
-                                                   wl, s_flux)
-
         # Exposure class which holds the result
         self.exposure = exposure.Exposure(self.detector, self.grism,
                                           self.planet, self.exp_info)
 
         # Zero Read
-        # zero read is ~ the time of the first read, which is essentially
-        # the read time
-        zero_read_duration = self.read_times[0].to(u.ms)
-        # zero_read_duration = 100*u.ms
-        zero_read, zero_read_info = self._gen_zero_read(
-            x_ref, s_y_refs[0], s_wl, s_flux, zero_read_duration, scale_factor,
-            add_flat, noise_mean, noise_std, sky_background,
-            add_gain_variations, cosmic_rate)
-
+        zero_read, zero_read_info = self._gen_zero_read()
         self.exposure.add_read(zero_read.copy(), zero_read_info)
 
         # we dont want the zero read to stack yet as the other corrections
@@ -302,16 +286,15 @@ class ExposureGenerator(object):
                 s_dur = 0*u.ms
                 s_y_ref = s_y_refs[-1]
 
-            if planet_signal.ndim == 1:
-                pass  # handled above but leaving to point out this needs cleaning up
-            else:
+            if self.transmission_spectroscopy:
                 s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal[i])
+            else:
+                s_flux = stellar_flux
 
-                # TODO (ryan) handling cropping elsewhere to avoid doing it
-                #  all the time, crop flux + depth together
-                s_wl, s_flux = tools.crop_spectrum(self.grism.wl_limits[0],
-                                                   self.grism.wl_limits[-1],
-                                                   wl, s_flux)
+            # TODO (ryan) handling cropping elsewhere to avoid doing it
+            #  all the time, crop flux + depth together
+            s_wl, s_flux = tools.crop_spectrum(
+                self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, s_flux)
 
             # generate sample frame
             blank_frame = np.zeros_like(pixel_array)
@@ -321,8 +304,6 @@ class ExposureGenerator(object):
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
-
-                # TODO (ryan) check scaling i.e. DN vs e
                 cumulative_exp_time = read_exp_times[read_num]
                 read_exp_time = (
                     read_exp_times[read_num] - previous_read_time).to(u.s).value
@@ -397,22 +378,11 @@ class ExposureGenerator(object):
         if add_read_noise:
             self.exposure.add_read_noise()
 
-    def _gen_zero_read(self, x_ref, s_y_ref, s_wl, s_flux, s_dur,
-                       scale_factor, add_flat, noise_mean,
-                       noise_std, sky_background, add_gain_variations, cosmic_rate):
+    def _gen_zero_read(self):
 
         # Disabled the zero read generation in favour of an inital bias (more
         # for looks than anything) could be implemented better later
         # TODO (ryan) real zero read generation (low priority)
-
-        # pixel_array = self._gen_subsample(
-        #     x_ref, s_y_ref, s_wl, s_flux, pixel_array, s_dur,
-        #     scale_factor, add_flat)
-
-        # read_exp_time = s_dur.to(u.s).value
-        # pixel_array_full = self._add_read_reductions(
-        #     pixel_array, read_exp_time, noise_mean, noise_std,
-        #     sky_background, add_gain_variations, cosmic_rate)
 
         pixel_array_full = self.detector.gen_pixel_array(self.SUBARRAY,
                                             light_sensitive=False)

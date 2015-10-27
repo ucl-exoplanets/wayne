@@ -21,7 +21,7 @@ target:
 
 observation:
   detector: 'WFC3IR'  # currently fixed
-  grism: 'G141'  # currently fixed
+  grism: 'G141'
 
   # x and y reference positions, can be a number for every exposure or a file
   # containing the position per exposure. Note that if you specificy indivudal

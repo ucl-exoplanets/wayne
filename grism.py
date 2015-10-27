@@ -444,7 +444,7 @@ class G102(G141):
 
         self.trace_coeff = g102_trace_coeff
         self.wl_solution = g102_wl_solution
-        self.dispersion_solution = g102_dispersion_solution
+        self.dispersion_solution = g102_wl_solution[3:]
 
         # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually
         #  dependant on x and y and not constant
