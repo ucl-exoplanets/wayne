@@ -3,7 +3,7 @@
 """
 
 __author__ = 'Ryan Varley'
-__version__ = '0.6b.151027b'
+__version__ = '0.6b.151104b'
 __short_version__ = '0.6b'
 __all__ = ('detector', 'observation' 'exposure', 'grism', 'models', 'params', 'tools')
 

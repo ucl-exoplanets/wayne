@@ -609,7 +609,7 @@ class ExposureGenerator(object):
         count_rate = count_rate.to(u.photon / u.s)  # sanity check
 
         counts = (count_rate * exptime).to(u.photon)
-        counts = self.detector.apply_quantum_efficiency(wl, counts)
+        # QE removed as it is accounted for in sensitivity
 
         # Finally, scale the lightcurve by the ramp
         if scale_factor is not None:

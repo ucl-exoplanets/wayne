@@ -14,10 +14,19 @@ target:
   planet_spectrum_file: 'example_data/hj_1000.dat'  # wl (microns) vs transit depth
   rebin_resolution: false  # Rebin the planet spectrum to lower resolution or false
   stellar_spectrum_file: False
-  flux_scale: 5e18  # stellar flux is a blackbody, scale this to get the required counts per pixel
+  flux_scale: 2E-20  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
-  # Required only to overwrite ExoData defaults from the OEC, set to false otherwise
-  transit_time: 2454980.749
+  # Below only required to overwrite ExoData defaults from the OEC, set to false otherwise
+  period: false  # days
+  sma: false    # AU
+  stellar_radius: false  # Solar Radii
+  inclination: false  # deg
+  eccentricity: false
+  periastron: false
+  transit_time: 2454980.749  # JD
+  # Non-linear limb darkening coeffs 1-4 i.e [ld1, ld2, ld3, ld4], if false
+  # then name must be a valid OEC planet name
+  ldcoeffs: false
 
 observation:
   detector: 'WFC3IR'  # currently fixed

@@ -7,6 +7,7 @@ import quantities as pq
 from astropy import units as u
 import pylightcurve.fcmodel as pylc
 import matplotlib.pylab as plt
+import exodata
 
 from progress import Progress
 
@@ -65,7 +66,9 @@ class Observation(object):
         self.sample_rate = sample_rate
         self.clip_values_det_limits = clip_values_det_limits
 
-    def setup_target(self, planet, wavelengths, planet_spectrum, stellar_flux):
+    def setup_target(self, planet, wavelengths, planet_spectrum, stellar_flux,
+                     transittime=None, ldcoeffs=None, period=None, sma=None, inclination=None,
+                     eccentricity=None, periastron=None, stellar_radius=None):
         """
         :param planet: An ExoData type planet object your observing (holds
          observables like Rp, Rs, i, e, etc)
@@ -95,16 +98,46 @@ class Observation(object):
         if planet_spectrum is not None:
             len(wavelengths) == len(planet_spectrum)
             self.transmission_spectroscopy = True
-            self._generate_star_information()
+            self._generate_planet_information(
+                planet, ldcoeffs, period, sma, inclination, eccentricity,
+                periastron, stellar_radius)
         else:
             self.transmission_spectroscopy = False
 
-    def _generate_star_information(self):
-        star = self.planet.star
-        # TODO (ryan) option to give limb darkening
-        self.ldcoeffs = tools.get_limb_darkening_coeffs(star)
-        logger.info(
-            "Looked up Limb Darkening coeffs of {}".format(self.ldcoeffs))
+    def _generate_planet_information(self, planet, ldcoeffs, period, sma,
+                                     inclination, eccentricity, periastron,
+                                     stellar_radius):
+
+        if not isinstance(planet, exodata.astroclasses.Planet):
+            self.planet = exodata.astroclasses.Planet()
+            self.planet.parent = exodata.astroclasses.Star()
+            self.planet.params['name'] = planet  # in this case planet is targ name
+
+        if period:
+            self.planet.P = period
+
+        if sma:
+            self.planet.a = sma
+
+        if inclination:
+            self.planet.i = inclination
+
+        if eccentricity:
+            self.planet.e = eccentricity
+
+        if periastron:
+            self.planet.periastron = periastron
+
+        if stellar_radius:
+            self.planet.star.R = stellar_radius
+
+        if not ldcoeffs:
+            star = planet.star
+            self.ldcoeffs = tools.get_limb_darkening_coeffs(star)
+            logger.info(
+                "Looked up Limb Darkening coeffs of {}".format(self.ldcoeffs))
+        else:
+            self.ldcoeffs = ldcoeffs
 
     def setup_detector(self, detector, NSAMP, SAMPSEQ, SUBARRAY):
         """

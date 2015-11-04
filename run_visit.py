@@ -32,8 +32,21 @@ from trend_generators import scan_speed_varations
 
 seaborn.set_style("whitegrid")
 
+
 class WFC3SimConfigError(BaseException):
     pass
+
+
+def load_planet_from_config(cfg):
+    """ Loads the planet from the config file including any overwrites
+    Starts by attempting to get an ExoData object for the target then overwriting
+     if needed. if it cant, it builds one from the config.
+    :param cfg:
+    :return:
+    """
+
+    # TODO better in load planet function? use exodata=True option?
+
 
 if __name__ == '__main__':
     arguments = docopt.docopt(__doc__)
@@ -46,6 +59,8 @@ if __name__ == '__main__':
 
     outdir = cfg['general']['outdir']
     params.outdir = outdir
+
+    exodb = exodata.OECDatabase(cfg['general']['oec_location'])
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -77,12 +92,54 @@ if __name__ == '__main__':
         transmission_spectroscopy = False
 
     if transmission_spectroscopy:
-        exodb = exodata.OECDatabase(cfg['general']['oec_location'])
-        planet = exodb.planetDict[cfg['target']['name']]
+        try:
+            planet = exodb.planetDict[cfg['target']['name']]
+        except KeyError:
+            planet = cfg['target']['name']
+
         # modify planet params if given Note that exodata uses a different unit
         # package at present
-        if cfg['target']['transit_time']:
-            planet.transittime = cfg['target']['transit_time'] * aq.JD
+        try:
+            transittime = cfg['target']['transit_time'] * aq.JD
+        except KeyError:
+            transittime = None
+
+        try:
+            period = cfg['target']['period'] * aq.day
+        except KeyError:
+            period = None
+
+        try:
+            sma = cfg['target']['sma'] * aq.au
+        except KeyError:
+            sma = None
+
+        try:
+            stellar_radius = cfg['target']['stellar_radius'] * aq.R_s
+        except KeyError:
+            stellar_radius = None
+
+        try:
+            inclination = cfg['target']['inclination'] * aq.deg
+        except KeyError:
+            inclination = None
+
+        try:
+            eccentricity = cfg['target']['eccentricity']
+        except KeyError:
+            eccentricity = None
+
+        try:
+            ldcoeffs = cfg['target']['ldcoeffs']
+        except KeyError:
+            ldcoeffs = None
+
+        try:
+            periastron = cfg['target']['periastron']
+        except KeyError:
+            periastron = None
+
+
 
         planet_spectra = np.loadtxt(planet_spectrum)
         planet_spectra = planet_spectra.T  # turn to (wl list, flux list)
@@ -101,6 +158,18 @@ if __name__ == '__main__':
     else:
         depth_planet = None
         planet = None
+        transittime = None
+        period = None
+        sma = None
+        stellar_radius = None
+        inclination = None
+        eccentricity = None
+        ldcoeffs = None
+        periastron = None
+        try:
+            planet = exodb.planetDict[cfg['target']['name']]
+        except KeyError:
+            planet = cfg['target']['name']
 
     stellar_spec_file = cfg['target']['stellar_spectrum_file']
     if stellar_spec_file:
@@ -201,7 +270,9 @@ if __name__ == '__main__':
 
     obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
     obs.setup_grism(chosen_grism)
-    obs.setup_target(planet, wl, depth_planet, stellar_flux_scaled)
+    obs.setup_target(planet, wl, depth_planet, stellar_flux_scaled, transittime,
+                     ldcoeffs, period, sma, inclination, eccentricity, periastron,
+                     stellar_radius)
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
     obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear)
     obs.setup_observation(x_ref, y_ref, scan_speed)

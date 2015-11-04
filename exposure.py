@@ -12,6 +12,7 @@ import astropy.units as u
 import numpy as np
 import pandas
 import scipy
+import exodata
 import exodata.astroquantities as pq
 
 import params
@@ -355,7 +356,7 @@ class Exposure(object):
         h['V-PD'] = (pandas.__version__, 'Pandas version used')
 
         planet = self.planet
-        if planet is not None:
+        if isinstance(planet, exodata.astroclasses.Planet):
             h[''] = ''
             h[''] = '/ WFC3Sim Observation Parameters'
             h[''] = ''
