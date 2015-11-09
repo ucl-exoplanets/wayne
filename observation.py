@@ -41,7 +41,8 @@ class Observation(object):
 
         self._visit_trend = False
 
-    def setup_observation(self, x_ref, y_ref, scan_speed):
+    def setup_observation(self, x_ref, y_ref, spatial_scan=False,
+                          scan_speed=False):
         """
 
         :param x_ref: pixel in x axis the reference should be located
@@ -50,15 +51,18 @@ class Observation(object):
         :param y_ref: pixel in y axis the reference should be located
         :type y_ref: int
 
+        :param spatial_scan: Spatial scan mode or staring mode
+
         :param scan_speed: rate of scan in pixels/second
         :type scan_speed: astropy.units.quantity.Quantity
         :return:
         """
         self.x_ref = x_ref
         self.y_ref = y_ref
+        self.spatial_scan = spatial_scan
         self.scan_speed = scan_speed
 
-    def setup_simulator(self, sample_rate, clip_values_det_limits=True):
+    def setup_simulator(self, sample_rate=False, clip_values_det_limits=True):
         """
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
@@ -398,6 +402,9 @@ class Observation(object):
                                     self.SAMPSEQ, self.SUBARRAY,
                                     self.planet, filename, expstart)
 
+        if not self.spatial_scan:
+            self.sample_rate = 1 * u.year  # high number reverts to read times
+
         _, sample_mid_points, sample_durations, read_index = \
             exp_gen._gen_scanning_sample_times(self.sample_rate)
 
@@ -424,20 +431,35 @@ class Observation(object):
         else:
             scale_factor = None
 
-        exp_frame = exp_gen.scanning_frame(
-            x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
-            self.scan_speed, self.sample_rate, sample_mid_points,
-            sample_durations, read_index, ssv_generator=self.ssv_gen,
-            noise_mean=self.noise_mean, noise_std=self.noise_std,
-            add_flat=self.add_flat, add_dark=self.add_dark,
-            scale_factor=scale_factor, sky_background=sky_background,
-            cosmic_rate=self.cosmic_rate, add_gain_variations=self.add_gain_variations,
-            add_non_linear=self.add_non_linear,
-            clip_values_det_limits=self.clip_values_det_limits,
-            add_read_noise=self.add_read_noise,
-            add_stellar_noise=self.add_stellar_noise,
-            progress_bar=self.progess,
-        )
+        if self.spatial_scan:
+            exp_frame = exp_gen.scanning_frame(
+                x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
+                self.scan_speed, self.sample_rate, sample_mid_points,
+                sample_durations, read_index, ssv_generator=self.ssv_gen,
+                noise_mean=self.noise_mean, noise_std=self.noise_std,
+                add_flat=self.add_flat, add_dark=self.add_dark,
+                scale_factor=scale_factor, sky_background=sky_background,
+                cosmic_rate=self.cosmic_rate, add_gain_variations=self.add_gain_variations,
+                add_non_linear=self.add_non_linear,
+                clip_values_det_limits=self.clip_values_det_limits,
+                add_read_noise=self.add_read_noise,
+                add_stellar_noise=self.add_stellar_noise,
+                progress_bar=self.progess
+            )
+        else:
+            exp_frame = exp_gen.staring_frame(
+                x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
+                sample_mid_points, sample_durations, read_index,
+                noise_mean=self.noise_mean, noise_std=self.noise_std,
+                add_flat=self.add_flat, add_dark=self.add_dark,
+                scale_factor=scale_factor, sky_background=sky_background,
+                cosmic_rate=self.cosmic_rate, add_gain_variations=self.add_gain_variations,
+                add_non_linear=self.add_non_linear,
+                clip_values_det_limits=self.clip_values_det_limits,
+                add_read_noise=self.add_read_noise,
+                add_stellar_noise=self.add_stellar_noise,
+                progress_bar=self.progess
+            )
 
         exp_frame.generate_fits(self.outdir, filename)
 

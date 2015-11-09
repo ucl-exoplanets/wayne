@@ -50,8 +50,7 @@ class ExposureGenerator(object):
         self.exptime = self.detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
 
         # samples up the ramp
-        self.read_times = self.detector.get_read_times(NSAMP, SUBARRAY,
-                                                       SAMPSEQ)
+        self.read_times = self.detector.get_read_times(NSAMP, SUBARRAY, SAMPSEQ)
 
         self.exp_info = {
             # these should be generated mostly in observation class and
@@ -129,11 +128,40 @@ class ExposureGenerator(object):
 
         read_info = {
             'read_exp_time': 0 * u.s,  # TODO add real value
-            'cumulative_exp_time': 0 * u.s, # TODO add real value
+            'cumulative_exp_time': 0 * u.s,  # TODO add real value
             'CRPIX1': -5,
         }
 
         self.exposure.add_read(di_array, read_info)
+
+        return self.exposure
+
+    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
+                      sample_mid_points, sample_durations, read_index,
+                      noise_mean, noise_std, add_dark, add_flat, cosmic_rate,
+                      sky_background, scale_factor, add_gain_variations,
+                      add_non_linear, clip_values_det_limits, add_read_noise,
+                      add_stellar_noise, progress_bar):
+        """ Constructs a staring mode frame, basically a stationary scanning
+        """
+
+        # Variables that force scanning mode to staring
+        scan_speed = 0 * u.pixel/u.s
+        sample_rate = 1 * u.year  # high limit cuts off at read time
+        ssv_generator = None
+
+        # TODO (ryan) exp_info overwrites
+
+        self.exposure = self.scanning_frame(
+            x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed,
+            sample_rate, sample_mid_points, sample_durations,
+            read_index, ssv_generator, noise_mean,
+            noise_std, add_dark, add_flat,
+            cosmic_rate, sky_background, scale_factor,
+            add_gain_variations, add_non_linear,
+            clip_values_det_limits, add_read_noise, add_stellar_noise,
+            progress_bar
+        )
 
         return self.exposure
 
@@ -514,73 +542,6 @@ class ExposureGenerator(object):
         sample_mid_points *= u.ms
 
         return sample_starts, sample_mid_points, sample_durations, read_index
-
-    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
-                      psf_max=4):
-        """ Constructs a staring mode frame, given a source position and
-        spectrum scaling
-
-        NOTE THAT THIS FUNCTION IS NOT AS UP TO DATE AS SCANNING AND PROBABLY
-        WILL NOT BE UNTIL THE DEVELOPMENT PERIOD SLOWS DOWN
-
-        :param x_ref: pixel in x axis the reference should be located
-        :type x_ref: int
-        :param y_ref: pixel in y axis the reference should be located
-        :type y_ref: int
-        :param wl: array of wavelengths (corresponding to stellar flux and
-         planet spectrum) in u.microns
-        :type wl: astropy.units.quantity.Quantity
-        :param stellar_flux: array of stellar flux in units of
-         erg/(angstrom * s * cm^2)
-        :type stellar_flux: astropy.units.quantity.Quantity
-        :param planet_spectrum: array of the transit depth for the planet spectrum
-        :type planet_spectrum: numpy.ndarray
-
-        :param psf_max: how many pixels the psf tails span, 0.9999999999999889%
-         of flux between is between -4 and 4 of
-        the widest psf
-        :type psf_max: int
-
-        :return: array with the exposure
-        """
-
-        raise NotImplementedError('Sorry, needs drastically updating')
-
-        self.exp_info.update({
-            'SCAN': False,
-            'psf_max': psf_max,
-            'x_ref': x_ref,
-            'y_ref': y_ref,
-        })
-
-        # Exposure class which holds the result
-        self.exposure = exposure.Exposure(self.detector, self.grism,
-                                          self.planet, self.exp_info)
-
-        flux = self.combine_planet_stellar_spectrum(stellar_flux,
-                                                    planet_signal)
-        wl, flux = tools.crop_spectrum(self.grism.wl_limits[0],
-                                       self.grism.wl_limits[-1], wl, flux)
-
-        # Zero Read
-        self.exposure.add_read(
-            self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
-
-        # Generate first sample up the ramp
-        first_read_time = self.read_times[0]
-        first_read_array = self.detector.gen_pixel_array(self.SUBARRAY,
-                                                         light_sensitive=True)
-        first_read_array = self._gen_staring_frame(x_ref, y_ref, wl, flux,
-                                                   first_read_array,
-                                                   first_read_time, psf_max)
-        self.exposure.add_read(self.detector.add_bias_pixels(first_read_array))
-
-        # generate subsequent reads by scaling the first read, starting with the second (1)
-        for read_time in self.read_times[1:]:
-            read_array = first_read_array * (read_time / first_read_time)
-            self.exposure.add_read(self.detector.add_bias_pixels(read_array))
-
-        return self.exposure
 
     def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
                        scale_factor=None, add_flat=True,
