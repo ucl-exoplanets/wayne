@@ -558,7 +558,7 @@ class ExposureGenerator(object):
         x_pos = trace.wl_to_x(wl)
         y_pos = trace.wl_to_y(wl)
 
-        psf_std = self.grism.wl_to_psf_std(wl, x_ref, y_ref)
+        psf_std = self.grism.wl_to_psf_std(wl)
 
         # Modify the flux by the grism throughput Units e / (s A)
         count_rate = self.grism.apply_throughput(wl, flux)

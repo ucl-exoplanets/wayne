@@ -73,6 +73,9 @@ class G141(object):
         # Sky
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
 
+        ## PSF Information - now parametrised into 2d poly
+        self.psf_fwhm_poly = np.poly1d([0.20530303, -0.24010606, 1.03390909])
+
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf
         self.wl_limits = (0.988 * u.micron, 1.777 * u.micron)
@@ -91,7 +94,7 @@ class G141(object):
         # Non Grism Specific Constants
         self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
 
-    def flux_to_psf(self, wavelength, flux, y_pos, x_ref, y_ref):
+    def flux_to_psf(self, wavelength, flux, y_pos):
         """
         Given a wavelength and flux this function returns the gaussian function
         for the observation at the wl given (linearly interpolated using
@@ -121,27 +124,23 @@ class G141(object):
 
         mean = y_pos  # this is the center of the guassian
 
-        FWHM = self.wl_to_psf_std(wavelength, x_ref, y_ref) * _gauss_StDev_to_FWHM
+        FWHM = self.wl_to_psf_std(wavelength) * _gauss_StDev_to_FWHM
 
         gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
 
         return gaussian_model
 
-    def wl_to_psf_std(self, wavelengths, x_ref, y_ref):
+    def wl_to_psf_std(self, wavelengths):
         """ This is an optimised function to return the standard deviations of
         the gaussians at each wavelength for each flux. looks up FWHM then
         converts to stddev.
+
         :param wavelengths:
+
         :return: standard deviations of the gaussian for each lambda
         """
 
-        c1, c2, c3, c4, c5, c6 = self.dispersion_solution
-
-        dispersion = (c1 + c2 * x_ref + c3 * y_ref
-                      - c4 * (x_ref ** 2) + c5 * x_ref * y_ref
-                      + c6 * (y_ref ** 2)) / 10000.0
-
-        FWHM = wavelengths.to(u.micron).value / self.resolution / dispersion
+        FWHM = self.psf_fwhm_poly(wavelengths.to(u.micron).value)
 
         std = FWHM / _gauss_StDev_to_FWHM
 
