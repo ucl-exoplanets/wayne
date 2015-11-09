@@ -73,6 +73,7 @@ class ExposureGenerator(object):
             'noise_mean': False,
             'noise_std': False,
             'add_dark': False,
+            'add_stellar_noise': False,
         }
 
     def direct_image(self, x_ref, y_ref):
@@ -144,7 +145,7 @@ class ExposureGenerator(object):
                        noise_std=False, add_dark=True, add_flat=True,
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain_variations=True, add_non_linear=True,
-                       clip_values_det_limits=True, add_read_noise=True,
+                       clip_values_det_limits=True, add_read_noise=True, add_stellar_noise=True,
                        progress_bar=None):
         """ Generates a spatially scanned frame.
 
@@ -242,6 +243,7 @@ class ExposureGenerator(object):
             'add_flat': add_flat,
             'add_gain': add_gain_variations,
             'add_non_linear': add_non_linear,
+            'add_stellar_noise': add_stellar_noise,
             'cosmic_rate': cosmic_rate,
             'sky_background': sky_background,
             'scale_factor': scale_factor,
@@ -300,7 +302,7 @@ class ExposureGenerator(object):
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_subsample(
                 x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur,
-                scale_factor, add_flat)
+                scale_factor, add_flat, add_stellar_noise)
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
@@ -581,7 +583,8 @@ class ExposureGenerator(object):
         return self.exposure
 
     def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
-                           scale_factor=None, add_flat=True):
+                       scale_factor=None, add_flat=True,
+                       add_stellar_noise=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
@@ -617,7 +620,10 @@ class ExposureGenerator(object):
 
         counts = counts.to(u.photon).value  # final unit check
 
-        counts = np.random.poisson(counts)  # poisson noise
+        if add_stellar_noise:
+            counts = np.random.poisson(counts)  # Poisson noise
+        else:
+            counts = np.round(counts)  # Still need ints for electron thrower
 
         # each resolution element (wl, counts_tp)
         for i in xrange(len(wl)):

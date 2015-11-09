@@ -332,6 +332,7 @@ class Exposure(object):
         h['ADD-FLAT'] = (exp_info['add_flat'], 'flat field added (T/F)')
         h['ADD-GAIN'] = (exp_info['add_gain'], 'gain added (T/F)')
         h['ADD-NLIN'] = (exp_info['add_non_linear'], 'non-linearity effects added (T/F)')
+        h['STAR-NSE'] = (exp_info['add_stellar_noise'], 'Stellar Noise Added (T/F)')
 
         h['CSMCRATE'] = (exp_info['cosmic_rate'], 'Rate of cosmic hits (per s)')
 

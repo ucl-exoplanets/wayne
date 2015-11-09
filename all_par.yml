@@ -1,0 +1,37 @@
+general: {oec_location: /Users/ryan/git/open_exoplanet_catalogue/systems,
+ outdir: /Users/ryan/Dropbox/Shared/calimero/analysis/output2/all_test,
+  seed: 151021}
+observation:
+  NSAMP: 5
+  SAMPSEQ: SPARS10
+  SUBARRAY: 256
+  add_dark: true
+  add_flat: true
+  add_gain_variations: true
+  add_non_linear: true
+  add_read_noise: true
+  clip_values_det_limits: true
+  cosmic_rate: 11
+  detector: WFC3IR
+  exp_start_times: /Users/ryan/Dropbox/Shared/calimero/analysis/hd209458b_12181_jd.txt
+  grism: G141
+  noise_mean: false
+  noise_std: false
+  num_orbits: 5
+  psf_approx_factor: false
+  sample_rate: 30
+  scan_speed: 7.39
+  sky_background: /Users/ryan/Dropbox/Shared/calimero/analysis/hd209458b_12181_sky.txt
+  spatial_scan: true
+  ssv_coeffs: [1.5, 1.1, 0]
+  ssv_type: sine
+  start_JD: 2451369.812714386
+  x_ref: /Users/ryan/Dropbox/Shared/calimero/analysis/hd209458b_12181_xref.txt
+  x_shifts: 0
+  y_ref: /Users/ryan/Dropbox/Shared/calimero/analysis/hd209458b_12181_yref.txt
+  y_shifts: 0
+target: {flux_scale: 3.5e-20, name: HD 209458 b, planet_spectrum_file: /Users/ryan/Dropbox/Shared/calimero/analysis/spectrum1000_1.dat,
+  rebin_resolution: false, stellar_spectrum_file: /Users/ryan/Dropbox/Shared/calimero/analysis/lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits,
+  transit_time: 2451370.048}
+trends:
+  visit_trend_coeffs: [0.005, 0.0011, 400]

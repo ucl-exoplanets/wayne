@@ -37,17 +37,6 @@ class WFC3SimConfigError(BaseException):
     pass
 
 
-def load_planet_from_config(cfg):
-    """ Loads the planet from the config file including any overwrites
-    Starts by attempting to get an ExoData object for the target then overwriting
-     if needed. if it cant, it builds one from the config.
-    :param cfg:
-    :return:
-    """
-
-    # TODO better in load planet function? use exodata=True option?
-
-
 if __name__ == '__main__':
     arguments = docopt.docopt(__doc__)
     parameter_file = arguments['<parameter_file>']

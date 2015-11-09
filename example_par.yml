@@ -69,7 +69,9 @@ observation:
   add_flat: True
   add_gain_variations: True
   add_non_linear: True
-  add_read_noise: True  # include read and stellar noise
+  add_read_noise: True  # include read noise
+  add_stellar_noise: True
+
 
   # How many multiples of the master sky to use. Around 2 is fine, can specify
   # a list of values per frame
