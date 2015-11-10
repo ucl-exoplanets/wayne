@@ -223,16 +223,12 @@ class Observation(object):
         }
 
     def setup_reductions(self, add_dark=True, add_flat=True, add_gain_variations=True,
-                         add_non_linear=True):
-        """
-        :param add_dark:
-        :param add_flat:
-        :return:
-        """
+                         add_non_linear=True, add_initial_bias=True):
         self.add_dark = add_dark
         self.add_flat = add_flat
         self.add_gain_variations = add_gain_variations
         self.add_non_linear = add_non_linear
+        self.add_initial_bias = add_initial_bias
 
     def setup_trends(self, ssv_gen, x_shifts=0, y_shifts=0):
         """
@@ -444,6 +440,7 @@ class Observation(object):
                 clip_values_det_limits=self.clip_values_det_limits,
                 add_read_noise=self.add_read_noise,
                 add_stellar_noise=self.add_stellar_noise,
+                add_initial_bias=self.add_initial_bias,
                 progress_bar=self.progess
             )
         else:
@@ -458,6 +455,7 @@ class Observation(object):
                 clip_values_det_limits=self.clip_values_det_limits,
                 add_read_noise=self.add_read_noise,
                 add_stellar_noise=self.add_stellar_noise,
+                add_initial_bias=self.add_initial_bias,
                 progress_bar=self.progess
             )
 

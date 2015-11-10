@@ -51,6 +51,7 @@ observation:
   add_gain_variations: True
   add_non_linear: True
   add_read_noise: True
+  add_initial_bias: True
   add_stellar_noise: True
 
   sky_background: 'example_data/hd209458b_12181_sky.txt'

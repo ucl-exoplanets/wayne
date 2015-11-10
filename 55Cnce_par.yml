@@ -52,6 +52,7 @@ observation:
   add_non_linear: False
   add_read_noise: True
   add_stellar_noise: True
+  add_initial_bias: False
 
   sky_background: 'example_data/55cnce_13665_sky.txt'
   cosmic_rate: 11

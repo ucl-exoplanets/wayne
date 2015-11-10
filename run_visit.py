@@ -235,6 +235,7 @@ if __name__ == '__main__':
     add_gain_variations = cfg['observation']['add_gain_variations']
     add_non_linear = cfg['observation']['add_non_linear']
     add_read_noise = cfg['observation']['add_read_noise']
+    add_initial_bias = cfg['observation']['add_initial_bias']
 
     sky_background = cfg['observation']['sky_background']
     cosmic_rate = cfg['observation']['cosmic_rate']
@@ -269,7 +270,8 @@ if __name__ == '__main__':
                      ldcoeffs, period, sma, inclination, eccentricity, periastron,
                      stellar_radius)
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
-    obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear)
+    obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear,
+                         add_initial_bias)
     obs.setup_observation(x_ref, y_ref, spatial_scan, scan_speed)
     obs.setup_simulator(sample_rate, clip_values_det_limits)
     obs.setup_trends(ssv_gen, x_shifts, y_shifts)

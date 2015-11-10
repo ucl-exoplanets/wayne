@@ -36,6 +36,7 @@ class WFC3_IR(object):
 
         self.read_noise = 4.5 / self.constant_gain  # e to DN
 
+        # TODO needs values for other subbarrays
         self.initial_bias = os.path.join(params._data_dir, 'wfc3_ir_initial_bias.fits')
 
         # General Info

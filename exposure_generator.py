@@ -143,7 +143,7 @@ class ExposureGenerator(object):
                       noise_mean, noise_std, add_dark, add_flat, cosmic_rate,
                       sky_background, scale_factor, add_gain_variations,
                       add_non_linear, clip_values_det_limits, add_read_noise,
-                      add_stellar_noise, progress_bar):
+                      add_stellar_noise, add_initial_bias, progress_bar):
         """ Constructs a staring mode frame, basically a stationary scanning
         """
 
@@ -162,7 +162,7 @@ class ExposureGenerator(object):
             cosmic_rate, sky_background, scale_factor,
             add_gain_variations, add_non_linear,
             clip_values_det_limits, add_read_noise, add_stellar_noise,
-            progress_bar
+            add_initial_bias, progress_bar
         )
 
         return self.exposure
@@ -176,6 +176,7 @@ class ExposureGenerator(object):
                        cosmic_rate=None, sky_background=1*u.count/u.s,
                        scale_factor=None, add_gain_variations=True, add_non_linear=True,
                        clip_values_det_limits=True, add_read_noise=True, add_stellar_noise=True,
+                       add_initial_bias=True,
                        progress_bar=None):
         """ Generates a spatially scanned frame.
 
@@ -285,7 +286,7 @@ class ExposureGenerator(object):
                                           self.planet, self.exp_info)
 
         # Zero Read
-        zero_read, zero_read_info = self._gen_zero_read()
+        zero_read, zero_read_info = self._gen_zero_read(add_initial_bias)
         self.exposure.add_read(zero_read.copy(), zero_read_info)
 
         # we dont want the zero read to stack yet as the other corrections
@@ -417,7 +418,7 @@ class ExposureGenerator(object):
         if add_read_noise:
             self.exposure.add_read_noise()
 
-    def _gen_zero_read(self):
+    def _gen_zero_read(self, add_initial_bias=True):
 
         # Disabled the zero read generation in favour of an inital bias (more
         # for looks than anything) could be implemented better later
@@ -427,7 +428,7 @@ class ExposureGenerator(object):
                                             light_sensitive=False)
 
         # TODO formalise BIAS with other modes aswell
-        if self.SUBARRAY == 256:
+        if self.SUBARRAY == 256 and add_initial_bias:
             with fits.open(self.detector.initial_bias) as f:
                 pixel_array_full += f[1].data
 
