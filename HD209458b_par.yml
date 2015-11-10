@@ -26,8 +26,8 @@ target:
 observation:
   detector: 'WFC3IR'  # currently fixed
   grism: 'G141'  # currently fixed
-  x_ref: 'example_data/hd209458b_12181_xref.txt'
-  y_ref: 'example_data/hd209458b_12181_yref.txt'
+  x_ref: 404
+  y_ref: 456
   NSAMP: 5
   SAMPSEQ: 'SPARS10'
   SUBARRAY: 256
@@ -41,7 +41,7 @@ observation:
   ssv_type: sine
   ssv_coeffs: [1.5, 1.1, 0]
   x_shifts: 0.015  # linear shift in x position (pixels) per exposure
-  y_shifts: 5  # linear shift in y position (pixels) per exposure
+  y_shifts: 0  # linear shift in y position (pixels) per exposure
 
   noise_mean: False
   noise_std: False

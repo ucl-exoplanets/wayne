@@ -29,7 +29,7 @@ class WFC3_IR(object):
         self.telescope_area = np.pi * (2.4*u.m/2.)**2
         self.min_counts = -20
         # 5% non-linear limit where nonlinear correction fails
-        self.max_counts = 40000  # DN
+        self.max_counts = 78000  # DN
 
         self.constant_gain = 2.26
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
@@ -166,9 +166,9 @@ class WFC3_IR(object):
                            (mt['SUBARRAY'] == SUBARRAY)]
 
         if dark_query.empty:
-            raise WFC3SimSampleModeError(
-                "No Dark file for SAMPSEQ = {}, NSAMP={}, SUBARRAY={}"
-                "".format(SAMPSEQ, NSAMP, SUBARRAY))
+            raise WFC3SimNoDarkFileError(
+                "No Dark file found for SAMPSEQ = {}, SUBARRAY={}"
+                "".format(SAMPSEQ, SUBARRAY))
         else:
             dark_file = dark_query.Dark.values[0]
 
@@ -337,4 +337,8 @@ class WFC3SimException(BaseException):
 
 
 class WFC3SimSampleModeError(WFC3SimException):
+    pass
+
+
+class WFC3SimNoDarkFileError(WFC3SimException):
     pass

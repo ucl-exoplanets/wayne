@@ -1,4 +1,5 @@
 import time
+import warnings
 
 import numpy as np
 from astropy import units as u
@@ -6,6 +7,7 @@ import astropy.io.fits as fits
 
 import tools
 import exposure
+import detector
 from trend_generators import cosmic_rays, scan_speed_varations
 
 
@@ -384,8 +386,15 @@ class ExposureGenerator(object):
         :return:
         """
 
-        if add_dark:  # must be done at the end as its precomputed per NSAMP
-            self.exposure.add_dark_current()
+        try:
+            if add_dark:  # must be done at the end as its precomputed per NSAMP
+                self.exposure.add_dark_current()
+        except detector.WFC3SimNoDarkFileError:
+            warnings.warn("No Dark file found for SAMPSEQ = {}, SUBARRAY={}"
+                          " - Switching Dark Off".format(self.SAMPSEQ, self.SUBARRAY),
+                          WFC3SimNoDarkFileWarning)
+
+            self.exposure.exp_info[add_dark] = False
 
         # Final post generation corrections
         if add_non_linear:
@@ -716,3 +725,7 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
     final = np.reshape(yx, (y_size,x_size))
 
     return pixel_array + final
+
+
+class WFC3SimNoDarkFileWarning(Warning):
+    pass
