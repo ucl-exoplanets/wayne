@@ -7,9 +7,9 @@ general:
 target:
   name: '55 Cnc e'  # exact match of a OEC planet
   planet_spectrum_file: 'example_data/spectrum_55cnc_e.dat'  # wl (microns) vs transit depth
-  rebin_resolution: false
+  rebin_resolution: 300
   stellar_spectrum_file: 'lte052.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
-  flux_scale: 8E-18  # stellar flux is a blackbody, scale this to get the required counts per pixel
+  flux_scale: 4E-18  # stellar flux is a blackbody, scale this to get the required counts per pixel
 
   # Below only required to overwrite ExoData defaults from the OEC, set to false otherwise
   period: 0.7365449  # days
@@ -49,7 +49,7 @@ observation:
   add_dark: True
   add_flat: True
   add_gain_variations: True
-  add_non_linear: True
+  add_non_linear: False
   add_read_noise: True
   add_stellar_noise: True
 

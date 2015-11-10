@@ -61,7 +61,6 @@ class G141(object):
 
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
-        self.dispersion_solution = g141_wl_solution[3:]
 
         # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually
         #  dependant on x and y and not constant
@@ -372,7 +371,7 @@ class G141(object):
         :return: SpectrumTrace class
         """
 
-        return G141_Trace(x_ref, y_ref)
+        return self.trace(x_ref, y_ref)
 
     def get_flat_field(self, x_ref, y_ref, size=None):
         """ Uses the pixel-to-pixel flat to generate a wavelength depend flat
@@ -439,37 +438,37 @@ class G102(G141):
         # ------------
         self.min_lambda = 0.8 * u.micron
         self.max_lambda = 1.15 * u.micron
-        self.resolution = 130
+        self.resolution = 210
 
         self.trace_coeff = g102_trace_coeff
         self.wl_solution = g102_wl_solution
-        self.dispersion_solution = g102_wl_solution[3:]
 
         # self.dispersion = 2.5 * pq.nm (R~210) - The dispersion is actually
         #  dependant on x and y and not constant
 
-        ## PSF Information
-        self._psf_file = np.loadtxt(
-            os.path.join(params._data_dir, 'wfc3-ir-fwhm.dat'))
-        # in future add option to set unit of data file but we work internally
-        #  in microns
-        self.psf_wavelength = (self._psf_file[:, 0] * u.nm).to(u.micron)
-        self.psf_fwhm = self._psf_file[:, 1] * self.detector.pixel_unit
+        # Flat
+        self.flat_file = os.path.join(params._calb_dir,
+                                       'WFC3.IR.G102.flat.2.fits')
 
-        # we crop the input spectrum using this, the limiting factor here is psf
-        self.wl_limits = (self.psf_wavelength[0], self.psf_wavelength[-1])
+        # Sky
+        self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.sky.V1.0.fits')
+
+        ## PSF same as G141
+
+        # we crop the input spectrum using this, we set this just above and
+        # below the actual limits to not crop the psf
+        self.wl_limits = (0.75 * u.micron, 1.2 * u.micron)
 
         # Throughput
-        self.throughput_file = os.path.join(params._data_dir,
-                                            'wfc3_ir_g102_src_mjd_003_syn.fits')
+        self.throughput_file = os.path.join(
+            params._calb_dir, 'WFC3.IR.G102.1st.sens.2.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
+            self.throughput_units = (u.ph / (u.s * u.angstrom)) /\
+                                   (u.erg / (u.cm**2 * u.s *u.angstrom))
             self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
                 u.micron)
-            self.throughput_val = tbl.field('THROUGHPUT')
-
-        # Non Grism Specific Constants
-        self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
+            self.throughput_val = tbl.field('SENSITIVITY') * self.throughput_units
 
 
 class _SpectrumTrace(object):

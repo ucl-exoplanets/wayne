@@ -1,7 +1,7 @@
 general:
   # path to systems folder of the Open Exoplanet Catalogue
   oec_location: /Users/ryan/git/open_exoplanet_catalogue/systems
-  outdir: '/Users/ryan/Dropbox/phd/wfc3sim/hd209_stare'
+  outdir: '/Users/ryan/Dropbox/phd/wfc3sim/hd209_stare_g102'
   seed: 209
 
 target:
@@ -16,7 +16,7 @@ target:
 
 observation:
   detector: 'WFC3IR'  # currently fixed
-  grism: 'G141'  # currently fixed
+  grism: 'G102'  # currently fixed
   x_ref: 400
   y_ref: 510
   NSAMP: 5
