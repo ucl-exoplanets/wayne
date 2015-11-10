@@ -4,8 +4,8 @@
 import numpy as np
 import pysynphot
 import astropy.io.fits as fits
-from scipy.interpolate import interp1d
 import pylightcurve.fcmodel as pylc
+import pandas as pd
 
 
 def crop_spectrum(min_wl, max_wl, wl, flux):
@@ -135,6 +135,20 @@ def load_pheonix_stellar_grid_fits(fits_file):
     return star_wl, star_flux
 
 
+def load_and_sort_spectrum(file_path):
+    """ must be in the format wl, flux / depth
+    :param file:
+    :return:
+    """
+
+    df = pd.read_table(file_path, sep=" ", header=None, names=['wl', 'flux'],
+                       dtype={'wl': np.float64, 'flux': np.float64})
+
+    df.sort('wl', inplace=True)
+
+    return df.wl.values, df.flux.values
+
+
 def order_flux_grid(wavelength, spectrum):
     """ Given a wavelength and spectrum, will sort the wavelength in increasing
     order. this is necessary for models like pheonix that have been computed
@@ -206,6 +220,7 @@ def wl_at_resolution(R, wl_min, wl_max):
     delta_wl = mid_wl/R
 
     return np.arange(wl_min, wl_max+delta_wl, delta_wl)
+
 
 def crop_central_box(array, size):
     """ Crops the central size of pixels, Array must be square, and probably

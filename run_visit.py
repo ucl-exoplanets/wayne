@@ -128,14 +128,11 @@ if __name__ == '__main__':
         except KeyError:
             periastron = None
 
+        wl_planet, depth_planet = tools.load_and_sort_spectrum(planet_spectrum)
+        wl_planet, depth_planet = np.array(
+            tools.crop_spectrum(0.9, 1.8, wl_planet, depth_planet))
 
-
-        planet_spectra = np.loadtxt(planet_spectrum)
-        planet_spectra = planet_spectra.T  # turn to (wl list, flux list)
-        planet_spectra = np.array(tools.crop_spectrum(0.9, 1.8, *planet_spectra))
-
-        wl_planet = planet_spectra[0] * u.micron
-        depth_planet = planet_spectra[1]
+        wl_planet *= u.micron
 
         if rebin_resolution:
             new_wl = tools.wl_at_resolution(
@@ -144,6 +141,7 @@ if __name__ == '__main__':
 
             depth_planet = tools.rebin_spec(wl_planet.value, depth_planet, new_wl)
             wl_planet = new_wl * u.micron
+
     else:
         depth_planet = None
         planet = None
