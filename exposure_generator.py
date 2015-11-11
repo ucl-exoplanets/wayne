@@ -8,6 +8,7 @@ import astropy.io.fits as fits
 import tools
 import exposure
 import detector
+import filters
 from trend_generators import cosmic_rays, scan_speed_varations
 
 
@@ -109,8 +110,7 @@ class ExposureGenerator(object):
         })
 
         # Exposure class which holds the result
-        # TODO remove grism and add filter or something
-        self.exposure = exposure.Exposure(self.detector, self.grism,
+        self.exposure = exposure.Exposure(self.detector, filters.F140W(),
                                           self.planet, self.exp_info)
 
         # Zero Read
@@ -584,6 +584,9 @@ class ExposureGenerator(object):
 
         counts = (count_rate * exptime).to(u.photon)
         # QE removed as it is accounted for in sensitivity
+
+        # Calibration file Angelos wants often
+        # np.savetxt('spec_before_pix.dat', [wl, counts])
 
         # Finally, scale the lightcurve by the ramp
         if scale_factor is not None:

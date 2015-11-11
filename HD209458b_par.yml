@@ -6,8 +6,8 @@ general:
 
 target:
   name: 'HD 209458 b'  # exact match of a OEC planet
-  planet_spectrum_file: 'example_data/hd209_transmission_highres_spectrum_0.dat'  # wl (microns) vs transit depth
-  rebin_resolution: 300
+  planet_spectrum_file: 'example_data/209_spectrum.dat'  # wl (microns) vs transit depth
+  rebin_resolution: false
   stellar_spectrum_file: 'example_data/lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
   flux_scale: 2.8E-20  # stellar flux is a blackbody, scale this to get the required counts per pixel
 

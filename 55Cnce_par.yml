@@ -14,7 +14,7 @@ target:
   # Below only required to overwrite ExoData defaults from the OEC, set to false otherwise
   period: 0.7365449  # days
   sma: 0.0156    # AU
-  # stellar_radius: 0.943  # Solar Radii
+  stellar_radius: 0.943  # Solar Radii
   inclination: 82.5  # deg
   eccentricity: 0
   periastron: 0
@@ -34,7 +34,7 @@ observation:
   start_JD: 2451369.812714386
   exp_start_times: 'example_data/55cnce_13665_jd.txt'
   num_orbits: 5
-  sample_rate: 20  # How often to generate a single frame (when scanning) in ms
+  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
   spatial_scan: True
   scan_speed: 38.06 # 334/8.774724  # pixels per second
 
