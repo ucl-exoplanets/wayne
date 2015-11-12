@@ -751,8 +751,8 @@ def _psf_trace_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
     	    xx.append(np.clip(np.int_(np.random.normal(x_pos[i], psf_std[i], counts[i])), 0, x_size - 1))
     	    yy.append(np.clip(np.int_(np.random.normal(y_pos[i], psf_std[i], counts[i])), 0, y_size - 1))
     
-    xx = np.array(xx).flatten()
-    yy = np.array(yy).flatten()
+    xx = np.hstack(xx).flatten()
+    yy = np.hstack(yy).flatten()
 
     yx = yy * y_size + xx    	
     yx = np.bincount(yx)
