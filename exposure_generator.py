@@ -704,27 +704,25 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
 
     xx = []
     yy = []
+    max_x_index = x_size - 1
+    max_y_index = y_size - 1
 
     for i, bin_count in enumerate(counts):
         if bin_count > 0:
             # "throw" electrons into random (gaussian) positions in x and y
-            e_pos_x = np.random.normal(x_pos[i], psf_std[i], bin_count)
-            e_pos_y = np.random.normal(y_pos[i], psf_std[i], bin_count)
+            e_pos_x = np.random.normal(x_pos[i], psf_std[i], bin_count).astype(int)
+            e_pos_y = np.random.normal(y_pos[i], psf_std[i], bin_count).astype(int)
 
             # Turn coords into pixel numbers (ints) and clip thoose that fall
             # outside the detector
-
-            e_pos_x = np.clip(np.int_(e_pos_x), 0, x_size - 1)
-            e_pos_y = np.clip(np.int_(e_pos_y), 0, y_size - 1)
+            e_pos_x = np.clip(e_pos_x, 0, max_x_index)
+            e_pos_y = np.clip(e_pos_y, 0, max_y_index)
 
             xx.append(e_pos_x)
             yy.append(e_pos_y)
 
-    try:
-        xx = np.concatenate(xx)
-        yy = np.concatenate(yy)
-    except ValueError: # all zero counts
-        return pixel_array
+    xx = np.concatenate(xx)
+    yy = np.concatenate(yy)
 
     yx = yy * y_size + xx    	
     yx = np.bincount(yx)
