@@ -719,9 +719,12 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
 
             xx.append(e_pos_x)
             yy.append(e_pos_y)
-    
-    xx = np.concatenate(xx)
-    yy = np.concatenate(yy)
+
+    try:
+        xx = np.concatenate(xx)
+        yy = np.concatenate(yy)
+    except ValueError: # all zero counts
+        return pixel_array
 
     yx = yy * y_size + xx    	
     yx = np.bincount(yx)
