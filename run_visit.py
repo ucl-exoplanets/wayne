@@ -76,7 +76,7 @@ if __name__ == '__main__':
     # Check for transmission spectroscopy mode
     try:
         planet_spectrum = cfg['target']['planet_spectrum_file']
-        shutil.copy2(parameter_file, os.path.join(outdir, os.path.basename(planet_spectrum)))
+        shutil.copy2(planet_spectrum, os.path.join(outdir, os.path.basename(planet_spectrum)))
 
         transmission_spectroscopy = True
     except KeyError:
