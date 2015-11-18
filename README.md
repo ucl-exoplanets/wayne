@@ -22,7 +22,7 @@ ask Ryan or email ryanjvarley@gmail.com for help. I will package this up soon.
 
 ## Running
 
-Once install move to the wayne directory and edit a parameter file e.g. HD209458b_par.yml, in particular the `oec_location' and `outdir'.
+Once install move to the wayne directory and edit a parameter file e.g. HD209458b_par.yml, in particular the `oec_location` and `outdir`.
 
 Then run by typing
 
