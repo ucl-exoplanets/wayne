@@ -20,10 +20,11 @@ You need install this repo and download the data needed to your system.
 
 First clone this repo
 
-    git clone https://github.com/ucl-exoplanets/Wayne.git
+    git clone https://github.com/ucl-exoplanets/wayne.git
 
-Then install the package
-
+Then move to the new directory and install it
+    
+    cd wayne
     python setup.py install
     
 *If you are developing the package, you should install in edit mode instead so you are not required to install the package again after every update*
@@ -38,6 +39,16 @@ You can optionally install the [Open exoplanet Catalogue](https://github.com/Ope
 
 Wayne is ran by using the `wayne` command and a parameter file.
 
-A bunch of these are included in the `examples` folder. Move to this directory and give one a try.
+A bunch of these are included in the `examples` folder you can download [here](https://www.dropbox.com/s/2qswujobc97z5a9/wayne_examples.zip?dl=0). Move to this directory and give one a try.
 
     wayne -p HD209458b_par.yml
+    
+## FAQ 
+
+### Im getting a weird pandas column error
+
+update pandas
+
+### Im getting a weird numpy *= error
+
+update numpy
