@@ -16,18 +16,28 @@ Wayne is designed to be adapted to more instruments and systematics. Wayne got h
 
 ## Installation
 
-Currently this is clunky. Add this folder to your python path, install the requirements (including this one https://github.com/ucl-exoplanets/pylightcurve)
+You need install this repo and download the data needed to your system.
 
-ask Ryan or email ryanjvarley@gmail.com for help. I will package this up soon.
+First clone this repo
+
+    git clone https://github.com/ucl-exoplanets/Wayne.git
+
+Then install the package
+
+    python setup.py install
+    
+*If you are developing the package, you should install in edit mode instead so you are not required to install the package again after every update*
+
+    pip install -e .
+
+Now you need the data files from [here](https://www.dropbox.com/s/49cyy7el37d58a6/wayne_files.zip?dl=0). Put these in the folder `~/.wayne` or elsewhere and set the `WAYNE_DATA` environment variable.
+
+You can optionally install the [Open exoplanet Catalogue](https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue) and set the location to it in the parameter files. Otherwise leave this blank and the catalogue will be obtained from the web.
 
 ## Running
 
-Once install move to the wayne directory and edit a parameter file e.g. HD209458b_par.yml, in particular the `oec_location` and `outdir`.
+Wayne is ran by using the `wayne` command and a parameter file.
 
-Then run by typing
+A bunch of these are included in the `examples` folder. Move to this directory and give one a try.
 
-```
-python run_visit.py -p HD209458b_par.yml
-```
-
-Good Luck
+    wayne -p HD209458b_par.yml

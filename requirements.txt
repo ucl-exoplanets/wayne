@@ -1,0 +1,11 @@
+docopt
+numpy
+scipy
+matplotlib
+pylightcurve
+astropy
+pandas
+exodata
+quantities
+seaborn
+pysynphot

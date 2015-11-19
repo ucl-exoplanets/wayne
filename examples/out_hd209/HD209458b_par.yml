@@ -1,0 +1,63 @@
+general:
+  # path to systems folder of the Open Exoplanet Catalogue
+  oec_location: false
+  outdir: 'out_hd209'
+  seed: 209
+
+target:
+  name: 'HD 209458 b'  # exact match of a OEC planet
+  planet_spectrum_file: 'example_data/209_spectrum.dat'  # wl (microns) vs transit depth
+  rebin_resolution: false
+  stellar_spectrum_file: 'example_data/lte061.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
+  flux_scale: 2.8E-20  # stellar flux is a blackbody, scale this to get the required counts per pixel
+
+  # Below only required to overwrite ExoData defaults from the OEC, set to false otherwise
+  period: false  # days
+  sma: false    # AU
+  stellar_radius: false  # Solar Radii
+  inclination: false  # deg
+  eccentricity: false
+  periastron: false
+  transit_time: 2451370.0209  # JD
+  # Non-linear limb darkening coeffs 1-4 i.e [ld1, ld2, ld3, ld4], if false
+  # then name must be a valid OEC planet name
+  ldcoeffs: false
+
+observation:
+  detector: 'WFC3IR'  # currently fixed
+  grism: 'G141'  # currently fixed
+  x_ref: 404
+  y_ref: 456
+  NSAMP: 5
+  SAMPSEQ: 'SPARS10'
+  SUBARRAY: 256
+  start_JD: 2451369.812714386
+  exp_start_times: 'example_data/hd209458b_12181_jd.txt'
+  num_orbits: 5
+  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
+  spatial_scan: True
+  scan_speed: 7.39 # 165/22.32  # pixels per second
+
+  ssv_type: sine
+  ssv_coeffs: [1.5, 1.1, 0]
+  x_shifts: 0.015  # linear shift in x position (pixels) per exposure
+  y_shifts: 0  # linear shift in y position (pixels) per exposure
+
+  noise_mean: False
+  noise_std: False
+
+  add_dark: True
+  add_flat: True
+  add_gain_variations: True
+  add_non_linear: True
+  add_read_noise: True
+  add_initial_bias: True
+  add_stellar_noise: True
+
+  sky_background: 'example_data/hd209458b_12181_sky.txt'
+  cosmic_rate: 11
+
+  clip_values_det_limits: True
+
+trends:
+  visit_trend_coeffs: [0.005, 0.0011, 400]  # visit ramp / hook model coeffs

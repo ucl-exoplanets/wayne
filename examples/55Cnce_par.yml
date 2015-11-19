@@ -1,0 +1,63 @@
+general:
+  # path to systems folder of the Open Exoplanet Catalogue
+  oec_location: false
+  outdir: 'out_55cnce'
+  seed: 209
+
+target:
+  name: '55 Cnc e'  # exact match of a OEC planet
+  planet_spectrum_file: 'example_data/spectrum_55cnc_e.dat'  # wl (microns) vs transit depth
+  rebin_resolution: 300
+  stellar_spectrum_file: 'lte052.0-4.5-0.0a+0.0.BT-Settl.spec.fits'
+  flux_scale: 6.3E-19  # stellar flux is a blackbody, scale this to get the required counts per pixel
+
+  # Below only required to overwrite ExoData defaults from the OEC, set to false otherwise
+  period: 0.7365449  # days
+  sma: 0.0156    # AU
+  stellar_radius: 0.943  # Solar Radii
+  inclination: 82.5  # deg
+  eccentricity: 0
+  periastron: 0
+  transit_time: 2455733.007922  # JD
+  # Non-linear limb darkening coeffs 1-4 i.e [ld1, ld2, ld3, ld4], if false
+  # then name must be a valid OEC planet name
+  ldcoeffs: [6.88063E-01, -1.93654E-01, +2.46850E-01, -1.30323E-01]
+
+observation:
+  detector: 'WFC3IR'  # currently fixed
+  grism: 'G141'  # currently fixed
+  x_ref: 'example_data/55cnce_13665_xref.txt'
+  y_ref: 375
+  NSAMP: 3
+  SAMPSEQ: 'SPARS10'
+  SUBARRAY: 512
+  start_JD: 2451369.812714386
+  exp_start_times: 'example_data/55cnce_13665_jd.txt'
+  num_orbits: 5
+  sample_rate: 50  # How often to generate a single frame (when scanning) in ms
+  spatial_scan: True
+  scan_speed: 38.06 # 334/8.774724  # pixels per second
+
+  ssv_type: false
+  ssv_coeffs: false
+  x_shifts: 0  # linear shift in x position (pixels) per exposure
+  y_shifts: 0  # linear shift in y position (pixels) per exposure
+
+  noise_mean: False
+  noise_std: False
+
+  add_dark: True
+  add_flat: True
+  add_gain_variations: True
+  add_non_linear: True
+  add_read_noise: True
+  add_stellar_noise: True
+  add_initial_bias: False
+
+  sky_background: 'example_data/55cnce_13665_sky.txt'
+  cosmic_rate: 11
+
+  clip_values_det_limits: False
+
+trends:
+  visit_trend_coeffs: [0.005, 0.0015, 370]  # visit ramp / hook model coeffs
