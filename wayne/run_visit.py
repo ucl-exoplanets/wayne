@@ -52,7 +52,7 @@ def run():
 
     oec_path = cfg['general']['oec_location']
     if oec_path:
-        exodb = exodata.OECDatabase()
+        exodb = exodata.OECDatabase(oec_path)
     else:
         exodb = exodata.load_db_from_url()
 
