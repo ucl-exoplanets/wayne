@@ -43,7 +43,19 @@ A bunch of these are included in the `examples` folder you can download [here](h
 
     wayne -p HD209458b_par.yml
     
+This will take a while (~6h)
+
+You should take a look at example_par.yml in this folder for information on the configuration file. The other files show the file setup in a few other scenarios.
+    
 ## FAQ 
+
+### What package versions do you use?
+
+    V-PY    = '2.7.10 final'       / Python version used                            
+    V-NP    = '1.9.3   '           / NumPy version used                                
+    V-SP    = '0.16.0  '           / SciPy version used                             
+    V-AP    = '1.0.4   '           / AstroPy version used                           
+    V-PD    = '0.16.2  '           / Pandas version used 
 
 ### Im getting a weird pandas column error
 

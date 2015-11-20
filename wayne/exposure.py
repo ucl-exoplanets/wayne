@@ -312,13 +312,13 @@ class Exposure(object):
         h['DIRIMAGE'] = ('NONE', 'direct image for grism or prism exposure')
 
         h[''] = ''
-        h[''] = '/ WFC3Sim'
+        h[''] = '/ Wayne'
         h[''] = ''
-        h['SIM'] = (True, 'WFC3Sim Simulation (T/F)')
+        h['SIM'] = (True, 'Wayne Simulation (T/F)')
         from __init__ import __version__
         h['SIM-VER'] = (__version__, 'WFC3Sim Version Used')
         h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value,
-                         'WFC3Sim exposure generation time (s)')
+                         'Wayne exposure generation time (s)')
         h[''] = ''
         h['X-REF'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
         h['Y-REF'] = (exp_info['y_ref'], 'y position of star on frame (full frame))')
@@ -330,7 +330,7 @@ class Exposure(object):
         exp_info['noise_std'], 'std of normal noise (per s per pix)')
         h['ADD-DRK'] = (exp_info['add_dark'], 'dark current added (T/F)')
         h['ADD-FLAT'] = (exp_info['add_flat'], 'flat field added (T/F)')
-        h['ADD-GAIN'] = (exp_info['add_gain'], 'gain added (T/F)')
+        h['ADD-GAIN'] = (exp_info['add_gain'], 'gain variations added (T/F)')
         h['ADD-NLIN'] = (exp_info['add_non_linear'], 'non-linearity effects added (T/F)')
         h['STAR-NSE'] = (exp_info['add_stellar_noise'], 'Stellar Noise Added (T/F)')
 
@@ -345,21 +345,21 @@ class Exposure(object):
 
 
         h[''] = ''
-        h[''] = '/ WFC3Sim Package Versions Used'
+        h[''] = '/ Wayne Package Versions Used'
         h[''] = ''
         s = sys.version_info
         py_ver = '{}.{}.{} {}'.format(s.major, s.minor, s.micro,
                                       s.releaselevel)
         h['V-PY'] = (py_ver, 'Python version used')
-        h['V-NP'] = (np.__version__, 'np version used')
-        h['V-SP'] = (scipy.__version__, 'Scipy version used')
-        h['V-AP'] = (astropy.__version__, 'Astropy version used')
+        h['V-NP'] = (np.__version__, 'NumPy version used')
+        h['V-SP'] = (scipy.__version__, 'SciPy version used')
+        h['V-AP'] = (astropy.__version__, 'AstroPy version used')
         h['V-PD'] = (pandas.__version__, 'Pandas version used')
 
         planet = self.planet
         if isinstance(planet, exodata.astroclasses.Planet):
             h[''] = ''
-            h[''] = '/ WFC3Sim Observation Parameters'
+            h[''] = '/ Wayne Observation Parameters'
             h[''] = ''
             h['mid-tran'] = (float(planet.transittime), 'Time of mid transit (JD)')
             # h['t14'] = (float(planet.calcTransitDuration().rescale(pq.h)), 'Transit Duration (hr)')
