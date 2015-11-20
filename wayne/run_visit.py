@@ -66,8 +66,9 @@ def run():
         seed = cfg['general']['seed']
     except KeyError:
         seed = None
-    np.random.seed(seed)
-    params.seed = np.random.get_state()[1][0]  # tell params what the seed is for exp header
+    if not seed or seed is None:
+        np.random.seed(seed)
+        params.seed = np.random.get_state()[1][0]  # tell params what the seed is for exp header
 
     grisms = {
         'G141': grism.G141(),
