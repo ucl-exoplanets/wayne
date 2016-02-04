@@ -73,7 +73,9 @@ class G141(object):
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
 
         ## PSF Information - now parametrised into 2d poly
-        self.psf_fwhm_poly = np.poly1d([0.20530303, -0.24010606, 1.03390909])
+        # self.psf_fwhm_poly = np.poly1d([0.20530303, -0.24010606, 1.03390909])
+        # new psf based on measurements on the Tiny Tim simulated frames
+        self.psf_fwhm_poly = np.poly1d([0.16364845, -0.13557755,  1.14514456])
 
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf
