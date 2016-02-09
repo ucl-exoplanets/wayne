@@ -140,7 +140,7 @@ def run():
         wl_planet, depth_planet = np.array(
             tools.crop_spectrum(0.9, 1.8, wl_planet, depth_planet))
 
-        wl_planet *= u.micron
+        wl_planet = wl_planet * u.micron
 
         if rebin_resolution:
             new_wl = tools.wl_at_resolution(
@@ -181,7 +181,7 @@ def run():
             wl_star = new_wl
 
         flux_units = u.erg / (u.angstrom * u.s * u.sr * u.cm**2)
-        flux_star *= flux_units
+        flux_star = flux_star * flux_units
     else:  # use blackbody
         if transmission_spectroscopy:
             flux_star = blackbody_lambda(wl_planet, planet.star.T)
@@ -268,7 +268,7 @@ def run():
 
     if isinstance(sky_background, str):
         sky_background = np.loadtxt(sky_background)
-    sky_background *= u.count/u.s
+    sky_background = sky_background * u.count/u.s
 
     obs = observation.Observation(outdir)
 
