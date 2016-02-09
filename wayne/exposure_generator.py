@@ -547,9 +547,9 @@ class ExposureGenerator(object):
         sample_durations = _ends - sample_starts
         sample_mid_points = sample_starts + (sample_durations / 2)
 
-        sample_starts *= u.ms
-        sample_durations *= u.ms
-        sample_mid_points *= u.ms
+        sample_starts = sample_starts * u.ms
+        sample_durations = sample_durations * u.ms
+        sample_mid_points = sample_mid_points * u.ms
 
         return sample_starts, sample_mid_points, sample_durations, read_index
 
