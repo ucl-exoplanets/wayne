@@ -31,7 +31,7 @@ class WFC3_IR(object):
         # 5% non-linear limit where nonlinear correction fails
         self.max_counts = 78000  # DN
 
-        self.constant_gain = 2.26
+        self.constant_gain = 2.35
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
         self.read_noise = 10.5 / self.constant_gain  # e to DN
