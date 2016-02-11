@@ -143,8 +143,6 @@ class WFC3_IR(object):
         """ Adds the exact contribution from dark current as specified in
          the super_dark for that mode, must be done after bias pixels added
 
-        .. TODO : vary dark per pixel within error
-
         :param pixel_array: light sensitive pixel array
         :type pixel_array: np.ndarray
         :param NSAMP: number of sample up the ramp, effects exposure time
@@ -179,7 +177,8 @@ class WFC3_IR(object):
 
         with fits.open(dark_file_path) as f:
             dark_array = f[file_index].data
-            return pixel_array + dark_array
+            dark_error_array = f[file_index + 1].data
+            return pixel_array + np.random.normal(dark_array, dark_error_array)
 
     def add_read_noise(self, pixel_array):
         """ Adds read noise, stellar noise and distribution noise to the frame
