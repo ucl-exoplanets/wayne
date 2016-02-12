@@ -126,10 +126,10 @@ class Observation(object):
         if inclination:
             self.planet.i = inclination
 
-        if eccentricity or eccentricity==0:
+        if eccentricity or eccentricity is 0:
             self.planet.e = eccentricity
 
-        if periastron or periastron==0:
+        if periastron or periastron is 0:
             self.planet.periastron = periastron
 
         if stellar_radius:
