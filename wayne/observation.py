@@ -103,12 +103,12 @@ class Observation(object):
             len(wavelengths) == len(planet_spectrum)
             self.transmission_spectroscopy = True
             self._generate_planet_information(
-                planet, ldcoeffs, period, sma, inclination, eccentricity,
+                planet, transittime, ldcoeffs, period, sma, inclination, eccentricity,
                 periastron, stellar_radius)
         else:
             self.transmission_spectroscopy = False
 
-    def _generate_planet_information(self, planet, ldcoeffs, period, sma,
+    def _generate_planet_information(self, planet, transittime, ldcoeffs, period, sma,
                                      inclination, eccentricity, periastron,
                                      stellar_radius):
 
@@ -134,6 +134,9 @@ class Observation(object):
 
         if stellar_radius:
             self.planet.star.R = stellar_radius
+            
+        if transittime:
+            self.planet.transittime = transittime
 
         if not ldcoeffs:
             star = planet.star
