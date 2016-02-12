@@ -1,4 +1,5 @@
 examples/out_*
+.hypothesis
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

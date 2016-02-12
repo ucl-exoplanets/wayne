@@ -63,4 +63,4 @@ update pandas
 
 ### Im getting a weird numpy *= error
 
-update numpy
+downgrade numpy from 1.10 to 1.9
