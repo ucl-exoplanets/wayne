@@ -177,7 +177,7 @@ class WFC3_IR(object):
 
         with fits.open(dark_file_path) as f:
             dark_array = f[file_index].data
-            dark_error_array = np.abs(f[file_index + 1].data)
+            dark_error_array = np.where(f[file_index + 1].data > 0, f[file_index + 1].data, 0.00001)
             return pixel_array + np.random.normal(dark_array, dark_error_array)
 
     def add_read_noise(self, pixel_array):
