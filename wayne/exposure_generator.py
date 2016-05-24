@@ -122,7 +122,7 @@ class ExposureGenerator(object):
         # Angelos code
         y = np.arange(SUBARRAY, dtype=float)
         x = np.arange(SUBARRAY, dtype=float)
-        x, y = np.meshgrid(x, y)
+        x, y = np.meshgrid(x + 0.5, y + 0.5)
         x0 = x_ref - (507.0 - SUBARRAY / 2.0)
         y0 = x_ref - (507.0 - SUBARRAY / 2.0)
         # generate a 2d gaussian
