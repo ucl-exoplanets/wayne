@@ -568,7 +568,7 @@ class ExposureGenerator(object):
         x_pos = trace.wl_to_x(wl)
         y_pos = trace.wl_to_y(wl)
 
-        psf_std = self.grism.wl_to_psf_std(wl)
+        psf_std = self.grism.psf_fwhm_poly(wl)
 
         # Modify the flux by the grism throughput Units e / (s A)
         count_rate = self.grism.apply_throughput(wl, flux)
@@ -710,8 +710,8 @@ def _psf_distribution(counts, x_pos, y_pos, psf_std, pixel_array):
     for i, bin_count in enumerate(counts):
         if bin_count > 0:
             # "throw" electrons into random (gaussian) positions in x and y
-            e_pos_x = np.random.normal(x_pos[i], psf_std[i], bin_count).astype(int)
-            e_pos_y = np.random.normal(y_pos[i], psf_std[i], bin_count).astype(int)
+            e_pos_x = x_pos[i] + psf_std[i] * np.random.standard_cauchy(bin_count).astype(int)
+            e_pos_y = y_pos[i] + psf_std[i] * np.random.standard_cauchy(bin_count).astype(int)
 
             # Turn coords into pixel numbers (ints) and clip thoose that fall
             # outside the detector
