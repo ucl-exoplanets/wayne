@@ -4,7 +4,7 @@
 import numpy as np
 import pysynphot
 import astropy.io.fits as fits
-import thirdparty.pylightcurve.transit_models as pylc
+import thirdparty.pylightcurve as pylc
 import pandas as pd
 
 

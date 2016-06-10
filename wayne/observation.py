@@ -16,7 +16,7 @@ from visit_planner import VisitPlanner
 from wfc3simlog import logger
 
 from thirdparty.progress import Progress
-import thirdparty.pylightcurve.transit_models as pylc
+import thirdparty.pylightcurve as pylc
 
 
 class Observation(object):
@@ -327,9 +327,8 @@ class Observation(object):
             ))
 
         for j, spec_elem in enumerate(planet_spectrum):
-            ww = 0
             models[:, j] = pylc.transit(self.ldcoeffs, spec_elem, P, a, e, i, W,
-                                        ww, transittime, time_array)
+                                        transittime, time_array)
 
         return models
 

@@ -1,4 +1,6 @@
 __version__ = 1.0
 
-
-from transit_models import *
+from pylightcurve_tools import *
+from flux import *
+from position import *
+from models import *
