@@ -124,9 +124,10 @@ class ExposureGenerator(object):
         x = np.arange(SUBARRAY, dtype=float)
         x, y = np.meshgrid(x + 0.5, y + 0.5)
         x0 = x_ref - (507.0 - SUBARRAY / 2.0)
-        y0 = x_ref - (507.0 - SUBARRAY / 2.0)
+        y0 = y_ref - (507.0 - SUBARRAY / 2.0)
+        sigma = 2.0
         # generate a 2d gaussian
-        di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / 2.0)
+        di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / (2.0 * sigma * sigma))
 
         read_info = {
             'read_exp_time': 0 * u.s,  # TODO add real value
