@@ -176,7 +176,16 @@ def get_limb_darkening_coeffs(star):
     :param star: exodata star object
     """
 
-    return pylc.ldcoeff(star.Z, float(star.T), star.calcLogg(), 'J')
+    return pylc.limb_darkening(star.Z, float(star.T), star.calcLogg(), 'J')
+
+
+def jd_to_hjd(jd, planet):
+    """ converts jd to hjd for a given target
+
+    :param star: exodata star object
+    """
+
+    return pylc.jd_to_hjd(jd, planet.system.ra.degree, planet.system.dec.degree)
 
 
 def detect_orbits(exp_start_times, separation=0.028):

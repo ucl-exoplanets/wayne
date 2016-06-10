@@ -317,8 +317,9 @@ class Observation(object):
 
         models = np.zeros((len(time_array), len(planet_spectrum)))
 
-        planet_spectrum = np.sqrt(
-            planet_spectrum)  # pylc wants Rp/Rs not transit depth
+        planet_spectrum = np.sqrt(planet_spectrum)  # pylc wants Rp/Rs not transit depth
+
+        time_array = tools.jd_to_hjd(time_array / u.day, planet)  # pylc wants hjd not jd
 
         logger.debug(
             "Generating lightcurves with P={}, a={}, i={}, e={}, W={}, T14={},"
