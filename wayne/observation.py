@@ -71,7 +71,7 @@ class Observation(object):
         self.clip_values_det_limits = clip_values_det_limits
 
     def setup_target(self, planet, wavelengths, planet_spectrum, stellar_flux,
-                     transittime=None, ldcoeffs=None, period=None, sma=None, inclination=None,
+                     transittime=None, ldcoeffs=None, period=None, rp=None, sma=None, inclination=None,
                      eccentricity=None, periastron=None, stellar_radius=None):
         """
         :param planet: An ExoData type planet object your observing (holds
@@ -103,12 +103,12 @@ class Observation(object):
             len(wavelengths) == len(planet_spectrum)
             self.transmission_spectroscopy = True
             self._generate_planet_information(
-                planet, transittime, ldcoeffs, period, sma, inclination, eccentricity,
+                planet, transittime, ldcoeffs, period, rp, sma, inclination, eccentricity,
                 periastron, stellar_radius)
         else:
             self.transmission_spectroscopy = False
 
-    def _generate_planet_information(self, planet, transittime, ldcoeffs, period, sma,
+    def _generate_planet_information(self, planet, transittime, ldcoeffs, period, rp, sma,
                                      inclination, eccentricity, periastron,
                                      stellar_radius):
 
@@ -119,6 +119,9 @@ class Observation(object):
 
         if period:
             self.planet.P = period
+
+        if rp:
+            self.planet.R = rp
 
         if sma:
             self.planet.a = sma
@@ -298,6 +301,7 @@ class Observation(object):
 
         P = float(planet.P.rescale(pq.day))
         a = float((planet.a / star.R).simplified)
+        rp = float((planet.R / star.R).simplified)
         i = float(planet.i.rescale(pq.deg))
         e = planet.e
         W = float(planet.periastron)
@@ -328,8 +332,8 @@ class Observation(object):
             ))
 
         for j, spec_elem in enumerate(planet_spectrum):
-            models[:, j] = pylc.transit(self.ldcoeffs, spec_elem, P, a, e, i, W,
-                                        transittime, time_array)
+            models[:, j] = pylc.transit(self.ldcoeffs, spec_elem, P, a, e, i, W, transittime, time_array) - \
+                (1. - pylc.eclipse(spec_elem ** 2, rp, P, a, e, i, W, transittime, time_array))
 
         return models
 

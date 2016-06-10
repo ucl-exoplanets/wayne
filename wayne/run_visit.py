@@ -107,6 +107,11 @@ def run():
             period = None
 
         try:
+            rp = cfg['target']['rp'] * aq.R_j
+        except KeyError:
+            rp = None
+
+        try:
             sma = cfg['target']['sma'] * aq.au
         except KeyError:
             sma = None
@@ -155,6 +160,7 @@ def run():
         planet = None
         transittime = None
         period = None
+        rp = None
         sma = None
         stellar_radius = None
         inclination = None
@@ -275,7 +281,7 @@ def run():
     obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
     obs.setup_grism(chosen_grism)
     obs.setup_target(planet, wl, depth_planet, stellar_flux_scaled, transittime,
-                     ldcoeffs, period, sma, inclination, eccentricity, periastron,
+                     ldcoeffs, period, rp, sma, inclination, eccentricity, periastron,
                      stellar_radius)
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
     obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear,
