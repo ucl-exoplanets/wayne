@@ -11,7 +11,6 @@ from astropy import units as u
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
-from models import GaussianModel1D, _gauss_StDev_to_FWHM
 from detector import WFC3_IR
 import params
 import tools
@@ -66,30 +65,27 @@ class G141(object):
         #  dependant on x and y and not constant
 
         # Flat
-        self.flat_file = os.path.join(params._calb_dir,
-                                       'WFC3.IR.G141.flat.2.fits')
+        self.flat_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.flat.2.fits')
 
         # Sky
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
 
-        ## PSF Information - now parametrised into 2d poly
-        # self.psf_fwhm_poly = np.poly1d([0.20530303, -0.24010606, 1.03390909])
-        # new psf based on measurements on the Tiny Tim simulated frames
-        # self.psf_fwhm_poly = np.poly1d([0.16364845, -0.13557755,  1.14514456])
-        # gamma parameter of a lorenzian psf, calculated from Corot-1b data (ID: 12181, PI:Deming)
-        self.psf_fwhm_poly = np.poly1d([ 0.23333333, -0.45, 0.72266667])
+        # PSF Information
+        # parameters of double gaussian psf, calculated from WASP 18 data (ID: 12181, PI:Deming)
+        # to be improved using the data from the instrument hand book
+        self.psf_ratio_poly = np.poly1d([-0.15537802, 0.38680151, -0.07414255])
+        self.psf_sigmal_poly = np.poly1d([0.15341696, -0.26097903, 0.66656004])
+        self.psf_sigmah_poly = np.poly1d([-3.25508806, 14.71343819, -8.23424356])
         
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf
         self.wl_limits = (0.988 * u.micron, 1.777 * u.micron)
 
         # Throughput
-        self.throughput_file = os.path.join(
-            params._calb_dir, 'WFC3.IR.G141.1st.sens.2.fits')
+        self.throughput_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.1st.sens.2.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_units = (u.ph / (u.s * u.angstrom)) /\
-                                   (u.erg / (u.cm**2 * u.s *u.angstrom))
+            self.throughput_units = (u.ph / (u.s * u.angstrom)) / (u.erg / (u.cm ** 2 * u.s * u.angstrom))
             self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
                 u.micron)
             self.throughput_val = tbl.field('SENSITIVITY') * self.throughput_units
@@ -97,57 +93,57 @@ class G141(object):
         # Non Grism Specific Constants
         self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
 
-    def flux_to_psf(self, wavelength, flux, y_pos):
-        """
-        Given a wavelength and flux this function returns the gaussian function
-        for the observation at the wl given (linearly interpolated using
-        numpy.interp)
-
-        The FWHM at each wavelength should be defined in a textfile loaded by
-         self._psf_file
-
-        We assume the psf can be represented by a gaussian, this is true for
-        WFC3 G141 (*WFC3 inst handbook (cycle 23)
-         - sec 7.6.1 - page 140*).
-
-        :param wavelength: wavelength to sample (unit length) singular
-        :type wavelength: astropy.units.quantity.Quantity
-        :param flux: The flux at the wavelength (i.e the area under the gaussian)
-        :type flux: float
-        :param y_pos: optionally set ypos. this means you can integrate over
-        the same values as pixels set mean=2.1 and integrate from 2 to 3
-        :type y_pos: float
-
-        :return:
-        """
-
-        if not isinstance(wavelength, u.Quantity):
-            raise TypeError("Wavelength must be given in units, got {}".format(
-                type(wavelength)))
-
-        mean = y_pos  # this is the center of the guassian
-
-        FWHM = self.wl_to_psf_std(wavelength) * _gauss_StDev_to_FWHM
-
-        gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
-
-        return gaussian_model
-
-    def wl_to_psf_std(self, wavelengths):
-        """ This is an optimised function to return the standard deviations of
-        the gaussians at each wavelength for each flux. looks up FWHM then
-        converts to stddev.
-
-        :param wavelengths:
-
-        :return: standard deviations of the gaussian for each lambda
-        """
-
-        FWHM = self.psf_fwhm_poly(wavelengths.to(u.micron).value)
-
-        std = FWHM / _gauss_StDev_to_FWHM
-
-        return std
+    # def flux_to_psf(self, wavelength, flux, y_pos):
+    #     """
+    #     Given a wavelength and flux this function returns the gaussian function
+    #     for the observation at the wl given (linearly interpolated using
+    #     numpy.interp)
+    #
+    #     The FWHM at each wavelength should be defined in a textfile loaded by
+    #      self._psf_file
+    #
+    #     We assume the psf can be represented by a gaussian, this is true for
+    #     WFC3 G141 (*WFC3 inst handbook (cycle 23)
+    #      - sec 7.6.1 - page 140*).
+    #
+    #     :param wavelength: wavelength to sample (unit length) singular
+    #     :type wavelength: astropy.units.quantity.Quantity
+    #     :param flux: The flux at the wavelength (i.e the area under the gaussian)
+    #     :type flux: float
+    #     :param y_pos: optionally set ypos. this means you can integrate over
+    #     the same values as pixels set mean=2.1 and integrate from 2 to 3
+    #     :type y_pos: float
+    #
+    #     :return:
+    #     """
+    #
+    #     if not isinstance(wavelength, u.Quantity):
+    #         raise TypeError("Wavelength must be given in units, got {}".format(
+    #             type(wavelength)))
+    #
+    #     mean = y_pos  # this is the center of the guassian
+    #
+    #     FWHM = self.wl_to_psf_std(wavelength) * _gauss_StDev_to_FWHM
+    #
+    #     gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
+    #
+    #     return gaussian_model
+    #
+    # def wl_to_psf_std(self, wavelengths):
+    #     """ This is an optimised function to return the standard deviations of
+    #     the gaussians at each wavelength for each flux. looks up FWHM then
+    #     converts to stddev.
+    #
+    #     :param wavelengths:
+    #
+    #     :return: standard deviations of the gaussian for each lambda
+    #     """
+    #
+    #     FWHM = self.psf_fwhm_poly(wavelengths.to(u.micron).value)
+    #
+    #     std = FWHM / _gauss_StDev_to_FWHM
+    #
+    #     return std
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
         """ Returns the coefficients to compute the spectrum trace and the
@@ -186,8 +182,7 @@ class G141(object):
         a_t_i = 1 / a_t  # the inverse
 
         # Distance between the reference and required point on the trace
-        d = np.sqrt((y_ref - y_1 + a_t_i * x_ref - a_t_i * x_1) ** 2 / (
-        a_t_i ** 2 + 1))
+        d = np.sqrt((y_ref - y_1 + a_t_i * x_ref - a_t_i * x_1) ** 2 / (a_t_i ** 2 + 1))
 
         # Determination of wavelength
         wl = a_w * d + b_w
@@ -226,8 +221,7 @@ class G141(object):
         a_t_i = 1 / a_t  # the inverse
 
         d_values = np.sqrt(
-            (y_ref - y_value + a_t_i * x_ref - a_t_i * x_values) ** 2 / (
-            a_t_i ** 2 + 1))
+            (y_ref - y_value + a_t_i * x_ref - a_t_i * x_values) ** 2 / (a_t_i ** 2 + 1))
 
         wl_values = a_w * d_values + b_w
 
@@ -400,9 +394,8 @@ class G141(object):
         # turn into format for flat equations
         wl_array_norm = (wl_array - wmin) / (wmax - wmin)
 
-
-        flatfield = (f0 + f1 * wl_array_norm + f2 * (wl_array_norm**2) +
-                     f3 * (wl_array_norm**3))
+        flatfield = (f0 + f1 * wl_array_norm + f2 * (wl_array_norm ** 2) +
+                     f3 * (wl_array_norm ** 3))
 
         if size is not None:
             flatfield = tools.crop_central_box(flatfield, size)
@@ -451,25 +444,22 @@ class G102(G141):
         #  dependant on x and y and not constant
 
         # Flat
-        self.flat_file = os.path.join(params._calb_dir,
-                                       'WFC3.IR.G102.flat.2.fits')
+        self.flat_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.flat.2.fits')
 
         # Sky
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.sky.V1.0.fits')
 
-        ## PSF same as G141
+        # PSF same as G141
 
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf
         self.wl_limits = (0.75 * u.micron, 1.2 * u.micron)
 
         # Throughput
-        self.throughput_file = os.path.join(
-            params._calb_dir, 'WFC3.IR.G102.1st.sens.2.fits')
+        self.throughput_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.1st.sens.2.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_units = (u.ph / (u.s * u.angstrom)) /\
-                                   (u.erg / (u.cm**2 * u.s *u.angstrom))
+            self.throughput_units = (u.ph / (u.s * u.angstrom)) / (u.erg / (u.cm ** 2 * u.s * u.angstrom))
             self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
                 u.micron)
             self.throughput_val = tbl.field('SENSITIVITY') * self.throughput_units
