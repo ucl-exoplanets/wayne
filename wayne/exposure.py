@@ -249,13 +249,13 @@ class Exposure(object):
         h['TARGNAME'] = (target_name, 'proposer\'s target name')
 
         try:
-            ra = self.planet.ra.degree
+            ra = self.planet.system.ra.degree
         except AttributeError:
             ra = 0.
         h['RA_TARG'] = (ra, 'right ascension of the target (deg) (J2000)')
 
         try:
-            dec = self.planet.dec.degree
+            dec = self.planet.system.dec.degree
         except AttributeError:
             dec = 0.
         h['DEC_TARG'] = (dec, 'declination of the target (deg) (J2000)')
