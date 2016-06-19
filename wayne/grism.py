@@ -73,9 +73,9 @@ class G141(object):
         # PSF Information
         # parameters of double gaussian psf, calculated from WASP 18 data (ID: 12181, PI:Deming)
         # to be improved using the data from the instrument hand book
-        self.psf_ratio_poly = np.poly1d([-0.15537802, 0.38680151, -0.07414255])
-        self.psf_sigmal_poly = np.poly1d([0.15341696, -0.26097903, 0.66656004])
-        self.psf_sigmah_poly = np.poly1d([-3.25508806, 14.71343819, -8.23424356])
+        self.psf_ratio_poly = np.poly1d([-0.25063428, 0.8332488, -0.80546074, 0.39896516])
+        self.psf_sigmal_poly = np.poly1d([0.69245668, -2.1043046, 2.22284446, -0.29689335])
+        self.psf_sigmah_poly = np.poly1d([2.90366189, -8.81859432, 8.96049229, 2.254503])
         
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf

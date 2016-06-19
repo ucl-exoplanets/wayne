@@ -34,7 +34,7 @@ class WFC3_IR(object):
         self.constant_gain = 2.35
         self.gain_file = os.path.join(params._calb_dir, 'u4m1335mi_pfl.fits')
 
-        self.read_noise = 10.5 / self.constant_gain  # e to DN
+        self.read_noise = 14.1 / self.constant_gain  # e to DN
 
         # TODO needs values for other subbarrays
         self.initial_bias = os.path.join(params._data_dir, 'wfc3_ir_initial_bias_256.fits')
