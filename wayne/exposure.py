@@ -129,7 +129,7 @@ class Exposure(object):
             pixel_array[ref_is_true] = value
             self.reads[i] = (pixel_array, header)
 
-    def generate_fits(self, out_dir='', filename=None):
+    def generate_fits(self, out_dir='', filename=None, ldcoeffs=None):
         """ Saves the exposure as a HST style fits file.
 
         :param out_dir: director to save output
@@ -148,7 +148,7 @@ class Exposure(object):
 
         out_path = os.path.join(out_dir, filename)
 
-        science_header = self.generate_science_header()
+        science_header = self.generate_science_header(ldcoeffs=ldcoeffs)
 
         hdulist = fits.HDUList([science_header])
 
@@ -205,7 +205,7 @@ class Exposure(object):
 
         hdulist.writeto(out_path)
 
-    def generate_science_header(self):
+    def generate_science_header(self, ldcoeffs=None):
         """ Generates the primary science header to match HST plus some
          information about the simulation
 
@@ -370,7 +370,10 @@ class Exposure(object):
             h['PERI'] = ('{}'.format(planet.periastron), 'Argument or periastron')
 
             # Limb Darkening
-            ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(self.planet.star)
+            if ldcoeffs:
+                ld1, ld2, ld3, ld4 = ldcoeffs
+            else:
+                ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(self.planet.star)
             h['ld1'] = (ld1, 'Non-linear limb darkening coeff 1')
             h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
             h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')

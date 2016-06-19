@@ -129,10 +129,10 @@ class Observation(object):
         if inclination:
             self.planet.i = inclination
 
-        if eccentricity or eccentricity is 0:
+        if eccentricity or eccentricity == 0:
             self.planet.e = eccentricity
 
-        if periastron or periastron is 0:
+        if periastron or periastron == 0:
             self.planet.periastron = periastron
 
         if stellar_radius:
@@ -470,7 +470,7 @@ class Observation(object):
                 progress_bar=self.progess
             )
 
-        exp_frame.generate_fits(self.outdir, filename)
+        exp_frame.generate_fits(self.outdir, filename, ldcoeffs=self.ldcoeffs)
 
         return exp_frame
 
