@@ -713,8 +713,8 @@ def _psf_distribution(counts, x_pos, y_pos, psf_ratio, psf_sigmal, psf_sigmah, p
         if bin_count > 1:
 
             # create a sample of 0 and 1 based on the ratio between the two gaussians
-            which_gauss = np.random.randint(0, 1000000, bin_count)
-            which_gauss = which_gauss / int(psf_ratio[i] * 1000000) / (which_gauss / int(psf_ratio[i] * 1000000))
+            which_gauss1 = np.zeros(int(bin_count*psf_ratio[i]))
+            which_gauss = np.int_(np.append(which_gauss1, np.ones(bin_count - len(which_gauss1))))
 
             # "throw" electrons into random (gaussian) positions in x and y
             e_pos_x = np.int_(np.random.normal(x_pos[i], np.array([psf_sigmah[i], psf_sigmal[i]])[which_gauss]))

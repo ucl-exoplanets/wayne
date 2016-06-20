@@ -3,7 +3,7 @@ from astropy import units as u
 
 
 def VisitPlanner(detector, NSAMP, SAMPSEQ, SUBARRAY, num_orbits=3,
-                  time_per_orbit=54 * u.min, hst_period=90 * u.min,
+                  time_per_orbit=54 * u.min, hst_period=95 * u.min,
                   exp_overhead=1 * u.min):
     """ Returns the start time of each exposure in minutes starting at 0.
      Useful for estimating buffer dumps etc.
