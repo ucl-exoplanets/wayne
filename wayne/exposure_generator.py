@@ -168,7 +168,8 @@ class ExposureGenerator(object):
 
         return self.exposure
 
-    def scanning_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
+    def scanning_frame(self, x_ref, y_ref, x_jitter, y_jitter,
+                       wl, stellar_flux, planet_signal,
                        scan_speed, sample_rate,
                        sample_mid_points=None, sample_durations=None,
                        read_index=None, ssv_generator=None,
@@ -333,7 +334,7 @@ class ExposureGenerator(object):
             # generate sample frame
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_subsample(
-                x_ref, s_y_ref, s_wl, s_flux, blank_frame, s_dur,
+                x_ref + np.random.normal(0, x_jitter), s_y_ref + np.random.normal(0, y_jitter), s_wl, s_flux, blank_frame, s_dur,
                 scale_factor, add_flat, add_stellar_noise)
             pixel_array += sample_frame
 

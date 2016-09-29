@@ -236,7 +236,7 @@ class Observation(object):
         self.add_non_linear = add_non_linear
         self.add_initial_bias = add_initial_bias
 
-    def setup_trends(self, ssv_gen, x_shifts=0, y_shifts=0):
+    def setup_trends(self, ssv_gen, x_shifts=0, x_jitter=0.0000001, y_shifts=0, y_jitter=0.0000001):
         """
         :param ssv_gen: scan speed generator
 
@@ -246,7 +246,9 @@ class Observation(object):
         """
         self.ssv_gen = ssv_gen
         self.x_shifts = x_shifts
+        self.x_jitter = x_jitter
         self.y_shifts = y_shifts
+        self.y_jitter = y_jitter
 
     def setup_noise_sources(self, sky_background=1*u.count/u.s, cosmic_rate=11.,
                             add_read_noise=True, add_stellar_noise=True):
@@ -432,6 +434,8 @@ class Observation(object):
         # X and Y Shifts
         x_ref += self.x_shifts * index_number
         y_ref += self.y_shifts * index_number
+        x_jitter = self.x_jitter
+        y_jitter = self.y_jitter
 
         if self._visit_trend:
             scale_factor = self._visit_trend.get_scale_factor(index_number)
@@ -440,7 +444,8 @@ class Observation(object):
 
         if self.spatial_scan:
             exp_frame = exp_gen.scanning_frame(
-                x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
+                x_ref, y_ref, x_jitter, y_jitter,
+                self.wl, self.stellar_flux, planet_depths,
                 self.scan_speed, self.sample_rate, sample_mid_points,
                 sample_durations, read_index, ssv_generator=self.ssv_gen,
                 noise_mean=self.noise_mean, noise_std=self.noise_std,

@@ -23,7 +23,7 @@ target:
   inclination: false  # deg
   eccentricity: false
   periastron: false
-  transit_time: 2454980.749  # JD
+  transit_time: 2454980.749  # HJD
   # Non-linear limb darkening coeffs 1-4 i.e [ld1, ld2, ld3, ld4], if false
   # then name must be a valid OEC planet name
   ldcoeffs: false
@@ -51,10 +51,10 @@ observation:
   spatial_scan: True
   scan_speed: 1 # 280 pixels/111.8 seconds  # pixels per second
 
-  # Scan speed variations types  can be of the type sine, mod-sine or None
+  # Scan speed variations types can be of the type sine, mod-sine or None
   # sine  = constant sine wave, coeffs = [stddev, period, start_phase]
   # start phase can be a number of 'rand' for random
-  # mod-sine = modulated sine wave with scan speed blips
+  # mod-sine = modulated sine wave with scan speed blips, still not implemented properly
   # coeffs = [amplitude, period, blip_proba] blip proba is a %
   ssv_type: false
   ssv_coeffs: false

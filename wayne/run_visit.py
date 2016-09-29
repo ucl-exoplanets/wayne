@@ -239,7 +239,9 @@ def run():
 
 
     x_shifts = cfg['observation']['x_shifts']
+    x_jitter = cfg['observation']['x_jitter']
     y_shifts = cfg['observation']['y_shifts']
+    y_jitter = cfg['observation']['y_jitter']
 
     noise_mean = cfg['observation']['noise_mean']
     noise_std = cfg['observation']['noise_std']
@@ -288,7 +290,7 @@ def run():
                          add_initial_bias)
     obs.setup_observation(x_ref, y_ref, spatial_scan, scan_speed)
     obs.setup_simulator(sample_rate, clip_values_det_limits)
-    obs.setup_trends(ssv_gen, x_shifts, y_shifts)
+    obs.setup_trends(ssv_gen, x_shifts, x_jitter, y_shifts, y_jitter)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 
