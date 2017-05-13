@@ -10,6 +10,7 @@ Options:
 
 import os
 import shutil
+import oec
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -64,7 +65,7 @@ def run():
     if oec_path:
         exodb = exodata.OECDatabase(oec_path)
     else:
-        exodb = exodata.load_db_from_url()
+        exodb = oec.oec_catalogue()
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
