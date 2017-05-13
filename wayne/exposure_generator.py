@@ -390,7 +390,7 @@ class ExposureGenerator(object):
         self._post_exposure_reductions(
             add_dark, add_non_linear, clip_values_det_limits, add_read_noise)
 
-        end_time = time.clock()
+        end_time = time.time()
         self.exp_info['sim_time'] = (end_time - start_time) * u.s
 
         return self.exposure
