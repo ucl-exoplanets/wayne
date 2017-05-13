@@ -56,6 +56,16 @@ class WFC3_IR(object):
 
         # Non-linearity
         self.non_linear_file = os.path.join(params._calb_dir, 'u1k1727mi_lin.fits')
+        with fits.open(self.non_linear_file) as f:
+            c1 = f[1].data
+            c2 = f[2].data
+            c3 = f[3].data
+            c4 = f[4].data
+
+        self.non_linear_c1 = c1
+        self.non_linear_c2 = c2
+        self.non_linear_c3 = c3
+        self.non_linear_c4 = c4
 
     def exptime(self, NSAMP, SUBARRAY, SAMPSEQ):
         """ Retrieves the total exposure time for the modes given
@@ -306,30 +316,34 @@ class WFC3_IR(object):
 
     def apply_non_linearity(self, pixel_array):  # Angelos code
         """ This uses the non linearity correction (in reverse) to give the
-        detector a non linear response. Units are in DN.
+        detector a non linear response. Units are in DN. The recorded flux is calculated from the
+        incoming flux by solving the inverse non-linearity equation (numerical solution, Newton-Raphson)
 
-        :param pixel_array:
-        :return:
+        :param pixel_array: incoming flux
+        :return non_linear_frame: recorded flux
         """
 
-        with fits.open(self.non_linear_file) as f:
-            # cropping scales the non-linear frame to the input frame
-            crop1 = len(f[1].data) / 2 - len(pixel_array) / 2
-            crop2 = len(f[1].data) / 2 + len(pixel_array) / 2
-            c1 = f[1].data[crop1:crop2, crop1:crop2]
-            c2 = f[2].data[crop1:crop2, crop1:crop2]
-            c3 = f[3].data[crop1:crop2, crop1:crop2]
-            c4 = f[4].data[crop1:crop2, crop1:crop2]
+        crop1 = len(self.non_linear_c1) / 2 - len(pixel_array) / 2
+        crop2 = len(self.non_linear_c1) / 2 + len(pixel_array) / 2
+        c1 = self.non_linear_c1[crop1:crop2, crop1:crop2]
+        c2 = self.non_linear_c2[crop1:crop2, crop1:crop2]
+        c3 = self.non_linear_c3[crop1:crop2, crop1:crop2]
+        c4 = self.non_linear_c4[crop1:crop2, crop1:crop2]
 
-        non_linear_frame = np.zeros_like(pixel_array)
+        u0 = pixel_array
+        u1 = u0 * 0
+        for ii in xrange(10000):  # setting a limit of 1k iterations - arbitrary limit
+            u1 = u0 - ((-pixel_array + u0 * (1 + c1 + u0 * (c2 + u0 * (c3 + c4 * u0)))) /
+                       (1 + c1 + 2 * c2 * u0 + 3 * c3 * u0 * u0 + 4 * c4 * u0 * u0 * u0))
+            if (np.abs(u1 - u0) < 10 ** (-3)).all():
+                break
+            else:
+                u0 = u1
 
-        for i in xrange(len(pixel_array)):  # finding roots isn't vectorised
-            for j in xrange(len(pixel_array[0])):
-                roots = np.real(np.roots([c4[i][j], c3[i][j], c2[i][j],
-                                          c1[i][j] + 1, -pixel_array[i][j]]))
-                non_linear_frame[i][j] = roots[np.argmin((roots - pixel_array[i][j]) ** 2)]
+        non_linear_frame = u1
 
         return non_linear_frame
+
 
 
 class WFC3SimException(BaseException):
