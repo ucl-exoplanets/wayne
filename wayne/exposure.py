@@ -156,9 +156,10 @@ class Exposure(object):
 
         for i, (data, header) in enumerate(reversed(self.reads)):
             # compression currently disabled as its producing stripey data
-            read_HDU = fits.ImageHDU(data, header)
+            header.set('SAMPNUM', len(self.reads) - 1 - i)
+            read_HDU = fits.ImageHDU(data, header, name='SCI')
 
-            error_array = fits.CompImageHDU(compression_type=compression)
+            error_array = fits.CompImageHDU(compression_type=compression, name='ERR')
 
             """ This array contains 16 independent flags indicating various
             status and problem conditions associated with each corresponding
@@ -169,7 +170,7 @@ class Exposure(object):
             interpreted as a flag. Table 2.5 lists the WFC3 data quality flags.
             """
             data_quality_array = fits.CompImageHDU(
-                compression_type=compression)
+                compression_type=compression, name='DQ')
 
             """ This array is present only for IR data. It is a 16-bit integer
             array and contains the number of samples used to derive the
@@ -184,7 +185,7 @@ class Exposure(object):
             image, the SAMP array contains the total number of samples
             retained at each pixel for all the exposures.
             """
-            samples_HDU = fits.CompImageHDU(compression_type=compression)
+            samples_HDU = fits.CompImageHDU(compression_type=compression, name='SAMP')
 
             """ This array is present only for IR data. This is a
             floating-point array that contains the effective integration
@@ -197,11 +198,14 @@ class Exposure(object):
             cosmic rays and saturated pixels from the intermediate data.
             """
             integration_time_HDU = fits.CompImageHDU(
-                compression_type=compression)
+                compression_type=compression, name='TIME')
 
             hdulist.extend(
                 [read_HDU, error_array, data_quality_array, samples_HDU,
                  integration_time_HDU])
+
+        if os.path.isfile(out_path):
+            os.system("rm {0}".format(out_path))
 
         hdulist.writeto(out_path)
 
@@ -399,6 +403,5 @@ class Exposure(object):
 
         h['SAMPTIME'] = (read_info['cumulative_exp_time'].value, 'total integration time (sec)')
         h['DELTATIM'] = (read_info['read_exp_time'].value, 'sample integration time (sec)')
-
 
         return read_header
