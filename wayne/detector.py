@@ -6,7 +6,7 @@ import os.path
 
 import numpy as np
 from astropy import units as u
-import astropy.io.fits as fits
+import pyfits as fits
 import pandas as pd
 
 import params

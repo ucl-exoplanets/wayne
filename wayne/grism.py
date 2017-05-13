@@ -9,7 +9,7 @@ import os.path
 import numpy as np
 from astropy import units as u
 import matplotlib.pyplot as plt
-from astropy.io import fits
+import pyfits as fits
 
 from detector import WFC3_IR
 import params
@@ -66,6 +66,14 @@ class G141(object):
 
         # Flat
         self.flat_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.flat.2.fits')
+        self.flat_fielding_fits_file = fits.open(self.flat_file)
+        self.flat_xs, self.flat_ys = np.meshgrid(np.arange(1014), np.arange(1014))
+        self.flat_wmin = self.flat_fielding_fits_file[0].header['WMIN']
+        self.flat_wmax = self.flat_fielding_fits_file[0].header['WMAX']
+        self.flat_f0 = self.flat_fielding_fits_file[0].data
+        self.flat_f1 = self.flat_fielding_fits_file[1].data
+        self.flat_f2 = self.flat_fielding_fits_file[2].data
+        self.flat_f3 = self.flat_fielding_fits_file[3].data
 
         # Sky
         self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
@@ -371,31 +379,54 @@ class G141(object):
 
         return self.trace(x_ref, y_ref)
 
-    def get_flat_field(self, x_ref, y_ref, size=None):
+    def get_flat_field(self, x_ref, y_ref, size=None, indices=None):
         """ Uses the pixel-to-pixel flat to generate a wavelength depend flat
         to correct for (or in this case add in) the effect of gain.
 
         :param x_ref:
         :param y_ref:
-        :param size: crops the flat feild to the array size given
+        :param size: crops the flat field to the array size given
         :return:
         """
 
-        wl_array = self.get_pixel_wl_whole_detector(x_ref, y_ref)
+        if indices is None:
+            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+            a_t_i = 1 / a_t  # the inverse
+            arr_1 = y_ref - self.flat_ys + a_t_i * x_ref - a_t_i * self.flat_xs
+            d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
+            wl_array = a_w * d_values + b_w
 
-        with fits.open(self.flat_file) as flat:
-            wmin = flat[0].header['WMIN']
-            wmax = flat[0].header['WMAX']
-            f0 = flat[0].data
-            f1 = flat[1].data
-            f2 = flat[2].data
-            f3 = flat[3].data
+        else:
+            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+            a_t_i = 1 / a_t  # the inverse
+            arr_1 = y_ref - self.flat_ys[indices] + a_t_i * x_ref - a_t_i * self.flat_xs[indices]
+            d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
+            wl_array = a_w * d_values + b_w
 
-        # turn into format for flat equations
-        wl_array_norm = (wl_array - wmin) / (wmax - wmin)
+        if indices is not None:
+            if size is not None:
+                indices = (indices[0] + (1014 - size) / 2, indices[1] + (1014 - size) / 2)
 
-        flatfield = (f0 + f1 * wl_array_norm + f2 * (wl_array_norm ** 2) +
-                     f3 * (wl_array_norm ** 3))
+            # turn into format for flat equations
+            wl_array_norm = (wl_array - self.flat_wmin) / (self.flat_wmax - self.flat_wmin)
+            wl_array_norm_2 = wl_array_norm * wl_array_norm
+            wl_array_norm_3 = wl_array_norm_2 * wl_array_norm
+
+            flatfield = np.ones_like(self.flat_f0)
+
+            flatfield[indices] = (self.flat_f0[indices] + (self.flat_f1[indices] * wl_array_norm) + (self.flat_f2[indices] * wl_array_norm_2) +
+                                  (self.flat_f3[indices] * wl_array_norm_3))
+
+        else:
+            wl_array = self.get_pixel_wl_whole_detector(x_ref, y_ref)
+
+            # turn into format for flat equations
+            wl_array_norm = (wl_array - self.flat_wmin) / (self.flat_wmax - self.flat_wmin)
+            wl_array_norm_2 = wl_array_norm * wl_array_norm
+            wl_array_norm_3 = wl_array_norm_2 * wl_array_norm
+
+            flatfield = (self.flat_f0 + (self.flat_f1 * wl_array_norm) + (self.flat_f2 * wl_array_norm_2) +
+                         (self.flat_f3 * wl_array_norm_3))
 
         if size is not None:
             flatfield = tools.crop_central_box(flatfield, size)

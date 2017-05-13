@@ -7,7 +7,7 @@ import os.path
 import sys
 
 import astropy
-import astropy.io.fits as fits
+import pyfits as fits
 import astropy.units as u
 import numpy as np
 import pandas
