@@ -153,6 +153,13 @@ class G141(object):
     #
     #     return std
 
+    def set_current_wavelength_only_dependent_array(self, wl):
+
+        self.current_psf_ratio = self.psf_ratio_poly(wl)
+        self.current_psf_sigmal = self.psf_sigmal_poly(wl)
+        self.current_psf_sigmah = self.psf_sigmah_poly(wl)
+        self.current_throughput_interpolated_function = np.interp(wl, self.throughput_wl, self.throughput_val)
+
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
         """ Returns the coefficients to compute the spectrum trace and the
         wavelength calibration as defined in the Axe Software manual and

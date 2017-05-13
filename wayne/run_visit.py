@@ -30,6 +30,7 @@ import grism
 import tools
 import params
 from trend_generators import scan_speed_varations
+import pyparallel_compiling
 
 seaborn.set_style("whitegrid")
 
@@ -48,14 +49,8 @@ def run():
     logger.info('WFC3Sim Started, parsing config file')
 
     threads = cfg['general']['threads']
-    if not threads:
-        threads = 1
-    files_location = os.path.abspath(os.path.dirname(__file__))
-    ww = open(os.path.join(files_location, 'pyparallel_menu.c'), 'w')
-    ww.write(open(os.path.join(files_location, 'pyparallel_menu_model.c')).read().replace('xxxxxx', str(threads)))
-    ww.close()
-    os.system("python {0}".format(os.path.join(files_location, 'pyparallel_setup.py build_ext --inplace')))
-
+    if threads:
+        pyparallel_compiling.pyparallel_compile(threads)
 
     outdir = cfg['general']['outdir']
     params.outdir = outdir

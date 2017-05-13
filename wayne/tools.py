@@ -41,6 +41,39 @@ def crop_spectrum(min_wl, max_wl, wl, flux):
 
     return wl[imin:imax], flux[imin:imax]
 
+def crop_spectrum_ind(min_wl, max_wl, wl):
+    """ crops the spectrum strictly between the limits provided, only works
+     if wl is ordered
+
+    :param min_wl: lower limit to crop
+    :type: numpy.ndarray
+    :param max_wl: upper limit to crop
+    :type: numpy.ndarray
+    :param wl: array of spectrum wl
+    :type wl: numpy.ndarray
+    :param flux: array of spectrum flux
+    :type flux: numpy.ndarray
+
+    :return: wl, flux (cropped)
+    :rtype: (numpy.ndarray, numpy.ndarray)
+    """
+
+    wl_min_nearest = wl-min_wl
+    # any negative values are < min_wl and are excluded by assigning them the
+    #  highest value in the array
+    wl_min_nearest[wl_min_nearest < 0] = wl_min_nearest.max()
+    imin = wl_min_nearest.argmin()
+
+    wl_max_nearest = wl-max_wl
+
+    # any positive values are > min_wl and are excluded
+    wl_max_nearest[wl_max_nearest > 0] = wl_max_nearest.min()
+
+    # plus 1 because we want this value included in the slice
+    imax = wl_max_nearest.argmax() + 1
+
+    return imin, imax
+
 
 def bin_centers_to_edges(centers):
     """ Converts bin centers to edges, handling uneven bins. Bins are assumed to

@@ -11,6 +11,7 @@ import exposure
 import detector
 import filters
 from trend_generators import cosmic_rays, scan_speed_varations
+import pyparallel_compiling
 
 
 class ExposureGenerator(object):
@@ -230,11 +231,10 @@ class ExposureGenerator(object):
         """
 
         if threads:
-            files_location = os.path.abspath(os.path.dirname(__file__))
-            ww = open(os.path.join(files_location, 'pyparallel_menu.c'), 'w')
-            ww.write(open(os.path.join(files_location, 'pyparallel_menu_model.c')).read().replace('xxxxxx', str(threads)))
-            ww.close()
-            os.system("python {0}".format(os.path.join(files_location, 'pyparallel_setup.py build_ext --inplace')))
+            pyparallel_compiling.pyparallel_compile(threads)
+
+        import pyparallel
+        self.pyp_dist = pyparallel.apply_psf
 
         start_time = time.time()
 
@@ -326,6 +326,10 @@ class ExposureGenerator(object):
         s_x_jitter = np.random.normal(0, x_jitter, num_samples)
         s_y_jitter = np.random.normal(0, y_jitter, num_samples)
 
+        wavelength_only_test = False
+        crop_ind = tools.crop_spectrum_ind(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl)
+        s_wl = wl[crop_ind[0]:crop_ind[1]]
+
         for i, s_mid in enumerate(sample_mid_points):
             try:
                 s_y_ref = s_y_refs[i]
@@ -335,19 +339,17 @@ class ExposureGenerator(object):
                 s_y_ref = s_y_refs[-1]
 
             if self.transmission_spectroscopy:
-                s_flux = self.combine_planet_stellar_spectrum(stellar_flux, planet_signal[i])
+                s_flux = stellar_flux[crop_ind[0]:crop_ind[1]] * (1. - planet_signal[i][crop_ind[0]:crop_ind[1]])
             else:
-                s_flux = stellar_flux
+                s_flux = stellar_flux[crop_ind[0]:crop_ind[1]]
 
-            # TODO (ryan) handling cropping elsewhere to avoid doing it
-            #  all the time, crop flux + depth together
-            s_wl, s_flux = tools.crop_spectrum(
-                self.grism.wl_limits[0], self.grism.wl_limits[-1], wl, s_flux)
+            if not wavelength_only_test:
+                self.grism.set_current_wavelength_only_dependent_array(s_wl)
+                wavelength_only_test = True
 
             # generate sample frame
-            blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_subsample(
-                x_ref + s_x_jitter[i], s_y_ref + s_y_jitter[i], s_wl, s_flux, blank_frame, s_dur, s_rand_seeds[i],
+                x_ref + s_x_jitter[i], s_y_ref + s_y_jitter[i], s_wl, s_flux, pixel_array, s_dur, s_rand_seeds[i],
                 scale_factor, add_flat, add_stellar_noise)
             pixel_array += sample_frame
 
@@ -576,8 +578,6 @@ class ExposureGenerator(object):
         :return:
         """
 
-        import pyparallel as pyp
-
         wl = wl.to(u.micron)
 
         # Wavelength calibration, mapping to detector x/y pos
@@ -585,12 +585,12 @@ class ExposureGenerator(object):
         x_pos = trace.wl_to_x(wl)
         y_pos = trace.wl_to_y(wl)
 
-        psf_ratio = self.grism.psf_ratio_poly(wl)
-        psf_sigmal = self.grism.psf_sigmal_poly(wl)
-        psf_sigmah = self.grism.psf_sigmah_poly(wl)
+        psf_ratio = self.grism.current_psf_ratio
+        psf_sigmal = self.grism.current_psf_sigmal
+        psf_sigmah = self.grism.current_psf_sigmah
 
         # Modify the flux by the grism throughput Units e / (s A)
-        count_rate = self.grism.apply_throughput(wl, flux)
+        count_rate = flux * self.grism.current_throughput_interpolated_function * self.grism.throughput_units
         count_rate = count_rate.to(u.photon / u.s / u.angstrom)
 
         # Scale the flux to photon counts (per pixel / per second)
@@ -624,15 +624,15 @@ class ExposureGenerator(object):
         y_size = len(pixel_array)
         x_size = len(pixel_array[0])
 
-        pixel_array = np.reshape(
-            pyp.apply_psf(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, y_size, x_size, rand_seed),
+        new_pixel_array = np.reshape(
+            self.pyp_dist(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, y_size, x_size, rand_seed),
             (y_size, x_size))
 
         if add_flat:
-            flat_field = self.grism.get_flat_field(x_ref, y_ref, self.SUBARRAY, np.where(pixel_array > 0))
-            pixel_array *= flat_field
+            flat_field = self.grism.get_flat_field(x_ref, y_ref, self.SUBARRAY, np.where(new_pixel_array > 0))
+            new_pixel_array *= flat_field
 
-        return pixel_array
+        return new_pixel_array
 
     def _flux_to_counts(self, flux, wl):
         """ Converts flux to photons by scaling to the to the detector pixel
