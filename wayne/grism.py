@@ -389,23 +389,16 @@ class G141(object):
         :return:
         """
 
-        if indices is None:
-            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
-            a_t_i = 1 / a_t  # the inverse
-            arr_1 = y_ref - self.flat_ys + a_t_i * x_ref - a_t_i * self.flat_xs
-            d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
-            wl_array = a_w * d_values + b_w
+        if indices is not None:
 
-        else:
+            if size is not None:
+                indices = (indices[0] + (1014 - size) / 2, indices[1] + (1014 - size) / 2)
+
             a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
             a_t_i = 1 / a_t  # the inverse
             arr_1 = y_ref - self.flat_ys[indices] + a_t_i * x_ref - a_t_i * self.flat_xs[indices]
             d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
             wl_array = a_w * d_values + b_w
-
-        if indices is not None:
-            if size is not None:
-                indices = (indices[0] + (1014 - size) / 2, indices[1] + (1014 - size) / 2)
 
             # turn into format for flat equations
             wl_array_norm = (wl_array - self.flat_wmin) / (self.flat_wmax - self.flat_wmin)
@@ -418,7 +411,12 @@ class G141(object):
                                   (self.flat_f3[indices] * wl_array_norm_3))
 
         else:
-            wl_array = self.get_pixel_wl_whole_detector(x_ref, y_ref)
+
+            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+            a_t_i = 1 / a_t  # the inverse
+            arr_1 = y_ref - self.flat_ys + a_t_i * x_ref - a_t_i * self.flat_xs
+            d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
+            wl_array = a_w * d_values + b_w
 
             # turn into format for flat equations
             wl_array_norm = (wl_array - self.flat_wmin) / (self.flat_wmax - self.flat_wmin)
