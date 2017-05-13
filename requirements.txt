@@ -9,3 +9,5 @@ exodata
 quantities
 seaborn
 pysynphot
+pyfits
+cython

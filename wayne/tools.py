@@ -3,7 +3,7 @@
 
 import numpy as np
 import pysynphot
-import astropy.io.fits as fits
+import pyfits as fits
 import thirdparty.pylightcurve as pylc
 import pandas as pd
 

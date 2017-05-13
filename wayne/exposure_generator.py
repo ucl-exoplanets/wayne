@@ -1,9 +1,10 @@
+import os
 import time
 import warnings
 
 import numpy as np
 from astropy import units as u
-import astropy.io.fits as fits
+import pyfits as fits
 
 import tools
 import exposure
@@ -179,7 +180,8 @@ class ExposureGenerator(object):
                        scale_factor=None, add_gain_variations=True, add_non_linear=True,
                        clip_values_det_limits=True, add_read_noise=True, add_stellar_noise=True,
                        add_initial_bias=True,
-                       progress_bar=None):
+                       progress_bar=None,
+                       threads=None):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -227,7 +229,14 @@ class ExposureGenerator(object):
         :return: array with the exposure
         """
 
-        start_time = time.clock()
+        if threads:
+            files_location = os.path.abspath(os.path.dirname(__file__))
+            ww = open(os.path.join(files_location, 'pyparallel_menu.c'), 'w')
+            ww.write(open(os.path.join(files_location, 'pyparallel_menu_model.c')).read().replace('xxxxxx', str(threads)))
+            ww.close()
+            os.system("python {0}".format(os.path.join(files_location, 'pyparallel_setup.py build_ext --inplace')))
+
+        start_time = time.time()
 
         if planet_signal is None:
             self.transmission_spectroscopy = False
@@ -313,6 +322,10 @@ class ExposureGenerator(object):
                             ' (samp {}/{})'.format(0, num_samples)
             progress_bar.print_status_line(progress_line)
 
+        s_rand_seeds = np.random.randint(0, 100000, num_samples)
+        s_x_jitter = np.random.normal(0, x_jitter, num_samples)
+        s_y_jitter = np.random.normal(0, y_jitter, num_samples)
+
         for i, s_mid in enumerate(sample_mid_points):
             try:
                 s_y_ref = s_y_refs[i]
@@ -334,7 +347,7 @@ class ExposureGenerator(object):
             # generate sample frame
             blank_frame = np.zeros_like(pixel_array)
             sample_frame = self._gen_subsample(
-                x_ref + np.random.normal(0, x_jitter), s_y_ref + np.random.normal(0, y_jitter), s_wl, s_flux, blank_frame, s_dur,
+                x_ref + s_x_jitter[i], s_y_ref + s_y_jitter[i], s_wl, s_flux, blank_frame, s_dur, s_rand_seeds[i],
                 scale_factor, add_flat, add_stellar_noise)
             pixel_array += sample_frame
 
@@ -555,13 +568,15 @@ class ExposureGenerator(object):
 
         return sample_starts, sample_mid_points, sample_durations, read_index
 
-    def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
+    def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime, rand_seed,
                        scale_factor=None, add_flat=True,
                        add_stellar_noise=True):
         """ Does the bulk of the work in generating the observation. Used by
          both staring and scanning modes.
         :return:
         """
+
+        import pyparallel as pyp
 
         wl = wl.to(u.micron)
 
@@ -606,10 +621,15 @@ class ExposureGenerator(object):
         sub_scale = 507 - (self.SUBARRAY / 2)
         x_sub = x_pos - sub_scale
         y_sub = y_pos - sub_scale
-        pixel_array = _psf_distribution(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, pixel_array)
+        y_size = len(pixel_array)
+        x_size = len(pixel_array[0])
+
+        pixel_array = np.reshape(
+            pyp.apply_psf(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, y_size, x_size, rand_seed),
+            (y_size, x_size))
 
         if add_flat:
-            flat_field = self.grism.get_flat_field(x_ref, y_ref, self.SUBARRAY)
+            flat_field = self.grism.get_flat_field(x_ref, y_ref, self.SUBARRAY, np.where(pixel_array > 0))
             pixel_array *= flat_field
 
         return pixel_array

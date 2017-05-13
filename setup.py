@@ -28,7 +28,8 @@ with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 install_requires = ['docopt', 'numpy', 'scipy', 'matplotlib', 'pysynphot',
-                    'astropy', 'pandas', 'exodata', 'quantities', 'seaborn',]
+                    'astropy', 'pandas', 'exodata', 'quantities', 'seaborn',
+                    'pyfits', 'cython']
 
 setup(
     name="Wayne",
