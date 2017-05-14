@@ -61,3 +61,5 @@ run_test.png
 stats*.txt
 tests/.hypothesis
 example_data
+wayne/wayne_calibration_files
+examples/hd209458b_12181_data_simulated
