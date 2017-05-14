@@ -2,3 +2,8 @@ include LICENSE
 include README.md
 recursive-include wayne data *
 include wayne/oec_data_base/*
+include wayne/pyparrallel_menu.c
+include wayne/pyparrallel_menu.h
+include wayne/pyparrallel.c
+include wayne/pyparrallel.pyx
+include wayne/pyparrallel.so

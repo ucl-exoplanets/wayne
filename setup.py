@@ -5,6 +5,9 @@ import re
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+os.chdir('wayne')
+os.system("python {0}".format(os.path.join(here, 'wayne', 'pyparallel_setup.py build_ext --inplace')))
+os.chdir(here)
 
 # Read the version number from a source file.
 def find_version(*file_paths):

@@ -62,13 +62,14 @@ class Observation(object):
         self.spatial_scan = spatial_scan
         self.scan_speed = scan_speed
 
-    def setup_simulator(self, sample_rate=False, clip_values_det_limits=True):
+    def setup_simulator(self, sample_rate=False, clip_values_det_limits=True, threads=2):
         """
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
         """
         self.sample_rate = sample_rate
         self.clip_values_det_limits = clip_values_det_limits
+        self.threads = threads
 
     def setup_target(self, planet, wavelengths, planet_spectrum, stellar_flux,
                      transittime=None, ldcoeffs=None, period=None, rp=None, sma=None, inclination=None,
@@ -457,11 +458,13 @@ class Observation(object):
                 add_read_noise=self.add_read_noise,
                 add_stellar_noise=self.add_stellar_noise,
                 add_initial_bias=self.add_initial_bias,
-                progress_bar=self.progess
+                progress_bar=self.progess,
+                threads=self.threads
             )
         else:
             exp_frame = exp_gen.staring_frame(
-                x_ref, y_ref, self.wl, self.stellar_flux, planet_depths,
+                x_ref, y_ref, x_jitter, y_jitter,
+                self.wl, self.stellar_flux, planet_depths,
                 sample_mid_points, sample_durations, read_index,
                 noise_mean=self.noise_mean, noise_std=self.noise_std,
                 add_flat=self.add_flat, add_dark=self.add_dark,
@@ -472,7 +475,8 @@ class Observation(object):
                 add_read_noise=self.add_read_noise,
                 add_stellar_noise=self.add_stellar_noise,
                 add_initial_bias=self.add_initial_bias,
-                progress_bar=self.progess
+                progress_bar=self.progess,
+                threads=self.threads
             )
 
         exp_frame.generate_fits(self.outdir, filename, ldcoeffs=self.ldcoeffs)

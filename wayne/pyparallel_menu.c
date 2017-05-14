@@ -7,122 +7,7 @@
 
 #define PI 3.14159265358979323846
 
-
-double pfibo(int n) {
- int i;
- double a=0.0, b=1.0, tmp;
- for (i=0; i<n; ++i) {
- tmp = a; a = a + b; b = tmp;
- }
- return a;
-}
-
-double sump(double *array,int N) {
- double ssum;
- int i,j;
- ssum = 0.0;
- #pragma omp parallel num_threads(4) \
- 			shared(array) \
- 			private(i,j) \
- 			firstprivate(N)\
- 			reduction(+:ssum)
- {
-
- #pragma omp for schedule(static)	 			
- for (i=0;i<N;i++){
-  for (j=0;j<N;j++) {
-   ssum += array[i];
-  }
- }
-
- }
-
- return ssum;
-}
-
-
-
-
-
-/* Box-Muller parallel - for generating a normal distribution*/
-double *Box_Muller_parallel(double mu,double sigma,int size) {
-	
-	int i,N=size/2;
-	unsigned seed;
-	double *Xarr = malloc(size*sizeof(double));
-	double R,theta;
-	
-	
-	#pragma omp parallel num_threads(4)\
-				shared(Xarr)\
-				private(i,seed,R,theta)\
-				firstprivate(N)
-	 
-	{
-			
-	int myid = omp_get_thread_num(),thread_number = omp_get_num_threads();
-	int istart = myid*N/thread_number , iend = (myid+1)*N/thread_number;
-	if (myid == thread_number -1) {iend = N;}
-	
-	
-	seed = 25234 + 17*myid + time(NULL);
-	
-		
-	for (i=istart;i<iend;i++) {
-				
-		theta = 2.*PI*rand_r(&seed)/((double)RAND_MAX);
-		R = sqrt(-2.*log(rand_r(&seed)/((double)RAND_MAX)));
-		
-		Xarr[i] = (R *cos(theta) )*sigma + mu;
-		Xarr[i+N] = (R *sin(theta) )*sigma + mu;
-	}
-	
-	}
-	
-	return Xarr;
-}
-
-
-
-/* Box-Muller parallel - for generating a normal distribution*/
-double *Box_Muller_parallel_new(double mu,double *sigma,int size) {
-	
-	int i,N=size/2;
-	unsigned seed;
-	double *Xarr = malloc(size*sizeof(double));
-	double R,theta;
-	
-	
-	#pragma omp parallel num_threads(4)\
-				shared(Xarr,sigma,mu)\
-				private(i,seed,R,theta)\
-				firstprivate(N)
-	 
-	{
-			
-	int myid = omp_get_thread_num(),thread_number = omp_get_num_threads();
-	int istart = myid*N/thread_number , iend = (myid+1)*N/thread_number;
-	if (myid == thread_number -1) {iend = N;}
-	
-	
-	seed = 25234 + 17*myid + time(NULL);
-	
-		
-	for (i=istart;i<iend;i++) {
-				
-		theta = 2.*PI*rand_r(&seed)/((double)RAND_MAX);
-		R = sqrt(-2.*log(rand_r(&seed)/((double)RAND_MAX)));
-		
-		Xarr[i] = (R *cos(theta) )*sigma[i] + mu;
-		Xarr[i+N] = (R *sin(theta) )*sigma[i+N] + mu;
-	}
-	
-	}
-	
-	return Xarr;
-}
-
-int *Batman(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_ratio, double *psf_sigmal,double *psf_sigmah,int nr,int nc, int test){
+int *PSF(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_ratio, double *psf_sigmal,double *psf_sigmah,int nr,int nc, int test, int threads){
 	
 	int i,k,ssum,dim=nr*nc,N;
 	int ii,jj,electron_index,electron_counter,xpos,ypos;
@@ -132,7 +17,7 @@ int *Batman(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_rati
 	
 	
 	ssum = 0;
-	#pragma omp parallel num_threads(4)\
+	#pragma omp parallel num_threads(threads)\
 				shared(counts)\
 				private(k)\
 				firstprivate(size)\
@@ -152,7 +37,7 @@ int *Batman(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_rati
 	
 	
 	
-	#pragma omp parallel num_threads(4)\
+	#pragma omp parallel num_threads(threads)\
 				shared(A)\
 				private(i,seed,R,theta)\
 				firstprivate(ssum)
@@ -180,7 +65,7 @@ int *Batman(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_rati
 	
 	
 	/*--------- filling pixe_array with zeros--------------*/
-	#pragma omp parallel num_threads(4)\
+	#pragma omp parallel num_threads(threads)\
 				shared(pixel_array)\
 				private(i)\
 				firstprivate(dim)
@@ -226,18 +111,3 @@ int *Batman(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_rati
 	free(A);
 	return pixel_array;
 }
-
-
-
-
-/*double *feval(double *array,int size,double (*func)(double)) {
- int i;
- double *outarray;
-
- outarray = malloc(size*sizeof(double));
- for (i=0;i<size;i++) {
-  outarray[i] = func(array[i]);
- }
-
- return outarray; 
-}*/

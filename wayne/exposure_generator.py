@@ -11,7 +11,7 @@ import exposure
 import detector
 import filters
 from trend_generators import cosmic_rays, scan_speed_varations
-import pyparallel_compiling
+import pyparallel as pyp
 
 
 class ExposureGenerator(object):
@@ -141,12 +141,13 @@ class ExposureGenerator(object):
 
         return self.exposure
 
-    def staring_frame(self, x_ref, y_ref, wl, stellar_flux, planet_signal,
+    def staring_frame(self, x_ref, y_ref, x_jitter, y_jitter,
+                      wl, stellar_flux, planet_signal,
                       sample_mid_points, sample_durations, read_index,
                       noise_mean, noise_std, add_dark, add_flat, cosmic_rate,
                       sky_background, scale_factor, add_gain_variations,
                       add_non_linear, clip_values_det_limits, add_read_noise,
-                      add_stellar_noise, add_initial_bias, progress_bar):
+                      add_stellar_noise, add_initial_bias, progress_bar, threads=2):
         """ Constructs a staring mode frame, basically a stationary scanning
         """
 
@@ -158,14 +159,14 @@ class ExposureGenerator(object):
         # TODO (ryan) exp_info overwrites
 
         self.exposure = self.scanning_frame(
-            x_ref, y_ref, wl, stellar_flux, planet_signal, scan_speed,
+            x_ref, y_ref, x_jitter, y_jitter, wl, stellar_flux, planet_signal, scan_speed,
             sample_rate, sample_mid_points, sample_durations,
             read_index, ssv_generator, noise_mean,
             noise_std, add_dark, add_flat,
             cosmic_rate, sky_background, scale_factor,
             add_gain_variations, add_non_linear,
             clip_values_det_limits, add_read_noise, add_stellar_noise,
-            add_initial_bias, progress_bar
+            add_initial_bias, progress_bar, threads
         )
 
         return self.exposure
@@ -182,7 +183,7 @@ class ExposureGenerator(object):
                        clip_values_det_limits=True, add_read_noise=True, add_stellar_noise=True,
                        add_initial_bias=True,
                        progress_bar=None,
-                       threads=None):
+                       threads=2):
         """ Generates a spatially scanned frame.
 
         Note also that the stellar flux and planet signal MUST be binned the
@@ -229,12 +230,6 @@ class ExposureGenerator(object):
 
         :return: array with the exposure
         """
-
-        if threads:
-            pyparallel_compiling.pyparallel_compile(threads)
-
-        import pyparallel
-        self.pyp_dist = pyparallel.apply_psf
 
         start_time = time.time()
 
@@ -350,7 +345,7 @@ class ExposureGenerator(object):
             # generate sample frame
             sample_frame = self._gen_subsample(
                 x_ref + s_x_jitter[i], s_y_ref + s_y_jitter[i], s_wl, s_flux, pixel_array, s_dur, s_rand_seeds[i],
-                scale_factor, add_flat, add_stellar_noise)
+                threads, scale_factor, add_flat, add_stellar_noise)
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
@@ -570,7 +565,7 @@ class ExposureGenerator(object):
 
         return sample_starts, sample_mid_points, sample_durations, read_index
 
-    def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime, rand_seed,
+    def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime, rand_seed, threads,
                        scale_factor=None, add_flat=True,
                        add_stellar_noise=True):
         """ Does the bulk of the work in generating the observation. Used by
@@ -625,7 +620,7 @@ class ExposureGenerator(object):
         x_size = len(pixel_array[0])
 
         new_pixel_array = np.reshape(
-            self.pyp_dist(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, y_size, x_size, rand_seed),
+            pyp.apply_psf(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, y_size, x_size, rand_seed, threads),
             (y_size, x_size))
 
         if add_flat:

@@ -30,7 +30,6 @@ import grism
 import tools
 import params
 from trend_generators import scan_speed_varations
-import pyparallel_compiling
 
 seaborn.set_style("whitegrid")
 
@@ -49,12 +48,9 @@ def run():
     logger.info('WFC3Sim Started, parsing config file')
 
     threads = cfg['general']['threads']
-    if threads:
-        pyparallel_compiling.pyparallel_compile(threads)
 
     outdir = cfg['general']['outdir']
     params.outdir = outdir
-
 
     oec_path = cfg['general']['oec_location']
     if oec_path:
@@ -295,7 +291,7 @@ def run():
     obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear,
                          add_initial_bias)
     obs.setup_observation(x_ref, y_ref, spatial_scan, scan_speed)
-    obs.setup_simulator(sample_rate, clip_values_det_limits)
+    obs.setup_simulator(sample_rate, clip_values_det_limits, threads)
     obs.setup_trends(ssv_gen, x_shifts, x_jitter, y_shifts, y_jitter)
     obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
