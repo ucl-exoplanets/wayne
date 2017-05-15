@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from ...trend_generators import cosmic_rays
+from wayne.trend_generators import cosmic_rays
 
 
 class Test_BaseCosmicGenerator(unittest.TestCase):
