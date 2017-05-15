@@ -46,5 +46,5 @@ class Test_HookAndLongTermRamp(unittest.TestCase):
             self.visit_plan, (0.005, 0.0011, 400, 2456196.28836))
 
         unittest_tools.assertArrayAlmostEqual(
-            visit_trend.scale_factors,
+            visit_trend.scale_factors,  # FIXME this test is broken
             [0.99988,0.99994681,0.99997525,0.9998491,0.99991591,0.99994435], 5)
