@@ -30,6 +30,7 @@ def find_version(*file_paths):
 with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# TODO (ryan) should be parsed from req.txt
 install_requires = ['docopt', 'numpy', 'scipy', 'matplotlib', 'pysynphot',
                     'astropy', 'pandas', 'exodata', 'quantities', 'seaborn',
                     'pyfits', 'cython']
