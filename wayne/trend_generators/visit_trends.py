@@ -47,10 +47,10 @@ class HookAndLongTermRamp(BaseVisitTrend):
     def ramp_model(t, t_0, a1, b1, b2, to):
         """ Combined hook and long term ramp model
         :param t: time_array
+        :param t_0: array of orbit start times (per exposure)
         :param a1: linear ramp gradient
         :param b1: exponential hook coeff1
         :param b2: exponential hook coeff2
-        :param t_0: array of orbit start times (per exposure)
 
         :return: ramp_model
         """
