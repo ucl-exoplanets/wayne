@@ -4,7 +4,6 @@ import numpy as np
 import numpy.testing
 
 from .. import grism
-from unittest_tools import assertArrayAlmostEqual
 
 
 class Test_G141_Grism(unittest.TestCase):
@@ -70,13 +69,13 @@ class Test_G141_Trace(unittest.TestCase):
 
         # This step is normally done at initialisation
         trace_50_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 50))
-        assertArrayAlmostEqual(trace_50_50,
-                               np.array([9.94400817e-03, 1.87673580e+00, 4.52664778e+01, 8.95898963e+03]), 4)
+        expected_50_50 = np.array([0.0099, 1.8767, 45.2665, 8958.9896])
+        np.testing.assert_array_almost_equal(trace_50_50, expected_50_50, decimal=4)
 
         trace_100_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(100, 50))
-        assertArrayAlmostEqual(trace_100_50,
-                               np.array([9.5914e-03, 1.8813e+00, 4.5278e+01, 8.9637e+03]), 4)
+        expected_100_50 = np.array([0.0096, 1.8812, 45.2776, 8963.6693])
+        np.testing.assert_array_almost_equal(trace_100_50, expected_100_50, decimal=4)
 
         trace_50_100 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 100))
-        assertArrayAlmostEqual(trace_50_100,
-                               np.array([9.85778097e-03, 1.78010580e+00, 4.53781960e+01, 8.95898963e+03]), 4)
+        expected_50_100 = np.array([0.0099, 1.7801, 45.3782, 8958.9896])
+        np.testing.assert_array_almost_equal(trace_50_100, expected_50_100, decimal=4)
