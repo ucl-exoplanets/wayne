@@ -27,8 +27,8 @@ class Test_WFC3_IR:
     def test_get_exptime_works(self):
         det = detector.WFC3_IR()
 
-        assert det.exptime(NSAMP=1, SAMPSEQ='RAPID', SUBARRAY=1024) == 2.932*u.s
-        assert det.exptime(NSAMP=15, SAMPSEQ='RAPID', SUBARRAY=64) == 0.912*u.s
+        assert det.exptime(NSAMP=2, SAMPSEQ='RAPID', SUBARRAY=1024) == 2.932*u.s
+        assert det.exptime(NSAMP=16, SAMPSEQ='RAPID', SUBARRAY=64) == 0.912*u.s
         assert det.exptime(NSAMP=8, SAMPSEQ='SPARS25', SUBARRAY=512).value - 161.302 < 0.001
 
     def test_exptime_return_type(self):
@@ -36,7 +36,7 @@ class Test_WFC3_IR:
         # this results in x += exptime + overhead failing with "ValueError: non-broadcastable output"
         det = detector.WFC3_IR()
 
-        exp_time = det.exptime(NSAMP=1, SAMPSEQ='RAPID', SUBARRAY=1024)
+        exp_time = det.exptime(NSAMP=2, SAMPSEQ='RAPID', SUBARRAY=1024)
 
         x = 4. * u.s
         x += exp_time + 6. * u.s  # should run without ValueError
@@ -45,7 +45,7 @@ class Test_WFC3_IR:
         det = detector.WFC3_IR()
 
         with pytest.raises(detector.WFC3SimSampleModeError):
-            det.exptime(NSAMP=16, SAMPSEQ='RAPID', SUBARRAY=1024)
+            det.exptime(NSAMP=17, SAMPSEQ='RAPID', SUBARRAY=1024)
 
         with pytest.raises(detector.WFC3SimSampleModeError):
             det.exptime(NSAMP=0, SAMPSEQ='RAPID', SUBARRAY=1024)
