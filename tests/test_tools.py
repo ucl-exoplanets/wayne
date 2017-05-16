@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing
 import astropy.units as u
 
-from .. import tools
+from wayne import tools
 
 
 class Test_crop_spectrum(unittest.TestCase):

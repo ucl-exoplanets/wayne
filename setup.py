@@ -62,21 +62,10 @@ setup(
         ],
     },
 
-    # What does your project relate to?
-    # keywords='sample setuptools development',
-
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages.
     packages=find_packages(),
-
-    # List run-time dependencies here.  These will be installed by pip when your
-    # project is installed.
+    setup_requires=["pytest-runner"],
     install_requires=install_requires,
-
-    # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
+    tests_require=['pytest'],
     include_package_data=True,
     zip_safe=False,
-    # test_suite='nose.collector'
 )

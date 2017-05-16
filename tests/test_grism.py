@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import numpy.testing
 
-from .. import grism
+from wayne import grism
 
 
 class Test_G141_Grism(unittest.TestCase):

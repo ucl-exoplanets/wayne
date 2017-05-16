@@ -1,9 +1,8 @@
 import unittest
 
 import numpy as np
-import numpy.testing
 
-from .. import models
+from wayne import models
 
 
 class Test_GaussianModel1D(unittest.TestCase):
