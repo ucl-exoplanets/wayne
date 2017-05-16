@@ -1,10 +1,10 @@
+from __future__ import division
 import unittest
 
 import numpy as np
 import astropy.units as u
 
 from wayne.trend_generators import visit_trends
-from wayne.tests import unittest_tools
 
 
 class ExampleVisitTrend(visit_trends.BaseVisitTrend):
@@ -43,8 +43,10 @@ class Test_HookAndLongTermRamp(unittest.TestCase):
         }
 
         visit_trend = visit_trends.HookAndLongTermRamp(
-            self.visit_plan, (0.005, 0.0011, 400, 2456196.28836))
+            self.visit_plan, (0.005, 0.0011, 400, 9/60/24))
 
-        unittest_tools.assertArrayAlmostEqual(
-            visit_trend.scale_factors,  # FIXME this test is broken
-            [0.99988,0.99994681,0.99997525,0.9998491,0.99991591,0.99994435], 5)
+        np.testing.assert_array_almost_equal(
+            visit_trend.scale_factors,
+            [0.99891,  0.99952,  0.99978,  0.9986 ,  0.99921,  0.99947],
+            decimal=5
+        )
