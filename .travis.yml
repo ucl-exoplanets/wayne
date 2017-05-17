@@ -16,6 +16,7 @@ install:
   # Install the deps pip can struggle with
   - conda create -qy -n test-environment python=$TRAVIS_PYTHON_VERSION numpy=1.10.4 astropy=1.1.2 matplotlib cython pymc=2.3.6
   - source activate test-environment
+  - pip install -r requirements.txt
   - python setup.py install
 
 script: python setup.py test
