@@ -1,5 +1,5 @@
 astropy==1.1.2
-Cython==0.25.2
+cython
 docopt
 exodata==2.1.6
 matplotlib
