@@ -33,7 +33,7 @@ with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 # TODO (ryan) should be parsed from req.txt
 install_requires = ['docopt', 'numpy', 'scipy', 'matplotlib', 'pysynphot',
                     'astropy', 'pandas', 'exodata', 'quantities', 'seaborn',
-                    'pyfits', 'cython']
+                    'pyfits', 'cython', 'ephem', 'pymc']
 
 setup(
     name="Wayne",
