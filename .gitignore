@@ -62,6 +62,6 @@ stats*.txt
 tests/.hypothesis
 example_data
 wayne/wayne_calibration_files
-examples/hd209458b_12181_data_simulated
 wayne/pyparallel.c
 wayne/oec_data_base/systems_last_update.txt
+hd209458b_12181_data_simulated
