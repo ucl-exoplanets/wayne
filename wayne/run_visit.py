@@ -10,28 +10,24 @@ Options:
 
 import os
 import shutil
-import oec
 
-import numpy as np
-import matplotlib.pyplot as plt
-from astropy.analytic_functions import blackbody_lambda
-from astropy import units as u
+import docopt
 import exodata
 import exodata.astroquantities as aq
-import quantities as pq  # exodata still uses this
+import matplotlib.pyplot as plt
+import numpy as np
 import yaml
-import docopt
-import seaborn
+from astropy import units as u
+from astropy.analytic_functions import blackbody_lambda
 
-from wfc3simlog import logger
-import observation
 import detector
 import grism
-import tools
+import observation
+import oec
 import params
+import tools
 from trend_generators import scan_speed_varations
-
-seaborn.set_style("whitegrid")
+from wfc3simlog import logger
 
 
 class WFC3SimConfigError(BaseException):

@@ -1,16 +1,12 @@
 __all__ = ['oec_catalogue', 'find_oec_parameters']
 
-
-import os
-import time
 import gzip
-import urllib
+import os
 import socket
-
-import numpy as np
+import time
+import urllib
 
 import exodata
-import exodata.astroquantities as aq
 
 
 def oec_catalogue():
