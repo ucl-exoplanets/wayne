@@ -2,10 +2,8 @@ import unittest
 
 import numpy as np
 import numpy.testing
-import astropy.units as u
 
-from .. import grism
-from unittest_tools import assertArrayAlmostEqual
+from wayne import grism
 
 
 class Test_G141_Grism(unittest.TestCase):
@@ -14,34 +12,6 @@ class Test_G141_Grism(unittest.TestCase):
 
     def test__init__(self):
         grism.G141()  # pass if no exceptions
-
-    def test_flux_to_psf_raises_TypeError_given_no_units(self):
-        with self.assertRaises(TypeError):
-            self.g141_grism.flux_to_psf(1.2, 1.)
-
-    def test_flux_to_psf_at_sample_points(self):
-        # Verified using MCMC
-        psf1 = self.g141_grism.flux_to_psf(1.2 * u.micron, 1.)
-        self.assertAlmostEqual(psf1.flux, 1., 9)
-        self.assertAlmostEqual(psf1.amplitude, 0.9033, 4)
-        self.assertAlmostEqual(psf1.stddev, 0.4416, 4)
-
-        psf2 = self.g141_grism.flux_to_psf(1.7 * u.micron, 1.5)
-
-        self.assertAlmostEqual(psf2.flux, 1.5, 9)
-        self.assertAlmostEqual(psf2.amplitude, 1.1560, 4)
-        self.assertAlmostEqual(psf2.stddev, 0.5177, 4)
-
-    def test_flux_to_psf_between_sample_points_interpolation(self):
-        psf1 = self.g141_grism.flux_to_psf(1.15 * u.micron, 1.)
-        self.assertAlmostEqual(psf1.flux, 1., 9)
-        self.assertAlmostEqual(psf1.amplitude, 0.9125, 4)
-        self.assertAlmostEqual(psf1.stddev, 0.4372, 4)
-
-        psf2 = self.g141_grism.flux_to_psf(1.65 * u.micron, 1.5)
-        self.assertAlmostEqual(psf2.flux, 1.5, 9)
-        self.assertAlmostEqual(psf2.amplitude, 1.1767, 4)
-        self.assertAlmostEqual(psf2.stddev, 0.5085, 4)
 
     def test_get_pixel_wl(self):
         self.assertAlmostEqual(self.g141_grism.get_pixel_wl(50, 50, 100, 50), 11222.2, 1)
@@ -99,13 +69,13 @@ class Test_G141_Trace(unittest.TestCase):
 
         # This step is normally done at initialisation
         trace_50_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 50))
-        assertArrayAlmostEqual(trace_50_50,
-                               np.array([9.94400817e-03, 1.87673580e+00, 4.52664778e+01, 8.95898963e+03]), 4)
+        expected_50_50 = np.array([0.0099, 1.8767, 45.2665, 8958.9896])
+        np.testing.assert_array_almost_equal(trace_50_50, expected_50_50, decimal=4)
 
         trace_100_50 = np.array(g141_trace._get_wavelength_calibration_coeffs(100, 50))
-        assertArrayAlmostEqual(trace_100_50,
-                               np.array([9.5914e-03, 1.8813e+00, 4.5278e+01, 8.9637e+03]), 4)
+        expected_100_50 = np.array([0.0096, 1.8812, 45.2776, 8963.6693])
+        np.testing.assert_array_almost_equal(trace_100_50, expected_100_50, decimal=4)
 
         trace_50_100 = np.array(g141_trace._get_wavelength_calibration_coeffs(50, 100))
-        assertArrayAlmostEqual(trace_50_100,
-                               np.array([9.85778097e-03, 1.78010580e+00, 4.53781960e+01, 8.95898963e+03]), 4)
+        expected_50_100 = np.array([0.0099, 1.7801, 45.3782, 8958.9896])
+        np.testing.assert_array_almost_equal(trace_50_100, expected_50_100, decimal=4)

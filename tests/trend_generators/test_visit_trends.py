@@ -1,17 +1,22 @@
+from __future__ import division
 import unittest
 
 import numpy as np
 import astropy.units as u
 
-from ...trend_generators import visit_trends
-from .. import unittest_tools
+from wayne.trend_generators import visit_trends
+
+
+class ExampleVisitTrend(visit_trends.BaseVisitTrend):
+    def _gen_scaling_factors(self, visit_plan, args, **kwargs):
+        return np.ones(len(visit_plan['exp_start_times']))
 
 
 class Test_BaseVisitTrend(unittest.TestCase):
 
     def setUp(self):
         self.visit_plan = {'exp_start_times': [1*u.day, 2*u.day, 3*u.day]}
-        self.visit_trend = visit_trends.BaseVisitTrend(self.visit_plan, None)
+        self.visit_trend = ExampleVisitTrend(self.visit_plan, None)
 
     def test__gen_scaling_factors(self):
 
@@ -38,8 +43,10 @@ class Test_HookAndLongTermRamp(unittest.TestCase):
         }
 
         visit_trend = visit_trends.HookAndLongTermRamp(
-            self.visit_plan, (1, -0.0005, 1.2e-4, 400))
+            self.visit_plan, (0.005, 0.0011, 400, 9/60/24))
 
-        unittest_tools.assertArrayAlmostEqual(
+        np.testing.assert_array_almost_equal(
             visit_trend.scale_factors,
-            [0.99988,0.99994681,0.99997525,0.9998491,0.99991591,0.99994435], 5)
+            [0.99891,  0.99952,  0.99978,  0.9986 ,  0.99921,  0.99947],
+            decimal=5
+        )

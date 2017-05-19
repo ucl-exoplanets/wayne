@@ -14,7 +14,7 @@ import tools
 
 
 class WFC3_IR(object):
-    """ Class containg the various methods and calibrations for the WFC3 IR detector
+    """ Class containing the various methods and calibrations for the WFC3 IR detector
     """
 
     def __init__(self):

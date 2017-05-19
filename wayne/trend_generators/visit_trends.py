@@ -2,19 +2,20 @@
 classic cases are the `hook' and long term ramp
 """
 
+import abc
+
 import numpy as np
 
 
 class BaseVisitTrend(object):
     """ Visit trends take input the visit planner output and generate a
-     scaling factor that will be multiplied per exposure.
+    scaling factor that will be multiplied per exposure.
 
-     They must implement the method
-
-     _gen_scaling_factors
-
-     which outputs a list of scaling factors, one per exposure
+    They must implement the method `_gen_scaling_factors` which outputs
+    a list of scaling factors, one per exposure
     """
+
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self, visit_plan, coeffs=None):
 
@@ -23,51 +24,40 @@ class BaseVisitTrend(object):
 
         self.scale_factors = self._gen_scaling_factors(visit_plan, coeffs)
 
+    @abc.abstractmethod
     def _gen_scaling_factors(self, visit_plan, coeffs):
-
-        return np.ones(len(visit_plan['exp_start_times']))
+        pass
 
 
     def get_scale_factor(self, exp_num):
-        """ Returns the scale factor for the exposure number i
-        :param exp_num:
-        :return:
-        """
-
+        """ Returns the scale factor for the exposure number `exp_num`."""
         return self.scale_factors[exp_num]
 
 
 class HookAndLongTermRamp(BaseVisitTrend):
 
-    def ramp_model(self, t, t_v, t_0, a1, b1, b2, to):
+    def _gen_scaling_factors(self, visit_plan, coeffs):
+        t = visit_plan['exp_start_times']
+        t_0 = gen_orbit_start_times_per_exp(t, visit_plan['orbit_start_index'])
+
+        ramp = self.ramp_model(t, t_0, *coeffs)
+        return ramp
+
+    @staticmethod
+    def ramp_model(t, t_0, a1, b1, b2, to):
         """ Combined hook and long term ramp model
         :param t: time_array
+        :param t_0: array of orbit start times (per exposure)
         :param a1: linear ramp gradient
         :param b1: exponential hook coeff1
         :param b2: exponential hook coeff2
-        :param t_v: start time of visit
-        :param t_0: array of orbit start times (per exposure)
 
         :return: ramp_model
         """
 
         t = np.array(t)  # wipes units if any
-        t_v = np.array(t_v)
-
         ramp = (1-a1*(t-to))*(1-b1*np.exp(-b2*(t-t_0)))
         return ramp
-
-    def _gen_scaling_factors(self, visit_plan, coeffs):
-        t = visit_plan['exp_start_times']
-        t_v = t[0]
-        t_0 = gen_orbit_start_times_per_exp(t, visit_plan['orbit_start_index'])
-
-        ramp = self.ramp_model(t, t_v, t_0, *coeffs)
-
-        return ramp
-
-    # i have implemented the trend classes, need to test them and then put them
-    # into the generator and config
 
 
 def gen_orbit_start_times_per_exp(time_array, obs_start_index):

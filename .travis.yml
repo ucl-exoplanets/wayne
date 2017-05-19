@@ -1,34 +1,20 @@
 language: python
-sudo: false
 python:
-  - 2.7
-
-# Setup anaconda
-before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
-  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
-  # - sudo rm -rf /dev/shm
-  # - sudo ln -s /run/shm /dev/shm
-  # fix matplotlib display problem
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-# Install packages
+  # We don't actually use the Travis Python, but this keeps it organized.
+  - "2.7"
 install:
-  - deps='pip numpy scipy matplotlib nose astropy'
-  - conda create -n myenv --yes $deps "python=$TRAVIS_PYTHON_VERSION"
-# - conda install --yes -c dan_blanchard python-coveralls nose-cov
-  - source activate myenv
-  - pip install quantities bottleneck scikit-learn
-  # while WFC3Sim is not a python package, add current dir to python path (needed for tests)
-  - ln -s `pwd` $(dirname `which python`)/../lib/python2.7/site-packages/WFC3Sim
+  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - export MPLBACKEND="TkAgg"
+  - conda config --set always_yes yes --set changeps1 no
+  # Useful for debugging any issues with conda
+  - conda info -a
 
-script:
-  - nosetests tests --logging-level=INFO
+  # Install the deps pip can struggle with
+  - conda create -qy -n test-environment python=$TRAVIS_PYTHON_VERSION numpy=1.10.4 astropy=1.1.2 matplotlib cython pymc=2.3.6 pandas=0.16.2 scipy=0.17.1
+  - source activate test-environment
+  - pip install -r requirements.txt
+  - python setup.py install
 
-# Calculate coverage
-# after_success:
-  # - coveralls --config_file .coveragerc
+script: python setup.py test

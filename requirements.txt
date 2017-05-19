@@ -1,16 +1,15 @@
 astropy==1.1.2
-Cython==0.25.2
-docopt==0.6.2
-exodata==2.1.6
-matplotlib==2.0.0
+cython
+docopt
+exodata==2.1.7
+matplotlib
 numpy==1.10.4
 pandas==0.16.2
 pyfits==3.4
 pysynphot==0.9.7
-PyYAML==3.12
+PyYAML
 quantities==0.11.1
-scipy==0.18.1
-seaborn==0.7.1
+scipy==0.17.1
 
 ephem==3.7.6.0
 pymc==2.3.6

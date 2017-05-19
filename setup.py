@@ -1,13 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 import codecs
 import os
 import re
 
-here = os.path.abspath(os.path.dirname(__file__))
+import numpy
 
-os.chdir('wayne')
-os.system("python {0}".format(os.path.join(here, 'wayne', 'pyparallel_setup.py build_ext --inplace')))
-os.chdir(here)
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 # Read the version number from a source file.
 def find_version(*file_paths):
@@ -30,9 +29,10 @@ def find_version(*file_paths):
 with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# TODO (ryan) scrap req.txt and define versions here or parse it here
 install_requires = ['docopt', 'numpy', 'scipy', 'matplotlib', 'pysynphot',
-                    'astropy', 'pandas', 'exodata', 'quantities', 'seaborn',
-                    'pyfits', 'cython']
+                    'astropy', 'pandas', 'exodata', 'quantities',
+                    'pyfits', 'cython', 'ephem', 'pymc']
 
 setup(
     name="Wayne",
@@ -61,21 +61,17 @@ setup(
         ],
     },
 
-    # What does your project relate to?
-    # keywords='sample setuptools development',
-
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages.
     packages=find_packages(),
-
-    # List run-time dependencies here.  These will be installed by pip when your
-    # project is installed.
+    setup_requires=["pytest-runner"],
     install_requires=install_requires,
-
-    # If there are data files included in your packages that need to be
-    # installed, specify them here.  If using Python 2.6 or less, then these
-    # have to be included in MANIFEST.in as well.
+    tests_require=['pytest'],
     include_package_data=True,
     zip_safe=False,
-    # test_suite='nose.collector'
+    ext_modules = [
+        Extension("pyparallel",
+                  sources=[os.path.join('wayne', x) for x in
+                           ("pyparallel.pyx", "pyparallel_menu.c")],
+                  extra_compile_args=['-fopenmp','-lm','-O3'],
+                  extra_link_args=['-lgomp'], include_dirs=[numpy.get_include()])
+    ]
 )

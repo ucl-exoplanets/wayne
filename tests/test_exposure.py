@@ -4,9 +4,8 @@ import shutil
 
 import numpy as np
 import astropy.io.fits as fits
-import numpy.testing
 
-from .. import exposure
+from wayne import exposure
 
 
 class Test_Exposure(unittest.TestCase):

@@ -61,9 +61,6 @@ class G141(object):
         self.trace_coeff = g141_trace_coeff
         self.wl_solution = g141_wl_solution
 
-        # self.dispersion = 4.65 * pq.nm (R~130)- The dispersion is actually
-        #  dependant on x and y and not constant
-
         # Flat
         self.flat_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.flat.2.fits')
         self.flat_fielding_fits_file = fits.open(self.flat_file)
@@ -100,58 +97,6 @@ class G141(object):
 
         # Non Grism Specific Constants
         self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
-
-    # def flux_to_psf(self, wavelength, flux, y_pos):
-    #     """
-    #     Given a wavelength and flux this function returns the gaussian function
-    #     for the observation at the wl given (linearly interpolated using
-    #     numpy.interp)
-    #
-    #     The FWHM at each wavelength should be defined in a textfile loaded by
-    #      self._psf_file
-    #
-    #     We assume the psf can be represented by a gaussian, this is true for
-    #     WFC3 G141 (*WFC3 inst handbook (cycle 23)
-    #      - sec 7.6.1 - page 140*).
-    #
-    #     :param wavelength: wavelength to sample (unit length) singular
-    #     :type wavelength: astropy.units.quantity.Quantity
-    #     :param flux: The flux at the wavelength (i.e the area under the gaussian)
-    #     :type flux: float
-    #     :param y_pos: optionally set ypos. this means you can integrate over
-    #     the same values as pixels set mean=2.1 and integrate from 2 to 3
-    #     :type y_pos: float
-    #
-    #     :return:
-    #     """
-    #
-    #     if not isinstance(wavelength, u.Quantity):
-    #         raise TypeError("Wavelength must be given in units, got {}".format(
-    #             type(wavelength)))
-    #
-    #     mean = y_pos  # this is the center of the guassian
-    #
-    #     FWHM = self.wl_to_psf_std(wavelength) * _gauss_StDev_to_FWHM
-    #
-    #     gaussian_model = GaussianModel1D(mean=mean, fwhm=FWHM, flux=flux)
-    #
-    #     return gaussian_model
-    #
-    # def wl_to_psf_std(self, wavelengths):
-    #     """ This is an optimised function to return the standard deviations of
-    #     the gaussians at each wavelength for each flux. looks up FWHM then
-    #     converts to stddev.
-    #
-    #     :param wavelengths:
-    #
-    #     :return: standard deviations of the gaussian for each lambda
-    #     """
-    #
-    #     FWHM = self.psf_fwhm_poly(wavelengths.to(u.micron).value)
-    #
-    #     std = FWHM / _gauss_StDev_to_FWHM
-    #
-    #     return std
 
     def set_current_wavelength_only_dependent_array(self, wl):
 
