@@ -1,13 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 import codecs
 import os
 import re
 
-here = os.path.abspath(os.path.dirname(__file__))
+import numpy
 
-os.chdir('wayne')
-os.system("python {0}".format(os.path.join(here, 'wayne', 'pyparallel_setup.py build_ext --inplace')))
-os.chdir(here)
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 # Read the version number from a source file.
 def find_version(*file_paths):
@@ -30,7 +29,7 @@ def find_version(*file_paths):
 with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-# TODO (ryan) should be parsed from req.txt
+# TODO (ryan) scrap req.txt and define versions here or parse it here
 install_requires = ['docopt', 'numpy', 'scipy', 'matplotlib', 'pysynphot',
                     'astropy', 'pandas', 'exodata', 'quantities', 'seaborn',
                     'pyfits', 'cython', 'ephem', 'pymc']
@@ -68,4 +67,11 @@ setup(
     tests_require=['pytest'],
     include_package_data=True,
     zip_safe=False,
+    ext_modules = [
+        Extension("pyparallel",
+                  sources=[os.path.join('wayne', x) for x in
+                           ("pyparallel.pyx", "pyparallel_menu.c")],
+                  extra_compile_args=['-fopenmp','-lm','-O3'],
+                  extra_link_args=['-lgomp'], include_dirs=[numpy.get_include()])
+    ]
 )
