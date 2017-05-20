@@ -1,4 +1,5 @@
-![](https://travis-ci.com/ucl-exoplanets/wayne.svg?token=n6r52fwBN2Mdz9psdp2V&branch=master)
+![](https://travis-ci.com/ucl-exoplanets/wayne.svg?token=n6r52fwBN2Mdz9psdp2V&branch=master) [![codecov](https://codecov.io/gh/ucl-exoplanets/wayne/branch/master/graph/badge.svg?token=2EJkVpjGHV)](https://codecov.io/gh/ucl-exoplanets/wayne)
+
 
 # Wayne
 
