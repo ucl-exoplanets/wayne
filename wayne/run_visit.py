@@ -20,14 +20,14 @@ import yaml
 from astropy import units as u
 from astropy.analytic_functions import blackbody_lambda
 
-import detector
-import grism
-import observation
-import oec
-import params
-import tools
-from trend_generators import scan_speed_varations
-from wfc3simlog import logger
+from wayne import detector
+from wayne import grism
+from wayne import observation
+from wayne import oec
+from wayne import params
+from wayne import tools
+from wayne.trend_generators import scan_speed_varations
+from wayne.wfc3simlog import logger
 
 
 class WFC3SimConfigError(BaseException):
@@ -58,7 +58,8 @@ def run():
         os.mkdir(outdir)
 
     # copy parfile to output
-    shutil.copy2(parameter_file, os.path.join(outdir, os.path.basename(parameter_file)))
+    shutil.copy2(parameter_file,
+                 os.path.join(outdir, os.path.basename(parameter_file)))
 
     try:
         seed = cfg['general']['seed']
@@ -66,7 +67,8 @@ def run():
         seed = None
     if not seed or seed is None:
         np.random.seed(seed)
-        params.seed = np.random.get_state()[1][0]  # tell params what the seed is for exp header
+        params.seed = np.random.get_state()[1][
+            0]  # tell params what the seed is for exp header
 
     grisms = {
         'G141': grism.G141(),
@@ -80,7 +82,8 @@ def run():
     # Check for transmission spectroscopy mode
     try:
         planet_spectrum = cfg['target']['planet_spectrum_file']
-        shutil.copy2(planet_spectrum, os.path.join(outdir, os.path.basename(planet_spectrum)))
+        shutil.copy2(planet_spectrum,
+                     os.path.join(outdir, os.path.basename(planet_spectrum)))
 
         transmission_spectroscopy = True
     except KeyError:
@@ -150,7 +153,8 @@ def run():
                 rebin_resolution, chosen_grism.wl_limits[0].value,
                 chosen_grism.wl_limits[1].value)
 
-            depth_planet = tools.rebin_spec(wl_planet.value, depth_planet, new_wl)
+            depth_planet = tools.rebin_spec(wl_planet.value, depth_planet,
+                                            new_wl)
             wl_planet = new_wl * u.micron
 
     else:
@@ -172,10 +176,12 @@ def run():
 
     stellar_spec_file = cfg['target']['stellar_spectrum_file']
     if stellar_spec_file:
-        wl_star, flux_star = tools.load_pheonix_stellar_grid_fits(stellar_spec_file)
+        wl_star, flux_star = tools.load_pheonix_stellar_grid_fits(
+            stellar_spec_file)
 
         if transmission_spectroscopy:
-            flux_star = tools.rebin_spec(wl_star, flux_star, np.array(wl_planet))
+            flux_star = tools.rebin_spec(wl_star, flux_star,
+                                         np.array(wl_planet))
         elif rebin_resolution:  # not transmission spectro mode
             new_wl = tools.wl_at_resolution(
                 rebin_resolution, chosen_grism.wl_limits[0].value,
@@ -184,7 +190,7 @@ def run():
             flux_star = tools.rebin_spec(wl_star, flux_star, new_wl)
             wl_star = new_wl
 
-        flux_units = u.erg / (u.angstrom * u.s * u.sr * u.cm**2)
+        flux_units = u.erg / (u.angstrom * u.s * u.sr * u.cm ** 2)
         flux_star = flux_star * flux_units
     else:  # use blackbody
         if transmission_spectroscopy:
@@ -214,7 +220,7 @@ def run():
 
     if spatial_scan:
         sample_rate = cfg['observation']['sample_rate'] * u.ms
-        scan_speed = cfg['observation']['scan_speed'] * (u.pixel/u.s)
+        scan_speed = cfg['observation']['scan_speed'] * (u.pixel / u.s)
     else:
         sample_rate = False
         scan_speed = False
@@ -234,7 +240,6 @@ def run():
         ssv_gen = ssv_class(*ssv_coeffs)
     else:
         ssv_gen = None
-
 
     x_shifts = cfg['observation']['x_shifts']
     x_jitter = cfg['observation']['x_jitter']
@@ -262,7 +267,8 @@ def run():
         exp_start_times = False
 
     if exp_start_times:  # otherwise we use the visit planner
-        logger.info('Visit planner disabled: using start times from {}'.format(exp_start_times))
+        logger.info('Visit planner disabled: using start times from {}'.format(
+            exp_start_times))
         exp_start_times = np.loadtxt(exp_start_times) * u.day
 
     # check to see if we have numbers of file paths, and load accordingly
@@ -274,17 +280,20 @@ def run():
 
     if isinstance(sky_background, str):
         sky_background = np.loadtxt(sky_background)
-    sky_background = sky_background * u.count/u.s
+    sky_background = sky_background * u.count / u.s
 
     obs = observation.Observation(outdir)
 
     obs.setup_detector(det, NSAMP, SAMPSEQ, SUBARRAY)
     obs.setup_grism(chosen_grism)
-    obs.setup_target(planet, wl, depth_planet, stellar_flux_scaled, transittime,
-                     ldcoeffs, period, rp, sma, inclination, eccentricity, periastron,
+    obs.setup_target(planet, wl, depth_planet, stellar_flux_scaled,
+                     transittime,
+                     ldcoeffs, period, rp, sma, inclination, eccentricity,
+                     periastron,
                      stellar_radius)
     obs.setup_visit(start_JD, num_orbits, exp_start_times)
-    obs.setup_reductions(add_dark, add_flat, add_gain_variations, add_non_linear,
+    obs.setup_reductions(add_dark, add_flat, add_gain_variations,
+                         add_non_linear,
                          add_initial_bias)
     obs.setup_observation(x_ref, y_ref, spatial_scan, scan_speed)
     obs.setup_simulator(sample_rate, clip_values_det_limits, threads)
@@ -302,6 +311,7 @@ def run():
     plt.close()
 
     obs.run_observation()
+
 
 if __name__ == '__main__':
     run()

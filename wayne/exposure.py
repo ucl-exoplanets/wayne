@@ -7,16 +7,16 @@ import os.path
 import sys
 
 import astropy
-import pyfits as fits
 import astropy.units as u
-import numpy as np
-import pandas
-import scipy
 import exodata
 import exodata.astroquantities as pq
+import numpy as np
+import pandas
+import pyfits as fits
+import scipy
 
-import params
-import tools
+from wayne import params
+from wayne import tools
 
 
 class Exposure(object):
@@ -53,7 +53,8 @@ class Exposure(object):
         """
 
         for i, (pixel_array, header) in enumerate(self.reads[1:], 1):
-            pixel_array_non_linear = self.detector.apply_non_linearity(pixel_array)
+            pixel_array_non_linear = self.detector.apply_non_linearity(
+                pixel_array)
 
             self.reads[i] = (pixel_array_non_linear, header)
 
@@ -140,8 +141,9 @@ class Exposure(object):
         :return:
         """
 
-        assert (len(self.reads) == (self.exp_info['NSAMP'])),\
-            'Reads {} != NSAMP {}'.format(len(self.reads), self.exp_info['NSAMP'])
+        assert (len(self.reads) == (self.exp_info['NSAMP'])), \
+            'Reads {} != NSAMP {}'.format(len(self.reads),
+                                          self.exp_info['NSAMP'])
 
         if filename is None:
             filename = self.exp_info['filename']
@@ -159,7 +161,8 @@ class Exposure(object):
             header.set('SAMPNUM', len(self.reads) - 1 - i)
             read_HDU = fits.ImageHDU(data, header, name='SCI')
 
-            error_array = fits.CompImageHDU(compression_type=compression, name='ERR')
+            error_array = fits.CompImageHDU(compression_type=compression,
+                                            name='ERR')
 
             """ This array contains 16 independent flags indicating various
             status and problem conditions associated with each corresponding
@@ -185,7 +188,8 @@ class Exposure(object):
             image, the SAMP array contains the total number of samples
             retained at each pixel for all the exposures.
             """
-            samples_HDU = fits.CompImageHDU(compression_type=compression, name='SAMP')
+            samples_HDU = fits.CompImageHDU(compression_type=compression,
+                                            name='SAMP')
 
             """ This array is present only for IR data. This is a
             floating-point array that contains the effective integration
@@ -224,13 +228,14 @@ class Exposure(object):
         now = datetime.datetime.now()
 
         h['DATE'] = (
-        now.strftime("%Y-%m-%d"), 'date this file was written (yyyy-mm-dd)')
+            now.strftime("%Y-%m-%d"),
+            'date this file was written (yyyy-mm-dd)')
         h['FILENAME'] = (exp_info['filename'], 'name of file')
         h['FILETYPE'] = ('SCI', 'type of data found in data file')
         h[''] = ''
 
         h['TELESCOP'] = (
-        self.detector.telescope, 'telescope used to acquire data')
+            self.detector.telescope, 'telescope used to acquire data')
         h['INSTRUME'] = (self.detector.instrument,
                          'identifier for instrument used to acquire data')
         h['EQUINOX'] = (2000.0, 'equinox of celestial coord. system')
@@ -241,7 +246,7 @@ class Exposure(object):
         # h['ROOTNAME'] = ('i.e ibh707kcq', 'rootname of the observation set')
         # h['IMAGETYP'] = ('EXT', 'type of exposure identifier')
         h['PRIMESI'] = (
-        self.detector.instrument, 'instrument designated as prime')
+            self.detector.instrument, 'instrument designated as prime')
 
         h[''] = ''
         h[''] = '/ TARGET INFORMATION'
@@ -273,7 +278,7 @@ class Exposure(object):
         h['DATE-OBS'] = (False, 'UT date of start of observation (yyyy-mm-dd)')
         h['TIME-OBS'] = (False, 'UT time of start of observation (hh:mm:ss)')
         h['EXPSTART'] = (
-        expstart, 'exposure start time (Modified Julian Date)')
+            expstart, 'exposure start time (Modified Julian Date)')
         h['EXPEND'] = (exp_info['EXPEND'].value - 2400000.5,
                        'exposure end time (Modified Julian Date)')
         h['EXPTIME'] = (exp_info['EXPTIME'].to(u.s).value,
@@ -291,25 +296,28 @@ class Exposure(object):
         h[''] = '/ INSTRUMENT CONFIGURATION INFORMATION'
         h[''] = ''
         h['OBSTYPE'] = (
-        exp_info['OBSTYPE'], 'observation type - imaging or spectroscopic')
+            exp_info['OBSTYPE'], 'observation type - imaging or spectroscopic')
         h['OBSMODE'] = (
-        'MULTIACCUM', 'operating mode')  # no other modes for WFC3 IR?
+            'MULTIACCUM', 'operating mode')  # no other modes for WFC3 IR?
         h['SCLAMP'] = ('NONE', 'lamp status, NONE or name of lamp which is on')
         # h['NRPTEXP'] = (1, 'number of repeat exposures in set: default 1')
         if not exp_info['SUBARRAY'] == 1024:
             SUBARRAY = True
         else:
             SUBARRAY = False
-        h['SUBARRAY'] = (SUBARRAY, 'data from a subarray (T) or full frame (F)')
+        h['SUBARRAY'] = (
+        SUBARRAY, 'data from a subarray (T) or full frame (F)')
         h['SUBTYPE'] = ('SQ{}SUB'.format(exp_info['SUBARRAY']))
-        h['DETECTOR'] = (self.detector.detector_type, 'detector in use: UVIS or IR')
+        h['DETECTOR'] = (
+        self.detector.detector_type, 'detector in use: UVIS or IR')
         h['FILTER'] = (self.filter.name, 'element selected from filter wheel')
         h['SAMP_SEQ'] = (
-        exp_info['SAMPSEQ'], 'MultiAccum exposure time sequence name')
+            exp_info['SAMPSEQ'], 'MultiAccum exposure time sequence name')
         h['NSAMP'] = (exp_info['NSAMP'], 'number of MULTIACCUM samples')
         # TODO (ryan) add when  known
         h['SAMPZERO'] = (0., 'sample time of the zeroth read (sec)')
-        APNAME = 'GRISM{}'.format(exp_info['SUBARRAY'])  # TODO (ryan) fix for non grism
+        APNAME = 'GRISM{}'.format(
+            exp_info['SUBARRAY'])  # TODO (ryan) fix for non grism
         h['APERTURE'] = (APNAME, 'aperture name')
         h['PROPAPER'] = ('', 'proposed aperture name')  # is this always null?
         # TODO (ryan) change when true
@@ -324,29 +332,34 @@ class Exposure(object):
         h['SIM-TIME'] = (exp_info['sim_time'].to(u.s).value,
                          'Wayne exposure generation time (s)')
         h[''] = ''
-        h['X-REF'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
-        h['Y-REF'] = (exp_info['y_ref'], 'y position of star on frame (full frame))')
+        h['X-REF'] = (
+        exp_info['x_ref'], 'x position of star on frame (full frame))')
+        h['Y-REF'] = (
+        exp_info['y_ref'], 'y position of star on frame (full frame))')
         h['SAMPRATE'] = (exp_info['samp_rate'].to(u.s).value,
                          'How often exposure is sampled (s)')
         h['NSE-MEAN'] = (
-        exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
+            exp_info['noise_mean'], 'mean of normal noise (per s per pix)')
         h['NSE-STD'] = (
-        exp_info['noise_std'], 'std of normal noise (per s per pix)')
+            exp_info['noise_std'], 'std of normal noise (per s per pix)')
         h['ADD-DRK'] = (exp_info['add_dark'], 'dark current added (T/F)')
         h['ADD-FLAT'] = (exp_info['add_flat'], 'flat field added (T/F)')
         h['ADD-GAIN'] = (exp_info['add_gain'], 'gain variations added (T/F)')
-        h['ADD-NLIN'] = (exp_info['add_non_linear'], 'non-linearity effects added (T/F)')
-        h['STAR-NSE'] = (exp_info['add_stellar_noise'], 'Stellar Noise Added (T/F)')
+        h['ADD-NLIN'] = (
+        exp_info['add_non_linear'], 'non-linearity effects added (T/F)')
+        h['STAR-NSE'] = (
+        exp_info['add_stellar_noise'], 'Stellar Noise Added (T/F)')
 
-        h['CSMCRATE'] = (exp_info['cosmic_rate'], 'Rate of cosmic hits (per s)')
+        h['CSMCRATE'] = (
+        exp_info['cosmic_rate'], 'Rate of cosmic hits (per s)')
 
-        sky_background = exp_info['sky_background'].to(u.ct/u.s).value
+        sky_background = exp_info['sky_background'].to(u.ct / u.s).value
         h['SKY-LVL'] = (sky_background, 'multiple of master sky per s')
         h['VSTTREND'] = (exp_info['scale_factor'], 'visit trend scale factor')
-        h['CLIPVALS'] = (exp_info['clip_values_det_limits'], 'pixels clipped to detector range (T/F)')
+        h['CLIPVALS'] = (exp_info['clip_values_det_limits'],
+                         'pixels clipped to detector range (T/F)')
 
         h['RANDSEED'] = (params.seed, 'seed used for the visit')
-
 
         h[''] = ''
         h[''] = '/ Wayne Package Versions Used'
@@ -365,19 +378,25 @@ class Exposure(object):
             h[''] = ''
             h[''] = '/ Wayne Observation Parameters'
             h[''] = ''
-            h['mid-tran'] = (float(planet.transittime), 'Time of mid transit (JD)')
+            h['mid-tran'] = (
+            float(planet.transittime), 'Time of mid transit (JD)')
             # h['t14'] = (float(planet.calcTransitDuration().rescale(pq.h)), 'Transit Duration (hr)')
-            h['period'] = (float(planet.P.rescale(pq.day)), 'Orbital Period (days)')
-            h['SMA'] = (float((planet.a / planet.star.R).simplified), 'Semi-major axis (a/R_s)')
-            h['INC'] = (float(planet.i.rescale(pq.deg)), 'Orbital Inclination (deg)')
+            h['period'] = (
+            float(planet.P.rescale(pq.day)), 'Orbital Period (days)')
+            h['SMA'] = (float((planet.a / planet.star.R).simplified),
+                        'Semi-major axis (a/R_s)')
+            h['INC'] = (
+            float(planet.i.rescale(pq.deg)), 'Orbital Inclination (deg)')
             h['ECC'] = (planet.e, 'Orbital Eccentricity')
-            h['PERI'] = ('{}'.format(planet.periastron), 'Argument or periastron')
+            h['PERI'] = (
+            '{}'.format(planet.periastron), 'Argument or periastron')
 
             # Limb Darkening
             if ldcoeffs:
                 ld1, ld2, ld3, ld4 = ldcoeffs
             else:
-                ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(self.planet.star)
+                ld1, ld2, ld3, ld4 = tools.get_limb_darkening_coeffs(
+                    self.planet.star)
             h['ld1'] = (ld1, 'Non-linear limb darkening coeff 1')
             h['ld2'] = (ld2, 'Non-linear limb darkening coeff 2')
             h['ld3'] = (ld3, 'Non-linear limb darkening coeff 3')
@@ -385,7 +404,8 @@ class Exposure(object):
 
         # not in correct section
         # keywords for analysis (i.e. xref positions until)
-        h['STARX'] = (exp_info['x_ref'], 'x position of star on frame (full frame))')
+        h['STARX'] = (
+        exp_info['x_ref'], 'x position of star on frame (full frame))')
 
         return science_header
 
@@ -401,7 +421,9 @@ class Exposure(object):
 
         h['CRPIX1'] = (read_info['CRPIX1'], 'x-coordinate of reference pixel')
 
-        h['SAMPTIME'] = (read_info['cumulative_exp_time'].value, 'total integration time (sec)')
-        h['DELTATIM'] = (read_info['read_exp_time'].value, 'sample integration time (sec)')
+        h['SAMPTIME'] = (
+        read_info['cumulative_exp_time'].value, 'total integration time (sec)')
+        h['DELTATIM'] = (
+        read_info['read_exp_time'].value, 'sample integration time (sec)')
 
         return read_header

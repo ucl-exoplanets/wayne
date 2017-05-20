@@ -2,7 +2,6 @@
  a par file
 """
 
-import os
 import os.path
 import urllib
 
@@ -19,10 +18,13 @@ class WayneDataError(Exception):
 # darks, flats etc
 files_location = os.path.abspath(os.path.dirname(__file__))
 files_directory_path = os.path.join(files_location, 'wayne_calibration_files')
-calibration_last_update_file_path = os.path.join(files_directory_path, 'last_update_calibration.txt')
-calibration_zip_file_path = os.path.join(files_location, 'wayne_calibration_files.zip')
+calibration_last_update_file_path = os.path.join(files_directory_path,
+                                                 'last_update_calibration.txt')
+calibration_zip_file_path = os.path.join(files_location,
+                                         'wayne_calibration_files.zip')
 calibration_directory_path = files_directory_path
-calibration_url = 'http://zuserver2.star.ucl.ac.uk/~atsiaras/wayne_calibration_files.zip'
+calibration_url = 'http://zuserver2.star.ucl.ac.uk/~atsiaras/' \
+                  'wayne_calibration_files.zip'
 calibration_last_update = 20170410
 
 # update calibration files
@@ -32,7 +34,8 @@ if not os.path.isdir(files_directory_path):
     calibration_update = True
 elif not os.path.isfile(calibration_last_update_file_path):
     calibration_update = True
-elif int(open(calibration_last_update_file_path).readlines()[0]) < calibration_last_update:
+elif int(open(calibration_last_update_file_path).readlines()[
+             0]) < calibration_last_update:
     calibration_update = True
 
 if calibration_update:
@@ -44,13 +47,13 @@ if calibration_update:
 
         urllib.urlretrieve(calibration_url, calibration_zip_file_path)
 
-        os.system('unzip {0} -d {1}{2}'.format(calibration_zip_file_path, files_location, os.sep))
+        os.system('unzip {0} -d {1}{2}'.format(calibration_zip_file_path,
+                                               files_location, os.sep))
         os.system('rm {0}'.format(calibration_zip_file_path))
         os.system('rm -rf {0}{1}__MACOSX'.format(files_location, os.sep))
 
     except IOError:
         raise WayneDataError('Failed to update wayne calibration files.')
-
 
 _calb_dir = files_directory_path
 

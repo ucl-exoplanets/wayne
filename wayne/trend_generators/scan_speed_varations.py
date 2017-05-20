@@ -1,9 +1,8 @@
-""" Functions that generate scan speed variations. These functions take input
-of the sample expsoure time...
+"""Functions that generate scan speed variations. These functions take input
+of the sample exposure time...
 
 Note all functions here take the same input (to get_subsample_exposure_times) and
-return the same output
-
+return the same output.
 """
 
 import numpy as np
@@ -11,10 +10,9 @@ import astropy.units as u
 
 
 class SSVSine(object):
-
     def __init__(self, stddev=1.5, period=0.7, start_phase='rand'):
-        """ Provides the scaling factors to adjust the flux by the scan speed
-         variations, should be more physical i.e adjusting exposure time
+        """Provides the scaling factors to adjust the flux by the scan speed
+        variations, should be more physical i.e adjusting exposure time.
 
         assuming sinusoidal variations
 
@@ -44,12 +42,12 @@ class SSVSine(object):
             (period * x) + phase) + mean
 
         if start_phase == 'rand':
-            start_phase = np.random.random() * 2*np.pi
+            start_phase = np.random.random() * 2 * np.pi
 
             # total exptime will change if a multiple of period doesnt fit,
             # so we need to scale the total flux by the a reference
             ssv_0 = self._flux_ssv_scaling(y_mid_points, stddev, period,
-                                                  start_phase=0)
+                                           start_phase=0)
             ssv_0_mean = np.mean(ssv_0)
 
         ssv_scaling = sin_func(zeroed_y_mid, stddev / 100., start_phase, 1.,
@@ -98,58 +96,75 @@ class SSVModulatedSine(object):
         exptime = np.round(read_times[-1], 6)
         tt = np.arange(0, exptime, sample_rate)
 
-
         amp1 = np.ones_like(tt)
-        amp2 = np.random.normal(0.1, 0.05) * np.sin((2 * np.pi / np.random.normal(2.0 * exptime, 0.5 * exptime)) * tt
-                                                    + np.random.random() * 2 * np.pi)
+        amp2 = np.random.normal(0.1, 0.05) * np.sin(
+            (2 * np.pi / np.random.normal(2.0 * exptime, 0.5 * exptime)) * tt
+            + np.random.random() * 2 * np.pi)
         if 100.0 * np.random.random() < self.blip_proba:
-            amp3 = np.random.normal(1.0, 0.1) * np.exp(-(tt - np.random.random() * exptime) ** 2 / (2 * (period / 2) ** 2))
+            amp3 = np.random.normal(1.0, 0.1) * np.exp(
+                -(tt - np.random.random() * exptime) ** 2 / (
+                    2 * (period / 2) ** 2))
         else:
             amp3 = 0
 
         final_amp = sample_rate * (amplitude / 100.0) * (amp1 + amp2 + amp3)
 
         per1 = np.ones_like(tt)
-        per2 = np.random.normal(0.1, 0.05) * np.sin((2 * np.pi / np.random.normal(2.0 * exptime, 0.5 * exptime)) * tt
-                                                    + np.random.random() * 2 * np.pi)
+        per2 = np.random.normal(0.1, 0.05) * np.sin(
+            (2 * np.pi / np.random.normal(2.0 * exptime, 0.5 * exptime)) * tt
+            + np.random.random() * 2 * np.pi)
         final_per = period * (per1 + per2)
 
         final_phase = np.random.random() * 2 * np.pi
-        final_sub_exptimes = np.round(sample_rate + final_amp * np.sin((2 * np.pi / final_per) * tt + final_phase), 6)
+        final_sub_exptimes = np.round(sample_rate + final_amp * np.sin(
+            (2 * np.pi / final_per) * tt + final_phase), 6)
 
-        difference = int((10 ** 6) * np.round(exptime - np.sum(final_sub_exptimes), 6))
+        difference = int(
+            (10 ** 6) * np.round(exptime - np.sum(final_sub_exptimes), 6))
         if difference < 0:
             for i in range(abs(difference)):
-                final_sub_exptimes[np.random.randint(len(final_sub_exptimes))] -= 0.000001
+                final_sub_exptimes[
+                    np.random.randint(len(final_sub_exptimes))] -= 0.000001
         else:
             for i in range(abs(difference)):
-                final_sub_exptimes[np.random.randint(len(final_sub_exptimes))] += 0.000001
+                final_sub_exptimes[
+                    np.random.randint(len(final_sub_exptimes))] += 0.000001
 
         breaks = []
         for i in read_times:
             breaks.append(np.argmin(abs(np.cumsum(final_sub_exptimes) - i)))
 
-        difference = int((10 ** 6) * np.round(read_times[0] - np.sum(final_sub_exptimes[:breaks[0] + 1]), 6))
+        difference = int((10 ** 6) * np.round(
+            read_times[0] - np.sum(final_sub_exptimes[:breaks[0] + 1]), 6))
         dis = np.int_(np.random.power(3, abs(difference)) * (breaks[0] + 1))
         if difference < 0:
             for i in dis:
                 final_sub_exptimes[breaks[0] - i] -= 0.000001
-                final_sub_exptimes[np.random.randint(breaks[0] + 1, len(final_sub_exptimes))] += 0.000001
+                final_sub_exptimes[np.random.randint(breaks[0] + 1, len(
+                    final_sub_exptimes))] += 0.000001
         else:
             for i in dis:
                 final_sub_exptimes[breaks[0] - i] += 0.000001
-                final_sub_exptimes[np.random.randint(breaks[0] + 1, len(final_sub_exptimes))] -= 0.000001
+                final_sub_exptimes[np.random.randint(breaks[0] + 1, len(
+                    final_sub_exptimes))] -= 0.000001
 
         for read in range(1, len(read_times) - 1):
-            difference = int((10 ** 6) * np.round(read_times[read] - np.sum(final_sub_exptimes[:breaks[read] + 1]), 6))
+            difference = int((10 ** 6) * np.round(read_times[read] - np.sum(
+                final_sub_exptimes[:breaks[read] + 1]), 6))
             if difference < 0:
                 for i in range(abs(difference)):
-                    final_sub_exptimes[np.random.randint(breaks[read - 1] + 1, breaks[read] + 1)] -= 0.000001
-                    final_sub_exptimes[np.random.randint(breaks[read] + 1, len(final_sub_exptimes))] += 0.000001
+                    final_sub_exptimes[np.random.randint(breaks[read - 1] + 1,
+                                                         breaks[
+                                                             read] + 1)] -= 0.000001
+                    final_sub_exptimes[np.random.randint(breaks[read] + 1, len(
+                        final_sub_exptimes))] += 0.000001
             else:
                 for i in range(abs(difference)):
-                    final_sub_exptimes[np.random.randint(breaks[read - 1] + 1, breaks[read] + 1)] += 0.000001
-                    final_sub_exptimes[np.random.randint(breaks[read] + 1, len(final_sub_exptimes))] -= 0.000001
+                    final_sub_exptimes[np.random.randint(breaks[read - 1] + 1,
+                                                         breaks[
+                                                             read] + 1)] += 0.000001
+                    final_sub_exptimes[np.random.randint(breaks[read] + 1, len(
+                        final_sub_exptimes))] -= 0.000001
 
         read_indexes = breaks
 

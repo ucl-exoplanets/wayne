@@ -1,4 +1,4 @@
-""" This is ony really here for the future, currently just used as a
+"""This is ony really here for the future, currently just used as a
 placeholder for the direct image
 """
 

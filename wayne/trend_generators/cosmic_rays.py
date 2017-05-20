@@ -1,4 +1,4 @@
-""" This class contains generator types for creating several different types
+"""This class contains generator types for creating several different types
 of trend and noise. The idea is each type of generator has a base class which
 defines the main methods but each can be overridden to create totally custom
 trend types as long as they keep the same output function.
@@ -8,7 +8,6 @@ import numpy as np
 
 
 class BaseCosmicGenerator(object):
-
     def __init__(self):
         """ This is the base class, it defines generates 11 cosmics per second
         of energy 25000. The methods are designed to be overidden by other
@@ -40,7 +39,7 @@ class BaseCosmicGenerator(object):
         else:
             num_pixels = size[0] * size[1]
 
-        rate_size = full_frame_rate/(1024.*1024.) * num_pixels
+        rate_size = full_frame_rate / (1024. * 1024.) * num_pixels
 
         return rate_size
 
@@ -105,7 +104,6 @@ class BaseCosmicGenerator(object):
 
 
 class MinMaxPossionCosmicGenerator(BaseCosmicGenerator):
-
     def __init__(self, rate=11., min_count=10000, max_count=35000):
         """ Generates cosmic rays between a minimum and maximum level sampled
         on a poisson distribution at a rate of `rate` per second per full frame
@@ -126,7 +124,7 @@ class MinMaxPossionCosmicGenerator(BaseCosmicGenerator):
 
         size_rate = self._rate_full_frame_to_size(self.rate, size)
 
-        return np.random.poisson(size_rate*time)
+        return np.random.poisson(size_rate * time)
 
     def _generate_cosmic_energies(self, number):
         """ Cosmic energies are a generated randomly between min_count to

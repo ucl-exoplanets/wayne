@@ -1,8 +1,8 @@
 import astropy.modeling.models
-import scipy.stats
 import numpy as np
+import scipy.stats
 
-_gauss_StDev_to_FWHM = (2*np.sqrt(2*np.log(2)))  # conversion constant
+_gauss_StDev_to_FWHM = (2 * np.sqrt(2 * np.log(2)))  # conversion constant
 
 
 class GaussianModel1D(astropy.modeling.models.Gaussian1D):
@@ -35,18 +35,19 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         :type flux: float
         """
 
-        if not((stddev is not None) ^ (fwhm is not None)):
+        if not ((stddev is not None) ^ (fwhm is not None)):
             raise ValueError(
                 "You must set either fwhm OR stdev, not both or  neither. "
                 "got stdev={} fwhm={}".format(stddev, fwhm))
 
-        if not((flux is not None) ^ (amplitude is not None)):
+        if not ((flux is not None) ^ (amplitude is not None)):
             raise ValueError(
                 "You must set either amplitude OR flux, not both or neither."
                 " got amplitude={} flux={}".format(amplitude, flux))
 
         # initialise empty gaussian, then we fill in values
-        astropy.modeling.models.Gaussian1D.__init__(self, 1., mean, 1., **kwargs)
+        astropy.modeling.models.Gaussian1D.__init__(self, 1., mean, 1.,
+                                                    **kwargs)
 
         if stddev is not None:
             self.stddev = stddev
@@ -69,7 +70,7 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         :return: the flux
         """
 
-        flux = self.amplitude * (self.stddev * np.sqrt(2*np.pi))
+        flux = self.amplitude * (self.stddev * np.sqrt(2 * np.pi))
         return flux
 
     @flux.setter
@@ -87,7 +88,7 @@ class GaussianModel1D(astropy.modeling.models.Gaussian1D):
         :param flux: integral of the gaussian
         """
 
-        self.amplitude = flux / (self.stddev * np.sqrt(2*np.pi))
+        self.amplitude = flux / (self.stddev * np.sqrt(2 * np.pi))
 
     @property
     def fwhm(self):

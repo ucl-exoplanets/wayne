@@ -1,17 +1,14 @@
 # coding: utf-8
-
-# We want to see how changing the sampling effects the generated exposure.
-
-import numpy as np
-import matplotlib.pyplot as plt
-from astropy.analytic_functions import blackbody_lambda
-from astropy import units as u
 import exodata
+import matplotlib.pyplot as plt
+import numpy as np
+from astropy import units as u
+from astropy.analytic_functions import blackbody_lambda
 
-import observation
-import detector
-import grism
-import tools
+from wayne import detector
+from wayne import grism
+from wayne import observation
+from wayne import tools
 
 plt.style.use('ggplot')
 
