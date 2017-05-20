@@ -1,3 +1,6 @@
+![](https://travis-ci.com/ucl-exoplanets/wayne.svg?token=n6r52fwBN2Mdz9psdp2V&branch=master) [![codecov](https://codecov.io/gh/ucl-exoplanets/wayne/branch/master/graph/badge.svg?token=2EJkVpjGHV)](https://codecov.io/gh/ucl-exoplanets/wayne)
+
+
 # Wayne
 
 Wayne is a telescope simulator used to generate realistic data with all noise sources, reductions and systematics. Currently it is applied to the **HST WFC IR** instrument which uses two grisms, G102 and G141 for spectroscopy. The project has a particular focus on **transmission spectroscopy** of exoplanets.
