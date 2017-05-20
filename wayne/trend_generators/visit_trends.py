@@ -18,7 +18,6 @@ class BaseVisitTrend(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, visit_plan, coeffs=None):
-
         self.visit_plan = visit_plan
         self.coeffs = coeffs
 
@@ -28,14 +27,12 @@ class BaseVisitTrend(object):
     def _gen_scaling_factors(self, visit_plan, coeffs):
         pass
 
-
     def get_scale_factor(self, exp_num):
         """ Returns the scale factor for the exposure number `exp_num`."""
         return self.scale_factors[exp_num]
 
 
 class HookAndLongTermRamp(BaseVisitTrend):
-
     def _gen_scaling_factors(self, visit_plan, coeffs):
         t = visit_plan['exp_start_times']
         t_0 = gen_orbit_start_times_per_exp(t, visit_plan['orbit_start_index'])
@@ -56,7 +53,7 @@ class HookAndLongTermRamp(BaseVisitTrend):
         """
 
         t = np.array(t)  # wipes units if any
-        ramp = (1-a1*(t-to))*(1-b1*np.exp(-b2*(t-t_0)))
+        ramp = (1 - a1 * (t - to)) * (1 - b1 * np.exp(-b2 * (t - t_0)))
         return ramp
 
 
@@ -70,7 +67,7 @@ def gen_orbit_start_times_per_exp(time_array, obs_start_index):
     obs_index.append(len(time_array))
     t_0 = np.zeros(len(time_array))
 
-    for i in xrange(len(obs_index)-1):
-        t_0[obs_index[i]:obs_index[i+1]] = time_array[obs_start_index[i]]
+    for i in xrange(len(obs_index) - 1):
+        t_0[obs_index[i]:obs_index[i + 1]] = time_array[obs_start_index[i]]
 
     return t_0

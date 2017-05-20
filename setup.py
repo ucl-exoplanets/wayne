@@ -1,12 +1,12 @@
-from setuptools import setup, find_packages, Extension
 import codecs
 import os
 import re
 
 import numpy
-
+from setuptools import setup, find_packages, Extension
 
 here = os.path.abspath(os.path.dirname(__file__))
+
 
 # Read the version number from a source file.
 def find_version(*file_paths):
@@ -67,11 +67,12 @@ setup(
     tests_require=['pytest'],
     include_package_data=True,
     zip_safe=False,
-    ext_modules = [
+    ext_modules=[
         Extension("pyparallel",
                   sources=[os.path.join('wayne', x) for x in
                            ("pyparallel.pyx", "pyparallel_menu.c")],
-                  extra_compile_args=['-fopenmp','-lm','-O3'],
-                  extra_link_args=['-lgomp'], include_dirs=[numpy.get_include()])
+                  extra_compile_args=['-fopenmp', '-lm', '-O3'],
+                  extra_link_args=['-lgomp'],
+                  include_dirs=[numpy.get_include()])
     ]
 )

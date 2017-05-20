@@ -6,20 +6,18 @@ detector class then maps the field to pixels.
 
 import os.path
 
-import numpy as np
-from astropy import units as u
 import matplotlib.pyplot as plt
+import numpy as np
 import pyfits as fits
+from astropy import units as u
 
-from detector import WFC3_IR
-import params
-import tools
-
-
-# Strictly the grism class should be non specfic and the G141 var / function
-#  should create one with g141 params.
+from wayne import params
+from wayne import tools
+from wayne.detector import WFC3_IR
 
 
+# TODO (ryan) Strictly the grism class should be non specfic and we should
+# initialise or inherit G141 and G102
 class G141(object):
     """ Handles a grism object and can be used to perform calculation on it
      such as the psf given a flux and wavelength
@@ -62,9 +60,11 @@ class G141(object):
         self.wl_solution = g141_wl_solution
 
         # Flat
-        self.flat_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.flat.2.fits')
+        self.flat_file = os.path.join(params._calb_dir,
+                                      'WFC3.IR.G141.flat.2.fits')
         self.flat_fielding_fits_file = fits.open(self.flat_file)
-        self.flat_xs, self.flat_ys = np.meshgrid(np.arange(1014), np.arange(1014))
+        self.flat_xs, self.flat_ys = np.meshgrid(np.arange(1014),
+                                                 np.arange(1014))
         self.flat_wmin = self.flat_fielding_fits_file[0].header['WMIN']
         self.flat_wmax = self.flat_fielding_fits_file[0].header['WMAX']
         self.flat_f0 = self.flat_fielding_fits_file[0].data
@@ -73,27 +73,34 @@ class G141(object):
         self.flat_f3 = self.flat_fielding_fits_file[3].data
 
         # Sky
-        self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.sky.V1.0.fits')
+        self.sky_file = os.path.join(params._calb_dir,
+                                     'WFC3.IR.G141.sky.V1.0.fits')
 
         # PSF Information
         # parameters of double gaussian psf, calculated from WASP 18 data (ID: 12181, PI:Deming)
         # to be improved using the data from the instrument hand book
-        self.psf_ratio_poly = np.poly1d([-0.25063428, 0.8332488, -0.80546074, 0.39896516])
-        self.psf_sigmal_poly = np.poly1d([0.69245668, -2.1043046, 2.22284446, -0.29689335])
-        self.psf_sigmah_poly = np.poly1d([2.90366189, -8.81859432, 8.96049229, 2.254503])
-        
+        self.psf_ratio_poly = np.poly1d(
+            [-0.25063428, 0.8332488, -0.80546074, 0.39896516])
+        self.psf_sigmal_poly = np.poly1d(
+            [0.69245668, -2.1043046, 2.22284446, -0.29689335])
+        self.psf_sigmah_poly = np.poly1d(
+            [2.90366189, -8.81859432, 8.96049229, 2.254503])
+
         # we crop the input spectrum using this, we set this just above and
         # below the actual limits to not crop the psf
         self.wl_limits = (0.988 * u.micron, 1.777 * u.micron)
 
         # Throughput
-        self.throughput_file = os.path.join(params._calb_dir, 'WFC3.IR.G141.1st.sens.2.fits')
+        self.throughput_file = os.path.join(params._calb_dir,
+                                            'WFC3.IR.G141.1st.sens.2.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_units = (u.ph / (u.s * u.angstrom)) / (u.erg / (u.cm ** 2 * u.s * u.angstrom))
+            self.throughput_units = (u.ph / (u.s * u.angstrom)) / (
+            u.erg / (u.cm ** 2 * u.s * u.angstrom))
             self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
                 u.micron)
-            self.throughput_val = tbl.field('SENSITIVITY') * self.throughput_units
+            self.throughput_val = tbl.field(
+                'SENSITIVITY') * self.throughput_units
 
         # Non Grism Specific Constants
         self._FWHM_to_StDev = 1. / (2 * np.sqrt(2 * np.log(2)))
@@ -103,7 +110,9 @@ class G141(object):
         self.current_psf_ratio = self.psf_ratio_poly(wl)
         self.current_psf_sigmal = self.psf_sigmal_poly(wl)
         self.current_psf_sigmah = self.psf_sigmah_poly(wl)
-        self.current_throughput_interpolated_function = np.interp(wl, self.throughput_wl, self.throughput_val)
+        self.current_throughput_interpolated_function = np.interp(wl,
+                                                                  self.throughput_wl,
+                                                                  self.throughput_val)
 
     def _get_wavelength_calibration_coeffs(self, x_ref, y_ref):
         """ Returns the coefficients to compute the spectrum trace and the
@@ -142,7 +151,8 @@ class G141(object):
         a_t_i = 1 / a_t  # the inverse
 
         # Distance between the reference and required point on the trace
-        d = np.sqrt((y_ref - y_1 + a_t_i * x_ref - a_t_i * x_1) ** 2 / (a_t_i ** 2 + 1))
+        d = np.sqrt((y_ref - y_1 + a_t_i * x_ref - a_t_i * x_1) ** 2 / (
+        a_t_i ** 2 + 1))
 
         # Determination of wavelength
         wl = a_w * d + b_w
@@ -181,7 +191,8 @@ class G141(object):
         a_t_i = 1 / a_t  # the inverse
 
         d_values = np.sqrt(
-            (y_ref - y_value + a_t_i * x_ref - a_t_i * x_values) ** 2 / (a_t_i ** 2 + 1))
+            (y_ref - y_value + a_t_i * x_ref - a_t_i * x_values) ** 2 / (
+            a_t_i ** 2 + 1))
 
         wl_values = a_w * d_values + b_w
 
@@ -271,7 +282,8 @@ class G141(object):
         :rtype: astropy.units.quantity.Quantity
         """
 
-        throughput_values = np.interp(wl, self.throughput_wl, self.throughput_val)
+        throughput_values = np.interp(wl, self.throughput_wl,
+                                      self.throughput_val)
 
         return flux * throughput_values * self.throughput_units
 
@@ -344,38 +356,48 @@ class G141(object):
         if indices is not None:
 
             if size is not None:
-                indices = (indices[0] + (1014 - size) / 2, indices[1] + (1014 - size) / 2)
+                indices = (
+                indices[0] + (1014 - size) / 2, indices[1] + (1014 - size) / 2)
 
-            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref,
+                                                                         y_ref)
             a_t_i = 1 / a_t  # the inverse
-            arr_1 = y_ref - self.flat_ys[indices] + a_t_i * x_ref - a_t_i * self.flat_xs[indices]
+            arr_1 = y_ref - self.flat_ys[indices] + a_t_i * x_ref - a_t_i * \
+                                                                    self.flat_xs[
+                                                                        indices]
             d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
             wl_array = a_w * d_values + b_w
 
             # turn into format for flat equations
-            wl_array_norm = (wl_array - self.flat_wmin) / (self.flat_wmax - self.flat_wmin)
+            wl_array_norm = (wl_array - self.flat_wmin) / (
+            self.flat_wmax - self.flat_wmin)
             wl_array_norm_2 = wl_array_norm * wl_array_norm
             wl_array_norm_3 = wl_array_norm_2 * wl_array_norm
 
             flatfield = np.ones_like(self.flat_f0)
 
-            flatfield[indices] = (self.flat_f0[indices] + (self.flat_f1[indices] * wl_array_norm) + (self.flat_f2[indices] * wl_array_norm_2) +
-                                  (self.flat_f3[indices] * wl_array_norm_3))
+            flatfield[indices] = (
+            self.flat_f0[indices] + (self.flat_f1[indices] * wl_array_norm) + (
+            self.flat_f2[indices] * wl_array_norm_2) +
+            (self.flat_f3[indices] * wl_array_norm_3))
 
         else:
 
-            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref, y_ref)
+            a_t, b_t, a_w, b_w = self._get_wavelength_calibration_coeffs(x_ref,
+                                                                         y_ref)
             a_t_i = 1 / a_t  # the inverse
             arr_1 = y_ref - self.flat_ys + a_t_i * x_ref - a_t_i * self.flat_xs
             d_values = np.sqrt((arr_1 * arr_1) / (a_t_i * a_t_i + 1))
             wl_array = a_w * d_values + b_w
 
             # turn into format for flat equations
-            wl_array_norm = (wl_array - self.flat_wmin) / (self.flat_wmax - self.flat_wmin)
+            wl_array_norm = (wl_array - self.flat_wmin) / (
+            self.flat_wmax - self.flat_wmin)
             wl_array_norm_2 = wl_array_norm * wl_array_norm
             wl_array_norm_3 = wl_array_norm_2 * wl_array_norm
 
-            flatfield = (self.flat_f0 + (self.flat_f1 * wl_array_norm) + (self.flat_f2 * wl_array_norm_2) +
+            flatfield = (self.flat_f0 + (self.flat_f1 * wl_array_norm) + (
+            self.flat_f2 * wl_array_norm_2) +
                          (self.flat_f3 * wl_array_norm_3))
 
         if size is not None:
@@ -425,10 +447,12 @@ class G102(G141):
         #  dependant on x and y and not constant
 
         # Flat
-        self.flat_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.flat.2.fits')
+        self.flat_file = os.path.join(params._calb_dir,
+                                      'WFC3.IR.G102.flat.2.fits')
 
         # Sky
-        self.sky_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.sky.V1.0.fits')
+        self.sky_file = os.path.join(params._calb_dir,
+                                     'WFC3.IR.G102.sky.V1.0.fits')
 
         # PSF same as G141
 
@@ -437,13 +461,16 @@ class G102(G141):
         self.wl_limits = (0.75 * u.micron, 1.2 * u.micron)
 
         # Throughput
-        self.throughput_file = os.path.join(params._calb_dir, 'WFC3.IR.G102.1st.sens.2.fits')
+        self.throughput_file = os.path.join(params._calb_dir,
+                                            'WFC3.IR.G102.1st.sens.2.fits')
         with fits.open(self.throughput_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
-            self.throughput_units = (u.ph / (u.s * u.angstrom)) / (u.erg / (u.cm ** 2 * u.s * u.angstrom))
+            self.throughput_units = (u.ph / (u.s * u.angstrom)) / (
+            u.erg / (u.cm ** 2 * u.s * u.angstrom))
             self.throughput_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(
                 u.micron)
-            self.throughput_val = tbl.field('SENSITIVITY') * self.throughput_units
+            self.throughput_val = tbl.field(
+                'SENSITIVITY') * self.throughput_units
 
 
 class _SpectrumTrace(object):

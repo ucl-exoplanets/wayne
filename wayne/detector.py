@@ -5,28 +5,24 @@
 import os.path
 
 import numpy as np
-from astropy import units as u
-import pyfits as fits
 import pandas as pd
+import pyfits as fits
+from astropy import units as u
 
-import params
-import tools
+from wayne import params
+from wayne import tools
 
 
 class WFC3_IR(object):
-    """ Class containing the various methods and calibrations for the WFC3 IR detector
-    """
+    """Various methods and calibrations for the WFC3 IR detector."""
 
     def __init__(self):
-        """ Initialise the WFC3 IR class.
-        :return:
-        """
 
         # Start with a single 1024x1024 array, add complexity in when we need it.
         self._pixel_array = np.zeros((1024, 1024))
-        self.pixel_unit = u.Unit('WFC3IR_Pix', 18*u.micron,
+        self.pixel_unit = u.Unit('WFC3IR_Pix', 18 * u.micron,
                                  doc='Pixel size for the HST WFC3 IR detector')
-        self.telescope_area = np.pi * (2.4*u.m/2.)**2
+        self.telescope_area = np.pi * (2.4 * u.m / 2.) ** 2
         self.min_counts = -20
         # 5% non-linear limit where nonlinear correction fails
         self.max_counts = 78000  # DN
@@ -37,7 +33,8 @@ class WFC3_IR(object):
         self.read_noise = 14.1 / self.constant_gain  # e to DN
 
         # TODO needs values for other subbarrays
-        self.initial_bias = os.path.join(params._data_dir, 'wfc3_ir_initial_bias_256.fits')
+        self.initial_bias = os.path.join(params._data_dir,
+                                         'wfc3_ir_initial_bias_256.fits')
 
         # General Info
         self.telescope = 'HST'
@@ -48,14 +45,16 @@ class WFC3_IR(object):
         self.modes_exp_table, self.modes_calb_table = self._get_modes()
 
         # QE
-        self.qe_file = os.path.join(params._data_dir, 'wfc3_ir_qe_003_syn.fits')
+        self.qe_file = os.path.join(params._data_dir,
+                                    'wfc3_ir_qe_003_syn.fits')
         with fits.open(self.qe_file) as f:
             tbl = f[1].data  # the table is in the data of the second HDU
             self.qe_wl = (tbl.field('WAVELENGTH') * u.angstrom).to(u.micron)
             self.qe_val = tbl.field('THROUGHPUT')
 
         # Non-linearity
-        self.non_linear_file = os.path.join(params._calb_dir, 'u1k1727mi_lin.fits')
+        self.non_linear_file = os.path.join(params._calb_dir,
+                                            'u1k1727mi_lin.fits')
         with fits.open(self.non_linear_file) as f:
             c1 = f[1].data
             c2 = f[2].data
@@ -144,7 +143,7 @@ class WFC3_IR(object):
             raise ValueError('array size must be in {} got {}'.format(
                 array_size, allowed_input))
 
-        full_array = np.zeros((array_size+10, array_size+10))
+        full_array = np.zeros((array_size + 10, array_size + 10))
         full_array[5:-5, 5:-5] = pixel_array
 
         return full_array
@@ -183,11 +182,12 @@ class WFC3_IR(object):
 
         dark_file_path = os.path.join(params._calb_dir, dark_file)
 
-        file_index = -(NSAMP)*5
+        file_index = -(NSAMP) * 5
 
         with fits.open(dark_file_path) as f:
             dark_array = f[file_index].data
-            dark_error_array = np.where(f[file_index + 1].data > 0, f[file_index + 1].data, 0.00001)
+            dark_error_array = np.where(f[file_index + 1].data > 0,
+                                        f[file_index + 1].data, 0.00001)
             return pixel_array + np.random.normal(dark_array, dark_error_array)
 
     def add_read_noise(self, pixel_array):
@@ -227,7 +227,8 @@ class WFC3_IR(object):
 
         if not 2 <= NSAMP <= 16:
             raise WFC3SimSampleModeError(
-                "NSAMP must be an integer between 2 and 16, got {}".format(NSAMP))
+                "NSAMP must be an integer between 2 and 16, got {}".format(
+                    NSAMP))
 
         sample_number = NSAMP - 1  # EXPTIME tables quote samp num not NSAMP
 
@@ -254,14 +255,14 @@ class WFC3_IR(object):
 
         modes_exp_table = pd.read_csv(
             os.path.join(params._data_dir, 'wfc3_ir_mode_exptime.csv'),
-            skiprows=1, dtype={ 'SUBARRAY': np.int64, 'SAMPSEQ': np.object,
-                                'SAMPNUM': np.int64, 'TIME':np.float},
-                                  thousands=',')
+            skiprows=1, dtype={'SUBARRAY': np.int64, 'SAMPSEQ': np.object,
+                               'SAMPNUM': np.int64, 'TIME': np.float},
+            thousands=',')
 
         modes_calb_table = pd.read_csv(
             os.path.join(params._data_dir, 'wfc3_ir_mode_calb.csv'),
             skiprows=1, dtype={'SUBARRAY': np.int64, 'SAMPSEQ': np.object,
-                                'dark': str})
+                               'dark': str})
 
         return modes_exp_table, modes_calb_table
 
@@ -286,7 +287,7 @@ class WFC3_IR(object):
         headers_per_exp = NSAMP + 1  # + 1 for zero read
 
         # 2 full frame (1024) 16 sample exposures
-        total_allowed_reads = 2*16*(1024/SUBARRAY)
+        total_allowed_reads = 2 * 16 * (1024 / SUBARRAY)
 
         if total_allowed_reads > hard_limit:
             total_allowed_reads = hard_limit
@@ -314,10 +315,11 @@ class WFC3_IR(object):
 
         return counts * throughput_values
 
-    def apply_non_linearity(self, pixel_array):  # Angelos code
+    def apply_non_linearity(self, pixel_array):
         """ This uses the non linearity correction (in reverse) to give the
-        detector a non linear response. Units are in DN. The recorded flux is calculated from the
-        incoming flux by solving the inverse non-linearity equation (numerical solution, Newton-Raphson)
+        detector a non linear response. Units are in DN. The recorded flux is
+        calculated from the incoming flux by solving the inverse non-linearity
+        equation (numerical solution, Newton-Raphson)
 
         :param pixel_array: incoming flux
         :return non_linear_frame: recorded flux
@@ -332,9 +334,12 @@ class WFC3_IR(object):
 
         u0 = pixel_array
         u1 = u0 * 0
-        for ii in xrange(10000):  # setting a limit of 1k iterations - arbitrary limit
-            u1 = u0 - ((-pixel_array + u0 * (1 + c1 + u0 * (c2 + u0 * (c3 + c4 * u0)))) /
-                       (1 + c1 + 2 * c2 * u0 + 3 * c3 * u0 * u0 + 4 * c4 * u0 * u0 * u0))
+
+        iteration_limit = 10000  # arbitrary limit
+        for _ in xrange(iteration_limit):
+            u1 = u0 - (
+            (-pixel_array + u0 * (1 + c1 + u0 * (c2 + u0 * (c3 + c4 * u0)))) /
+            (1 + c1 + 2 * c2 * u0 + 3 * c3 * u0 * u0 + 4 * c4 * u0 * u0 * u0))
             if (np.abs(u1 - u0) < 10 ** (-3)).all():
                 break
             else:
@@ -343,7 +348,6 @@ class WFC3_IR(object):
         non_linear_frame = u1
 
         return non_linear_frame
-
 
 
 class WFC3SimException(BaseException):

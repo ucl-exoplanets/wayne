@@ -2,10 +2,11 @@
 """
 
 import numpy as np
-import pysynphot
-import pyfits as fits
-import thirdparty.pylightcurve as pylc
 import pandas as pd
+import pyfits as fits
+import pysynphot
+
+import wayne.thirdparty.pylightcurve as pylc
 
 
 def crop_spectrum(min_wl, max_wl, wl, flux):

@@ -2,15 +2,15 @@ import time
 import warnings
 
 import numpy as np
-from astropy import units as u
 import pyfits as fits
+from astropy import units as u
 
-import tools
-import exposure
-import detector
-import filters
-from trend_generators import cosmic_rays, scan_speed_varations
-import pyparallel as pyp
+from wayne import detector
+from wayne import exposure
+from wayne import filters
+from wayne import pyparallel as pyp
+from wayne import tools
+from wayne.trend_generators import cosmic_rays, scan_speed_varations
 
 
 class ExposureGenerator(object):
@@ -54,7 +54,8 @@ class ExposureGenerator(object):
         self.exptime = self.detector.exptime(NSAMP, SUBARRAY, SAMPSEQ)
 
         # samples up the ramp
-        self.read_times = self.detector.get_read_times(NSAMP, SUBARRAY, SAMPSEQ)
+        self.read_times = self.detector.get_read_times(NSAMP, SUBARRAY,
+                                                       SAMPSEQ)
 
         self.exp_info = {
             # these should be generated mostly in observation class and
@@ -105,7 +106,7 @@ class ExposureGenerator(object):
             'add_non_linear': False,
             'add_read_noise': False,
             'cosmic_rate': 0,
-            'sky_background': 0*u.ct/u.s,
+            'sky_background': 0 * u.ct / u.s,
             'scale_factor': 1,
             'clip_values_det_limits': False,
         })
@@ -116,7 +117,8 @@ class ExposureGenerator(object):
 
         # Zero Read
         self.exposure.add_read(
-            self.detector.gen_pixel_array(self.SUBARRAY, light_sensitive=False))
+            self.detector.gen_pixel_array(self.SUBARRAY,
+                                          light_sensitive=False))
 
         SUBARRAY = self.SUBARRAY
 
@@ -128,7 +130,8 @@ class ExposureGenerator(object):
         y0 = y_ref - (507.0 - SUBARRAY / 2.0)
         sigma = 2.0
         # generate a 2d gaussian
-        di_array = 10000.0 * np.exp(-((x0 - x) ** 2 + (y0 - y) ** 2) / (2.0 * sigma * sigma))
+        di_array = 10000.0 * np.exp(
+            -((x0 - x) ** 2 + (y0 - y) ** 2) / (2.0 * sigma * sigma))
 
         read_info = {
             'read_exp_time': 0 * u.s,  # TODO add real value
@@ -146,19 +149,21 @@ class ExposureGenerator(object):
                       noise_mean, noise_std, add_dark, add_flat, cosmic_rate,
                       sky_background, scale_factor, add_gain_variations,
                       add_non_linear, clip_values_det_limits, add_read_noise,
-                      add_stellar_noise, add_initial_bias, progress_bar, threads=2):
+                      add_stellar_noise, add_initial_bias, progress_bar,
+                      threads=2):
         """ Constructs a staring mode frame, basically a stationary scanning
         """
 
         # Variables that force scanning mode to staring
-        scan_speed = 0 * u.pixel/u.s
+        scan_speed = 0 * u.pixel / u.s
         sample_rate = 1 * u.year  # high limit cuts off at read time
         ssv_generator = None
 
         # TODO (ryan) exp_info overwrites
 
         self.exposure = self.scanning_frame(
-            x_ref, y_ref, x_jitter, y_jitter, wl, stellar_flux, planet_signal, scan_speed,
+            x_ref, y_ref, x_jitter, y_jitter, wl, stellar_flux, planet_signal,
+            scan_speed,
             sample_rate, sample_mid_points, sample_durations,
             read_index, ssv_generator, noise_mean,
             noise_std, add_dark, add_flat,
@@ -177,9 +182,11 @@ class ExposureGenerator(object):
                        read_index=None, ssv_generator=None,
                        noise_mean=False,
                        noise_std=False, add_dark=True, add_flat=True,
-                       cosmic_rate=None, sky_background=1*u.count/u.s,
-                       scale_factor=None, add_gain_variations=True, add_non_linear=True,
-                       clip_values_det_limits=True, add_read_noise=True, add_stellar_noise=True,
+                       cosmic_rate=None, sky_background=1 * u.count / u.s,
+                       scale_factor=None, add_gain_variations=True,
+                       add_non_linear=True,
+                       clip_values_det_limits=True, add_read_noise=True,
+                       add_stellar_noise=True,
                        add_initial_bias=True,
                        progress_bar=None,
                        threads=2):
@@ -253,16 +260,17 @@ class ExposureGenerator(object):
         # TODO it is clear now that ssvs should probably take over the
         # functionality of _gen_scanning_sample_times instead of below
         if ssv_generator is not None:
-            if isinstance(ssv_generator, scan_speed_varations.SSVModulatedSine):
+            if isinstance(ssv_generator,
+                          scan_speed_varations.SSVModulatedSine):
 
                 sample_durations, read_index = ssv_generator.get_subsample_exposure_times(
-                s_y_refs, sample_durations, self.read_times, sample_rate)
+                    s_y_refs, sample_durations, self.read_times, sample_rate)
 
                 # sample_mid_points = sample_mid_points[:-1]
                 # read_index[-1] = len(sample_mid_points) -1
             else:
                 sample_durations = ssv_generator.get_subsample_exposure_times(
-                s_y_refs, sample_durations, self.read_times, sample_rate)
+                    s_y_refs, sample_durations, self.read_times, sample_rate)
 
         sample_durations = sample_durations.to(u.ms)
 
@@ -297,7 +305,7 @@ class ExposureGenerator(object):
         # we dont want the zero read to stack yet as the other corrections
         # assume it has been subtracted. it is added at the end
         cumulative_pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
-                                                    light_sensitive=False)
+                                                               light_sensitive=False)
 
         # Prep for random noise and other trends / noise sources
         read_num = 0
@@ -321,7 +329,8 @@ class ExposureGenerator(object):
         s_y_jitter = np.random.normal(0, y_jitter, num_samples)
 
         wavelength_only_test = False
-        crop_ind = tools.crop_spectrum_ind(self.grism.wl_limits[0], self.grism.wl_limits[-1], wl)
+        crop_ind = tools.crop_spectrum_ind(self.grism.wl_limits[0],
+                                           self.grism.wl_limits[-1], wl)
         s_wl = wl[crop_ind[0]:crop_ind[1]]
 
         for i, s_mid in enumerate(sample_mid_points):
@@ -329,11 +338,12 @@ class ExposureGenerator(object):
                 s_y_ref = s_y_refs[i]
                 s_dur = sample_durations[i]
             except IndexError:  # no sample time caused by bad ssvs (modsine)
-                s_dur = 0*u.ms
+                s_dur = 0 * u.ms
                 s_y_ref = s_y_refs[-1]
 
             if self.transmission_spectroscopy:
-                s_flux = stellar_flux[crop_ind[0]:crop_ind[1]] * (1. - planet_signal[i][crop_ind[0]:crop_ind[1]])
+                s_flux = stellar_flux[crop_ind[0]:crop_ind[1]] * (
+                1. - planet_signal[i][crop_ind[0]:crop_ind[1]])
             else:
                 s_flux = stellar_flux[crop_ind[0]:crop_ind[1]]
 
@@ -343,14 +353,16 @@ class ExposureGenerator(object):
 
             # generate sample frame
             sample_frame = self._gen_subsample(
-                x_ref + s_x_jitter[i], s_y_ref + s_y_jitter[i], s_wl, s_flux, pixel_array, s_dur, s_rand_seeds[i],
+                x_ref + s_x_jitter[i], s_y_ref + s_y_jitter[i], s_wl, s_flux,
+                pixel_array, s_dur, s_rand_seeds[i],
                 threads, scale_factor, add_flat, add_stellar_noise)
             pixel_array += sample_frame
 
             if i in read_index:  # trigger a read including final read
                 cumulative_exp_time = read_exp_times[read_num]
                 read_exp_time = (
-                    read_exp_times[read_num] - previous_read_time).to(u.s).value
+                    read_exp_times[read_num] - previous_read_time).to(
+                    u.s).value
 
                 pixel_array_full = self._add_read_reductions(
                     pixel_array, read_exp_time, noise_mean, noise_std,
@@ -359,25 +371,26 @@ class ExposureGenerator(object):
                 read_info = {
                     'cumulative_exp_time': cumulative_exp_time,
                     # not a unit earlier, but should be, req for fits saving
-                    'read_exp_time': read_exp_time*u.s,
+                    'read_exp_time': read_exp_time * u.s,
                     'CRPIX1': 0,
                 }
 
                 cumulative_pixel_array += pixel_array_full
 
                 # need to copy or all reads will be the same
-                self.exposure.add_read(cumulative_pixel_array.copy(), read_info)
+                self.exposure.add_read(cumulative_pixel_array.copy(),
+                                       read_info)
 
                 previous_read_time = read_exp_times[read_num]
                 read_num += 1
 
                 # Now we want to start again with a fresh array
                 pixel_array = self.detector.gen_pixel_array(self.SUBARRAY,
-                                            light_sensitive=True)
+                                                            light_sensitive=True)
 
             if progress_bar is not None:
                 progress_line = progress_bar.progress_line + \
-                                ' (samp {}/{})'.format(i+1, num_samples)
+                                ' (samp {}/{})'.format(i + 1, num_samples)
                 progress_bar.print_status_line(progress_line)
 
         # check to make sure all reads were made
@@ -403,7 +416,8 @@ class ExposureGenerator(object):
                 self.exposure.add_dark_current()
         except detector.WFC3SimNoDarkFileError:
             warnings.warn("No Dark file found for SAMPSEQ = {}, SUBARRAY={}"
-                          " - Switching Dark Off".format(self.SAMPSEQ, self.SUBARRAY),
+                          " - Switching Dark Off".format(self.SAMPSEQ,
+                                                         self.SUBARRAY),
                           WFC3SimNoDarkFileWarning)
 
             self.exposure.exp_info[add_dark] = False
@@ -436,7 +450,7 @@ class ExposureGenerator(object):
         # TODO (ryan) real zero read generation (low priority)
 
         pixel_array_full = self.detector.gen_pixel_array(self.SUBARRAY,
-                                            light_sensitive=False)
+                                                         light_sensitive=False)
 
         # TODO formalise BIAS with other modes aswell
         if self.SUBARRAY == 256 and add_initial_bias:
@@ -444,8 +458,8 @@ class ExposureGenerator(object):
                 pixel_array_full += f[1].data
 
         read_info = {
-            'cumulative_exp_time': 0*u.s,
-            'read_exp_time': 0*u.s,
+            'cumulative_exp_time': 0 * u.s,
+            'read_exp_time': 0 * u.s,
             'CRPIX1': 0,
         }
 
@@ -472,7 +486,7 @@ class ExposureGenerator(object):
         # TODO (ryan) bad pixels
 
         if sky_background:
-            bg_count_sec = sky_background.to(u.count/u.s).value
+            bg_count_sec = sky_background.to(u.count / u.s).value
             master_sky = self.grism.get_master_sky(array_size)
             bg_count = bg_count_sec * read_exp_time
 
@@ -564,7 +578,8 @@ class ExposureGenerator(object):
 
         return sample_starts, sample_mid_points, sample_durations, read_index
 
-    def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime, rand_seed, threads,
+    def _gen_subsample(self, x_ref, y_ref, wl, flux, pixel_array, exptime,
+                       rand_seed, threads,
                        scale_factor=None, add_flat=True,
                        add_stellar_noise=True):
         """ Does the bulk of the work in generating the observation. Used by
@@ -619,11 +634,14 @@ class ExposureGenerator(object):
         x_size = len(pixel_array[0])
 
         new_pixel_array = np.reshape(
-            pyp.apply_psf(counts, x_sub, y_sub, psf_ratio, psf_sigmal, psf_sigmah, y_size, x_size, rand_seed, threads),
+            pyp.apply_psf(counts, x_sub, y_sub, psf_ratio, psf_sigmal,
+                          psf_sigmah, y_size, x_size, rand_seed, threads),
             (y_size, x_size))
 
         if add_flat:
-            flat_field = self.grism.get_flat_field(x_ref, y_ref, self.SUBARRAY, np.where(new_pixel_array > 0))
+            flat_field = self.grism.get_flat_field(x_ref, y_ref, self.SUBARRAY,
+                                                   np.where(
+                                                       new_pixel_array > 0))
             new_pixel_array *= flat_field
 
         return new_pixel_array
@@ -709,7 +727,8 @@ class ExposureGenerator(object):
         return noise
 
 
-def _psf_distribution(counts, x_pos, y_pos, psf_ratio, psf_sigmal, psf_sigmah, pixel_array):
+def _psf_distribution(counts, x_pos, y_pos, psf_ratio, psf_sigmal, psf_sigmah,
+                      pixel_array):
     """ Distributes electrons across the 2D double-guassian PSF by acting like a
      glorified electron thrower. Coordinates are generated by 2 double-guassian
      distributions. Distributes all the wavelength elements at once.
@@ -726,14 +745,16 @@ def _psf_distribution(counts, x_pos, y_pos, psf_ratio, psf_sigmal, psf_sigmah, p
 
     for i, bin_count in enumerate(counts):
         if bin_count > 1:
-
             # create a sample of 0 and 1 based on the ratio between the two gaussians
-            which_gauss1 = np.zeros(int(bin_count*psf_ratio[i]))
-            which_gauss = np.int_(np.append(which_gauss1, np.ones(bin_count - len(which_gauss1))))
+            which_gauss1 = np.zeros(int(bin_count * psf_ratio[i]))
+            which_gauss = np.int_(np.append(which_gauss1, np.ones(
+                bin_count - len(which_gauss1))))
 
             # "throw" electrons into random (gaussian) positions in x and y
-            e_pos_x = np.int_(np.random.normal(x_pos[i], np.array([psf_sigmah[i], psf_sigmal[i]])[which_gauss]))
-            e_pos_y = np.int_(np.random.normal(y_pos[i], np.array([psf_sigmah[i], psf_sigmal[i]])[which_gauss]))
+            e_pos_x = np.int_(np.random.normal(x_pos[i], np.array(
+                [psf_sigmah[i], psf_sigmal[i]])[which_gauss]))
+            e_pos_y = np.int_(np.random.normal(y_pos[i], np.array(
+                [psf_sigmah[i], psf_sigmal[i]])[which_gauss]))
 
             # Turn coords into pixel numbers (ints) and clip those that fall outside the detector
             e_pos_x = np.clip(e_pos_x, 0, max_x_index)
@@ -747,8 +768,8 @@ def _psf_distribution(counts, x_pos, y_pos, psf_ratio, psf_sigmal, psf_sigmah, p
 
     yx = yy * y_size + xx
     yx = np.bincount(yx)
-    yx = np.insert(yx, len(yx), np.zeros(yx_size - len(yx)))  
-    
+    yx = np.insert(yx, len(yx), np.zeros(yx_size - len(yx)))
+
     final = np.reshape(yx, (y_size, x_size))
 
     return pixel_array + final

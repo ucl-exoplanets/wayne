@@ -8,15 +8,14 @@ import numpy as np
 import quantities as pq
 from astropy import units as u
 
-import exposure
-import tools
-from exposure_generator import ExposureGenerator
-from trend_generators import visit_trends
-from visit_planner import VisitPlanner
-from wfc3simlog import logger
-
-from thirdparty.progress import Progress
-import thirdparty.pylightcurve as pylc
+from wayne import exposure
+from wayne.thirdparty import pylightcurve as pylc
+from wayne import tools
+from wayne.exposure_generator import ExposureGenerator
+from wayne.thirdparty.progress import Progress
+from wayne.trend_generators import visit_trends
+from wayne.visit_planner import VisitPlanner
+from wayne.wfc3simlog import logger
 
 
 class Observation(object):
@@ -62,7 +61,8 @@ class Observation(object):
         self.spatial_scan = spatial_scan
         self.scan_speed = scan_speed
 
-    def setup_simulator(self, sample_rate=False, clip_values_det_limits=True, threads=2):
+    def setup_simulator(self, sample_rate=False, clip_values_det_limits=True,
+                        threads=2):
         """
         :param sample_rate: How often to sample the exposure (time units)
         :type sample_rate: astropy.units.quantity.Quantity
@@ -72,7 +72,8 @@ class Observation(object):
         self.threads = threads
 
     def setup_target(self, planet, wavelengths, planet_spectrum, stellar_flux,
-                     transittime=None, ldcoeffs=None, period=None, rp=None, sma=None, inclination=None,
+                     transittime=None, ldcoeffs=None, period=None, rp=None,
+                     sma=None, inclination=None,
                      eccentricity=None, periastron=None, stellar_radius=None):
         """
         :param planet: An ExoData type planet object your observing (holds
@@ -104,19 +105,22 @@ class Observation(object):
             len(wavelengths) == len(planet_spectrum)
             self.transmission_spectroscopy = True
             self._generate_planet_information(
-                planet, transittime, ldcoeffs, period, rp, sma, inclination, eccentricity,
+                planet, transittime, ldcoeffs, period, rp, sma, inclination,
+                eccentricity,
                 periastron, stellar_radius)
         else:
             self.transmission_spectroscopy = False
 
-    def _generate_planet_information(self, planet, transittime, ldcoeffs, period, rp, sma,
+    def _generate_planet_information(self, planet, transittime, ldcoeffs,
+                                     period, rp, sma,
                                      inclination, eccentricity, periastron,
                                      stellar_radius):
 
         if not isinstance(planet, exodata.astroclasses.Planet):
             self.planet = exodata.astroclasses.Planet()
             self.planet.parent = exodata.astroclasses.Star()
-            self.planet.params['name'] = planet  # in this case planet is targ name
+            self.planet.params[
+                'name'] = planet  # in this case planet is targ name
 
         if period:
             self.planet.P = period
@@ -138,7 +142,7 @@ class Observation(object):
 
         if stellar_radius:
             self.planet.star.R = stellar_radius
-            
+
         if transittime:
             self.planet.transittime = transittime
 
@@ -206,10 +210,10 @@ class Observation(object):
         :return:
         """
         self.visit_plan = VisitPlanner(self.detector, self.NSAMP,
-                                        self.SAMPSEQ, self.SUBARRAY,
-                                        self.num_orbits,
-                                        # TEMP! to make observations sparser
-                                        exp_overhead=3 * u.min)
+                                       self.SAMPSEQ, self.SUBARRAY,
+                                       self.num_orbits,
+                                       # TEMP! to make observations sparser
+                                       exp_overhead=3 * u.min)
 
         self.exp_start_times = self.visit_plan['exp_times'].to(
             u.day) + self.start_JD
@@ -229,7 +233,8 @@ class Observation(object):
             'orbit_start_index': tools.detect_orbits(self.exp_start_times),
         }
 
-    def setup_reductions(self, add_dark=True, add_flat=True, add_gain_variations=True,
+    def setup_reductions(self, add_dark=True, add_flat=True,
+                         add_gain_variations=True,
                          add_non_linear=True, add_initial_bias=True):
         self.add_dark = add_dark
         self.add_flat = add_flat
@@ -237,7 +242,8 @@ class Observation(object):
         self.add_non_linear = add_non_linear
         self.add_initial_bias = add_initial_bias
 
-    def setup_trends(self, ssv_gen, x_shifts=0, x_jitter=0.0000001, y_shifts=0, y_jitter=0.0000001):
+    def setup_trends(self, ssv_gen, x_shifts=0, x_jitter=0.0000001, y_shifts=0,
+                     y_jitter=0.0000001):
         """
         :param ssv_gen: scan speed generator
 
@@ -251,7 +257,8 @@ class Observation(object):
         self.y_shifts = y_shifts
         self.y_jitter = y_jitter
 
-    def setup_noise_sources(self, sky_background=1*u.count/u.s, cosmic_rate=11.,
+    def setup_noise_sources(self, sky_background=1 * u.count / u.s,
+                            cosmic_rate=11.,
                             add_read_noise=True, add_stellar_noise=True):
 
         self.sky_background = sky_background
@@ -324,9 +331,11 @@ class Observation(object):
 
         models = np.zeros((len(time_array), len(planet_spectrum)))
 
-        planet_spectrum = np.sqrt(planet_spectrum)  # pylc wants Rp/Rs not transit depth
+        planet_spectrum = np.sqrt(
+            planet_spectrum)  # pylc wants Rp/Rs not transit depth
 
-        time_array = tools.jd_to_hjd(time_array, planet)  # pylc wants hjd not jd
+        time_array = tools.jd_to_hjd(time_array,
+                                     planet)  # pylc wants hjd not jd
 
         logger.debug(
             "Generating lightcurves with P={}, a={}, i={}, e={}, W={}, T14={},"
@@ -335,8 +344,12 @@ class Observation(object):
             ))
 
         for j, spec_elem in enumerate(planet_spectrum):
-            models[:, j] = pylc.transit(self.ldcoeffs, spec_elem, P, a, e, i, W, transittime, time_array) - \
-                (1. - pylc.eclipse(spec_elem ** 2, rp, P, a, e, i, W, transittime, time_array))
+            models[:, j] = pylc.transit(self.ldcoeffs, spec_elem, P, a, e, i,
+                                        W, transittime, time_array) - \
+                           (
+                               1. - pylc.eclipse(spec_elem ** 2, rp, P, a, e,
+                                                 i, W,
+                                                 transittime, time_array))
 
         return models
 
@@ -351,7 +364,8 @@ class Observation(object):
         fig = plt.figure()
 
         if self.transmission_spectroscopy:
-            lc_model = self.generate_lightcurves(time_array, self.planet.calcTransitDepth())
+            lc_model = self.generate_lightcurves(time_array,
+                                                 self.planet.calcTransitDepth())
             plt.ylabel("Transit Depth")
         else:
             lc_model = np.ones_like(time_array)
@@ -388,7 +402,8 @@ class Observation(object):
             self._generate_exposure(start_time, filenum)
 
             progress.increment()
-            progress_line = 'Generating frames {}/{} done'.format(filenum, num_frames)
+            progress_line = 'Generating frames {}/{} done'.format(filenum,
+                                                                  num_frames)
             progress.print_status_line(progress_line)
 
             # so it can be retreived by exposure_generator
@@ -404,7 +419,7 @@ class Observation(object):
         :rtype: exposure.Exposure
         """
 
-        index_number = number-1  # for zero indexing
+        index_number = number - 1  # for zero indexing
 
         filename = '{:04d}_raw.fits'.format(number)
 
@@ -452,7 +467,8 @@ class Observation(object):
                 noise_mean=self.noise_mean, noise_std=self.noise_std,
                 add_flat=self.add_flat, add_dark=self.add_dark,
                 scale_factor=scale_factor, sky_background=sky_background,
-                cosmic_rate=self.cosmic_rate, add_gain_variations=self.add_gain_variations,
+                cosmic_rate=self.cosmic_rate,
+                add_gain_variations=self.add_gain_variations,
                 add_non_linear=self.add_non_linear,
                 clip_values_det_limits=self.clip_values_det_limits,
                 add_read_noise=self.add_read_noise,
@@ -469,7 +485,8 @@ class Observation(object):
                 noise_mean=self.noise_mean, noise_std=self.noise_std,
                 add_flat=self.add_flat, add_dark=self.add_dark,
                 scale_factor=scale_factor, sky_background=sky_background,
-                cosmic_rate=self.cosmic_rate, add_gain_variations=self.add_gain_variations,
+                cosmic_rate=self.cosmic_rate,
+                add_gain_variations=self.add_gain_variations,
                 add_non_linear=self.add_non_linear,
                 clip_values_det_limits=self.clip_values_det_limits,
                 add_read_noise=self.add_read_noise,
