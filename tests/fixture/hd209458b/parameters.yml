@@ -1,0 +1,64 @@
+general:
+  # path to systems folder of the Open Exoplanet Catalogue
+  oec_location: False
+  outdir: 'hd209458b_simulated'
+  seed: 1963
+  threads: 1
+
+target:
+  name: 'HD 209458 b'  # exact match of a OEC planet
+  planet_spectrum_file: 'planetary_spectrum.dat'  # wl (microns) vs transit depth
+  rebin_resolution: false
+  stellar_spectrum_file: 'stellar_spectrum.fits'
+  flux_scale: 2.8829687E-20  # stellar flux is a blackbody, scale this to get the required counts per pixel
+
+  # Below only required to overwrite ExoData defaults from the OEC, set to false otherwise
+  period: 3.524746  # days
+  sma: 0.047309    # AU
+  stellar_radius: 1.155  # Solar Radii
+  inclination: 86.71  # deg
+  eccentricity: 0.0
+  periastron: 0.0
+  transit_time: 2456196.28836  # HJD
+  ldcoeffs: [0.800627, -0.757066, 0.897268, -0.384804]
+
+observation:
+  detector: 'WFC3IR'  # currently fixed
+  grism: 'G141'  # currently fixed
+  x_ref: [4.04347e+02, 4.03898e+02]
+  y_ref: [4.57361e+02, 4.57271e+02]
+  NSAMP: 3
+  SAMPSEQ: 'RAPID'
+  SUBARRAY: 256
+  start_JD: False
+  exp_start_times: [2.45619613807e+06, 2.45619627354e+06]
+  num_orbits: 1
+  sample_rate: 10  # How often to generate a single frame (when scanning) in ms
+  spatial_scan: True
+  scan_speed: 20
+
+  ssv_type: sine
+  ssv_coeffs: [1.5, 1.1, 0]
+  x_shifts: 0
+  x_jitter: 0.025
+  y_shifts: 0
+  y_jitter: 0.000000000000001
+
+  noise_mean: False
+  noise_std: False
+
+  add_dark: True
+  add_flat: True
+  add_gain_variations: True
+  add_non_linear: True
+  add_read_noise: True
+  add_initial_bias: True
+  add_stellar_noise: True
+
+  sky_background: [4.7816, 4.8101]
+  cosmic_rate: 11
+
+  clip_values_det_limits: True
+
+trends:
+  visit_trend_coeffs: [0.005, 0.0011, 400, 2456196.28836]  # visit ramp / hook model coeffs

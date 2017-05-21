@@ -34,7 +34,13 @@ class WFC3SimConfigError(BaseException):
     pass
 
 
-def run(parameter_file):
+def run():
+    arguments = docopt.docopt(__doc__)
+    parameter_file = arguments['<parameter_file>']
+    run_simulation(parameter_file)
+
+
+def run_simulation(parameter_file):
 
     with open(parameter_file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
@@ -271,7 +277,7 @@ def run(parameter_file):
             exp_start_times))
         exp_start_times = np.loadtxt(exp_start_times) * u.day
 
-    # check to see if we have numbers of file paths, and load accordingly
+    # check to see if we file paths instead of numbers and load if so
     if isinstance(x_ref, str):
         x_ref = np.loadtxt(x_ref)
 
@@ -314,6 +320,4 @@ def run(parameter_file):
 
 
 if __name__ == '__main__':
-    arguments = docopt.docopt(__doc__)
-    parameter_file = arguments['<parameter_file>']
-    run(parameter_file)
+    run()
