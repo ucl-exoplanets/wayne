@@ -2,7 +2,7 @@ general:
   # path to systems folder of the Open Exoplanet Catalogue
   oec_location: False
   outdir: 'hd209458b_12181_data_simulated'
-  seed: False
+  seed: 1963
   threads: 4
 
 target:

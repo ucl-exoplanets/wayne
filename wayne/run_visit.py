@@ -69,6 +69,8 @@ def run():
         np.random.seed(seed)
         params.seed = np.random.get_state()[1][
             0]  # tell params what the seed is for exp header
+    else:
+        np.random.seed(seed)
 
     grisms = {
         'G141': grism.G141(),

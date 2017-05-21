@@ -49,7 +49,7 @@ int *PSF(int *counts,int size,double  *x_pos,double  *y_pos, double *psf_ratio, 
 	if (myid == thread_number -1) {iend = ssum;}
 	
 	
-	seed = 25234 + 17*myid + time(NULL) + test;
+	seed = 25234 + 17*myid + test;
 	
 		
 	for (i=istart;i<iend;i++) {
