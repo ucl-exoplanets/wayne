@@ -34,9 +34,7 @@ class WFC3SimConfigError(BaseException):
     pass
 
 
-def run():
-    arguments = docopt.docopt(__doc__)
-    parameter_file = arguments['<parameter_file>']
+def run(parameter_file):
 
     with open(parameter_file, 'r') as ymlfile:
         cfg = yaml.load(ymlfile)
@@ -316,4 +314,6 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    arguments = docopt.docopt(__doc__)
+    parameter_file = arguments['<parameter_file>']
+    run(parameter_file)
