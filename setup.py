@@ -1,44 +1,33 @@
-import codecs
 import os
-import re
 
 import numpy
 from setuptools import setup, find_packages, Extension
 
-here = os.path.abspath(os.path.dirname(__file__))
+VERSION = '1.0.0.dev'
 
+SHORT_DESCRIPTION = """
+Wayne is a instrument simulator primarily for HST WFC3 IR grism spectroscopy.
+"""
 
-# Read the version number from a source file.
-def find_version(*file_paths):
-    # Open in Latin-1 so that we avoid encoding errors.
-    # Use codecs.open for Python 2 compatibility
-    print os.path.join(here, *file_paths)
-    with codecs.open(os.path.join(here, *file_paths), 'r', 'latin1') as f:
-        version_file = f.read()
-
-    # The version line must have the form
-    # __version__ = 'ver'
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
-        return version_match.group(1)
-    raise RuntimeError("Unable to find version string.")
-
-
-# Get the long description from the relevant file
-with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+LONG_DESCRIPTION = """
+Wayne is a telescope simulator used to generate realistic data with most of
+the noise sources, reductions and systematics present in real data. Currently 
+only the HST WFC IR instrument has been implemented. The project has a 
+particular focus on transmission spectroscopy of exoplanets.
+"""
 
 # TODO (ryan) scrap req.txt and define versions here or parse it here
 install_requires = ['docopt', 'numpy', 'scipy', 'matplotlib', 'pysynphot',
                     'astropy', 'pandas', 'exodata', 'quantities',
                     'pyfits', 'cython', 'ephem', 'pymc']
 
+_here = os.path.abspath(os.path.dirname(__file__))
+
 setup(
     name="Wayne",
-    version=find_version('wayne', '__init__.py'),
-    description="Wayne is a instrument simulator primarily for HST WFC3 IR grism spectroscopy.",
-    long_description=long_description,
+    version=VERSION,
+    description=SHORT_DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
     url='https://github.com/ucl-exoplanets/Wayne',
     author='Ryan Varley',
     author_email='ryan@ryanvarley.uk',
