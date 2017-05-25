@@ -64,5 +64,5 @@ tests/.hypothesis
 example_data
 wayne/wayne_calibration_files
 wayne/pyparallel.c
-wayne/oec_data_base/systems_last_update.txt
+wayne/oec_data_base/
 hd209458b_12181_data_simulated

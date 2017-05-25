@@ -20,6 +20,7 @@ def oec_catalogue():
                                          'systems_last_update.txt')
 
     date = time.strftime('%y%m%d')
+
     update = False
     if not os.path.isfile(last_update_file_path):
         update = True
@@ -33,7 +34,11 @@ def oec_catalogue():
         print 'Updating OEC...'
 
         try:
+            if not os.path.exists(data_base_location):
+                os.mkdir(data_base_location)
+
             socket.setdefaulttimeout(5)
+            # TODO dl to memory instead of file
             urllib.urlretrieve(data_base_url, data_base_file_path + '.gz')
             socket.setdefaulttimeout(30)
 
