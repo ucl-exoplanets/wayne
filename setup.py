@@ -1,5 +1,5 @@
 import codecs
-import os
+import os.path
 import re
 
 import numpy
