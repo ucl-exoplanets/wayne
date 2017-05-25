@@ -19,13 +19,17 @@ Wayne is designed to be adapted to more instruments and systematics.
 
 ## Installation
 
-Wayne is a standalone program that should be ran in its own environement. It has not been tested with different package versions. I recomend reading up on either [virtualenvs](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/) or [conda environments](https://conda.io/docs/using/envs.html).
+Wayne is a standalone program that should be ran in its own environement. It has not been tested with different package versions. To avoid issues installing wayne, or the installation breaking other python programs, we recomend using either [virtualenvs](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/) or [conda environments](https://conda.io/docs/using/envs.html). This will save you alot of headache.
 
-First clone this repo
+If you are using conda, create your environment
+
+    conda create -n wayne python=2
+
+Clone this repo
 
     git clone https://github.com/ucl-exoplanets/wayne.git
 
-Then move to the new directory, activate your virtual environment and install it
+Move to the new directory, activate your virtual environment and install it
     
     cd wayne
     python setup.py install
