@@ -1,12 +1,15 @@
 The following licence applies to all the files in this repo with the exception of:
 
-* The data files provided in the [data folder](https://github.com/ucl-exoplanets/wayne/tree/master/wayne/data) which were botained from the [Space Telescope Science Institute](http://www.stsci.edu) (STScI)
-* The Open Exoplanet Catalogue (see [here](https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue) for licence
-* The pylightcurve package (see [here](https://github.com/ucl-exoplanets/pylightcurve) for licence)
-* The progress bar code (see [here](https://github.com/ucl-exoplanets/wayne/blob/master/wayne/thirdparty/progress.py) for licence)
+* The data files provided in the data folder 
+  (see https://github.com/ucl-exoplanets/wayne/tree/master/wayne/data) 
+  which were obtained from the Space Telescope Science Institute (STScI, http://www.stsci.edu)
+* The Open Exoplanet Catalogue (see https://github.com/OpenExoplanetCatalogue/open_exoplanet_catalogue for licence)
+* The pylightcurve package (see https://github.com/ucl-exoplanets/pylightcurve for licence)
+* The progress bar code (see https://github.com/ucl-exoplanets/wayne/blob/master/wayne/thirdparty/progress.py for licence)
 * Any third party modules required by this software
 
-Please site [this paper](https://arxiv.org/abs/1511.09108) (submitted to ApJ) in in all scientific publications that make use of this software.
+Please site [this paper](https://arxiv.org/abs/1511.09108) (submitted to ApJ) 
+in in all scientific publications that make use of this software.
 
 ---
 
@@ -20,7 +23,8 @@ copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software. A reference to the Software shall be included in all scientific publications that make use of the Software.
+copies or substantial portions of the Software. A reference to the Software
+shall be included in all scientific publications that make use of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
