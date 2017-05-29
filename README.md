@@ -48,7 +48,15 @@ A bunch of these are included in the `examples` folder. Move to this directory a
     
 This will take a while.
     
-## FAQ 
+## FAQ
+
+### I would like to contribute
+
+Great! An easy way to get involved is by addressing some of the raised issues or improving the test coverage by adding new tests. If you have a new feature idea you would like to implement please raise an issue first explaining what you plan to do. All contributions should be submitted using pull requests.
+
+### I am having trouble installing / using Wayne
+
+Please raise a github issue explaining the problem
 
 ### What does Wayne stand for?
 
