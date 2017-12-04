@@ -178,8 +178,11 @@ def load_and_sort_spectrum(file_path):
     df = pd.read_table(file_path, sep=" ", header=None, names=['wl', 'flux'],
                        dtype={'wl': np.float64, 'flux': np.float64})
 
-    df.sort('wl', inplace=True)
-
+    try:
+        df.sort('wl', inplace=True)
+    except AttributeError:
+        df.sort_data('wl', inplace=True)
+        
     return df.wl.values, df.flux.values
 
 
