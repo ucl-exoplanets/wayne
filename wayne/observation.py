@@ -9,7 +9,7 @@ import quantities as pq
 from astropy import units as u
 
 from wayne import exposure
-from wayne.thirdparty import pylightcurve as pylc
+import pylightcurve as pylc
 from wayne import tools
 from wayne.exposure_generator import ExposureGenerator
 from wayne.thirdparty.progress import Progress
@@ -344,7 +344,7 @@ class Observation(object):
             ))
 
         for j, spec_elem in enumerate(planet_spectrum):
-            models[:, j] = pylc.transit(self.ldcoeffs, spec_elem, P, a, e, i,
+            models[:, j] = pylc.transit('claret', self.ldcoeffs, spec_elem, P, a, e, i,
                                         W, transittime, time_array) - \
                            (
                                1. - pylc.eclipse(spec_elem ** 2, rp, P, a, e,
