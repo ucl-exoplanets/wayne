@@ -221,8 +221,54 @@ def jd_to_hjd(jd, planet):
 
     :param star: exodata star object
     """
+    ra_target, dec_target = (planet.system.ra.degree) * np.pi / 180, (planet.system.dec.degree) * np.pi / 180
 
-    return pylc.jd_to_hjd(jd, planet.system.ra.degree, planet.system.dec.degree)
+    try:
+        hjd = []
+
+        for julian_date in jd:
+            # calculate the position of the sun on the sky for this date
+
+            sun = ephem.Sun()
+            sun.compute(ephem.date(julian_date - 2415020))
+            ra_sun, dec_sun = float(sun.ra), float(sun.dec)
+
+            # calculate the correction coefficients
+
+            a = 149597870700.0 / ephem.c
+            b = np.sin(dec_target) * np.sin(dec_sun)
+            c = np.cos(dec_target) * np.cos(dec_sun) * np.cos(ra_target - ra_sun)
+
+            # apply the correction and save the result as the heliocentric_julian_date keyword
+
+            heliocentric_julian_date = julian_date - (a * (b + c)) / (24.0 * 60.0 * 60.0)
+
+            hjd.append(heliocentric_julian_date)
+
+        return np.array(hjd)
+    
+    except TypeError:
+
+        julian_date = jd
+
+        # calculate the position of the sun on the sky for this date
+
+        sun = ephem.Sun()
+        sun.compute(ephem.date(julian_date - 2415020))
+        ra_sun, dec_sun = float(sun.ra), float(sun.dec)
+
+        # calculate the correction coefficients
+
+        a = 149597870700.0 / ephem.c
+        b = np.sin(dec_target) * np.sin(dec_sun)
+        c = np.cos(dec_target) * np.cos(dec_sun) * np.cos(ra_target - ra_sun)
+
+        # apply the correction and save the result as the heliocentric_julian_date keyword
+
+        heliocentric_julian_date = julian_date - (a * (b + c)) / (24.0 * 60.0 * 60.0)
+
+        return heliocentric_julian_date
+
 
 
 def detect_orbits(exp_start_times, separation=0.028):
