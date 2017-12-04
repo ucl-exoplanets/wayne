@@ -68,7 +68,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     ext_modules=[
-        Extension("wayne/pyparallel",
+        Extension("pyparallel",
                   sources=[os.path.join('wayne', x) for x in
                            ("pyparallel.pyx", "pyparallel_menu.c")],
                   extra_compile_args=['-fopenmp', '-lm', '-O3'],

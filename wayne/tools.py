@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pyfits as fits
 import pysynphot
+import ephem
 
 import pylightcurve as pylc
 
@@ -181,7 +182,7 @@ def load_and_sort_spectrum(file_path):
     try:
         df.sort('wl', inplace=True)
     except AttributeError:
-        df.sort_data('wl', inplace=True)
+        df.sort_values('wl', inplace=True)
         
     return df.wl.values, df.flux.values
 
