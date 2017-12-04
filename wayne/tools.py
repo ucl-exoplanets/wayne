@@ -6,7 +6,7 @@ import pandas as pd
 import pyfits as fits
 import pysynphot
 
-import wayne.thirdparty.pylightcurve as pylc
+import pylightcurve as pylc
 
 
 def crop_spectrum(min_wl, max_wl, wl, flux):
@@ -213,7 +213,7 @@ def get_limb_darkening_coeffs(star):
     :param star: exodata star object
     """
 
-    return pylc.limb_darkening(star.Z, float(star.T), star.calcLogg(), 'J')
+    return pylc.clablimb('claret', star.calcLogg(), float(star.T), star.Z, 'J', stellar_model='ATLAS')
 
 
 def jd_to_hjd(jd, planet):
@@ -268,7 +268,6 @@ def jd_to_hjd(jd, planet):
         heliocentric_julian_date = julian_date - (a * (b + c)) / (24.0 * 60.0 * 60.0)
 
         return heliocentric_julian_date
-
 
 
 def detect_orbits(exp_start_times, separation=0.028):
