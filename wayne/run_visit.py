@@ -17,6 +17,7 @@ import exodata.astroquantities as aq
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+import pylightcurve as plc
 from astropy import units as u
 from astropy.analytic_functions import blackbody_lambda
 
@@ -50,9 +51,9 @@ def run():
 
     oec_path = cfg['general']['oec_location']
     if oec_path:
-        exodb = exodata.OECDatabase(oec_path)
+        exodb = exodata.OECDatabase(oec_path, stream=True)
     else:
-        exodb = oec.oec_catalogue()
+        exodb = plc.oec_catalogue()
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
