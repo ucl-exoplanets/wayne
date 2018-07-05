@@ -5,7 +5,6 @@ exodata==2.1.7
 matplotlib
 numpy==1.10.4
 pandas==0.16.2
-pyfits==3.4
 pysynphot==0.9.7
 PyYAML
 quantities==0.11.1
