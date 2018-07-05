@@ -8,7 +8,7 @@ import os.path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pyfits as fits
+from astropy.io import fits
 from astropy import units as u
 
 from wayne import params
