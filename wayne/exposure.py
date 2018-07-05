@@ -12,7 +12,7 @@ import exodata
 import exodata.astroquantities as pq
 import numpy as np
 import pandas
-import pyfits as fits
+from astropy.io import fits
 import scipy
 
 from wayne import params
