@@ -3,7 +3,7 @@
 
 import numpy as np
 import pandas as pd
-import pyfits as fits
+from astropy.io import fits
 import pysynphot
 import ephem
 
