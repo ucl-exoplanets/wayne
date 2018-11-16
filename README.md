@@ -21,13 +21,10 @@ Wayne is designed to be adapted to more instruments and systematics.
 
 Wayne is a standalone program that should be ran in its own environement. It has not been tested with different package versions. To avoid issues installing wayne, or the installation breaking other python programs, we recomend using either [virtualenvs](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/) or [conda environments](https://conda.io/docs/using/envs.html). This will save you alot of headache.
 
-If you are using conda, create a virtual environment, activate it, and install numpy/gcc/cython
+If you are using conda, create a python2 virtual environment with numpy/gcc/cython, and activate it
 
-    conda create -n wayne python=2
+    conda create -n wayne python=2 numpy=1.14.3 gcc=4.8.5 cython=0.28.2
     source activate wayne
-    conda install numpy==1.14.3
-    conda install gcc==4.8.5
-    conda install cython==0.28.2
 
 Clone this repo, move to the new directory and install Wayne
 
