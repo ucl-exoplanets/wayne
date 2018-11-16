@@ -24,7 +24,7 @@ Wayne is a standalone program that should be ran in its own environement. It has
 If you are using conda, create a virtual environment, activate it, and install numpy/gcc/cython
 
     conda create -n wayne python=2
-    source activate wayne`
+    source activate wayne
     conda install numpy==1.14.3
     conda install gcc==4.8.5
     conda install cython==0.28.2
