@@ -2,6 +2,9 @@
 (Observation). ExposureGenerator combines a spectrum, grism + detector combo and other observables to construct an image
 """
 
+import matplotlib
+matplotlib.use('TkAgg')
+
 import exodata
 import matplotlib.pylab as plt
 import numpy as np
