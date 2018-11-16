@@ -30,19 +30,19 @@ with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 # TODO (ryan) scrap req.txt and define versions here or parse it here
-install_requires = ['astropy==1.1.2',
-                    'cython',
-                    'docopt',
+install_requires = ['astropy==2.0.6',
+                    'cython==0.28.2',
+                    'docopt==0.6.2',
                     'exodata==2.1.7',
-                    'matplotlib==2.0.0',
-                    'numpy==1.10.4',
-                    'pandas==0.16.2',
-                    'pysynphot==0.9.7',
-                    'PyYAML',
-                    'quantities==0.11.1',
-                    'scipy==0.17.1',
+                    'matplotlib==2.2.2',
+                    'numpy==1.14.3',
+                    'pandas==0.23.0',
+                    'pysynphot==0.9.12',
+                    'PyYAML==3.12',
+                    'quantities==0.12.2',
+                    'scipy==1.1.0',
                     'ephem==3.7.6.0',
-                    'pylightcurve'
+                    'pylightcurve==2.2.5'
                    ]
 
 setup(
