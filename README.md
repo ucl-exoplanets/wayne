@@ -21,18 +21,24 @@ Wayne is designed to be adapted to more instruments and systematics.
 
 Wayne is a standalone program that should be ran in its own environement. It has not been tested with different package versions. To avoid issues installing wayne, or the installation breaking other python programs, we recomend using either [virtualenvs](http://python-guide-pt-br.readthedocs.io/en/latest/dev/virtualenvs/) or [conda environments](https://conda.io/docs/using/envs.html). This will save you alot of headache.
 
-If you are using conda, create your environment
+If you are using conda, create a virtual environment, activate it, and install numpy/gcc/cython
 
-    conda create -n wayne python=2
+    `conda create -n wayne python=2`
+    `source activate wayne`
+    `conda install numpy==1.14.3`
+    `conda install gcc==4.8.5`
+    `conda install cython==0.28.2`
 
-Clone this repo
+Clone this repo, move to the new directory and install Wayne
 
-    git clone https://github.com/ucl-exoplanets/wayne.git
+    `git clone https://github.com/ucl-exoplanets/wayne.git`
+    `cd wayne`
+    `python setup.py install`
 
-Move to the new directory, activate your virtual environment and install it
-    
-    cd wayne
-    python setup.py install
+Test an example
+
+    `cd examples`
+    `wayne -p hd209458b_12181_simulation_parameters.yml`
     
 *If you are developing the package, you should install in edit mode instead so you are not required to install the package again after every update*
 
