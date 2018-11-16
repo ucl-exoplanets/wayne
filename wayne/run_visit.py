@@ -257,6 +257,7 @@ def run():
     add_gain_variations = cfg['observation']['add_gain_variations']
     add_non_linear = cfg['observation']['add_non_linear']
     add_read_noise = cfg['observation']['add_read_noise']
+    add_stellar_noise = cfg['observation']['add_stellar_noise']
     add_initial_bias = cfg['observation']['add_initial_bias']
 
     sky_background = cfg['observation']['sky_background']
@@ -301,7 +302,7 @@ def run():
     obs.setup_observation(x_ref, y_ref, spatial_scan, scan_speed)
     obs.setup_simulator(sample_rate, clip_values_det_limits, threads)
     obs.setup_trends(ssv_gen, x_shifts, x_jitter, y_shifts, y_jitter)
-    obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise)
+    obs.setup_noise_sources(sky_background, cosmic_rate, add_read_noise, add_stellar_noise)
     obs.setup_gaussian_noise(noise_mean, noise_std)
 
     visit_trend_coeffs = cfg['trends']['visit_trend_coeffs']
