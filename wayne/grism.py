@@ -4,6 +4,9 @@ instrument) and simulates its passing through the grism as a field. The
 detector class then maps the field to pixels.
 """
 
+import matplotlib
+matplotlib.use('TkAgg')
+
 import os.path
 
 import matplotlib.pyplot as plt
