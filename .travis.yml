@@ -12,7 +12,7 @@ install:
   - conda info -a
 
   # Install the deps pip can struggle with
-  - conda create -qy -n test-environment python=$TRAVIS_PYTHON_VERSION numpy=1.14.3 gcc==4.8.5 cython==0.28.2
+  - conda create -qy -n test-environment python=$TRAVIS_PYTHON_VERSION numpy=1.14.3 gcc=4.8.5 cython=0.28.2
   - source activate test-environment
   - pip install pytest-cov codecov
   - python setup.py install
