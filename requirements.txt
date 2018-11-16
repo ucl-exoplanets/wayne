@@ -1,14 +1,14 @@
-astropy==1.1.2
+astropy
 cython
 docopt
-exodata==2.1.7
+exodata
 matplotlib
-numpy==1.10.4
-pandas==0.16.2
-pysynphot==0.9.7
+numpy
+pandas
+pysynphot
 PyYAML
-quantities==0.11.1
-scipy==0.17.1
+quantities
+scipy
 
-ephem==3.7.6.0
+ephem
 pylightcurve
