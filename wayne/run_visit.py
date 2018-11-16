@@ -8,6 +8,9 @@ Options:
     parameter_file  parameter file location
 """
 
+import matplotlib
+matplotlib.use('TkAgg')
+
 import os
 import shutil
 
